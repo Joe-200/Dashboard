@@ -1,0 +1,191 @@
+<div class="ai-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <span class="eyebrow">HOTEL INTELLIGENCE</span>
+      <h1>AI Assistant</h1>
+      <p>Ask questions and analyze your hotel's data.</p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        *ngIf="messages.length > 0"
+        type="button"
+        class="btn btn-secondary"
+        (click)="clearHistory()"
+      >
+        Clear History
+      </button>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- CHAT CARD -->
+  <div class="chat-card">
+
+    <!-- CHAT HEADER -->
+    <div class="chat-header">
+      <div>
+        <span class="chat-eyebrow">AI CONVERSATION</span>
+        <h2>Hotel Assistant</h2>
+      </div>
+
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span>Online</span>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div
+      class="chat-messages"
+      #chatContainer
+    >
+
+      <!-- EMPTY STATE -->
+      <div
+        *ngIf="messages.length === 0 && !loading"
+        class="chat-empty"
+      >
+        <div class="empty-icon">
+          ✦
+        </div>
+
+        <h3>How can I help?</h3>
+
+        <p>
+          Ask about rooms, bookings, occupancy,
+          revenue, guests or hotel performance.
+        </p>
+      </div>
+
+      <!-- MESSAGES -->
+      <div
+        *ngFor="let msg of messages"
+        class="message-wrapper"
+        [class.user-message-wrapper]="msg.role === 'user'"
+        [class.assistant-message-wrapper]="msg.role === 'assistant'"
+      >
+
+        <div
+          class="message"
+          [class.user]="msg.role === 'user'"
+          [class.assistant]="msg.role === 'assistant'"
+        >
+
+          <div class="message-avatar">
+            <span *ngIf="msg.role === 'assistant'">✦</span>
+            <span *ngIf="msg.role === 'user'">You</span>
+          </div>
+
+          <div class="message-content">
+
+            <div class="message-header">
+              <span class="message-role">
+                {{ msg.role === 'assistant' ? 'AI Assistant' : 'You' }}
+              </span>
+
+              <span class="message-time">
+                {{ msg.timestamp | date:'short' }}
+              </span>
+            </div>
+
+            <div class="message-text">
+              {{ msg.content }}
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- CHART -->
+        <div
+          *ngIf="
+            msg.role === 'assistant' &&
+            msg.graph &&
+            msg === messages[messages.length - 1]
+          "
+          class="chart-wrapper"
+        >
+          <div class="chart-header">
+            <span>ANALYTICS</span>
+          </div>
+
+          <canvas #chartCanvas></canvas>
+        </div>
+
+      </div>
+
+      <!-- LOADING -->
+      <div
+        *ngIf="loading"
+        class="message-wrapper assistant-message-wrapper"
+      >
+
+        <div class="message assistant">
+
+          <div class="message-avatar">
+            ✦
+          </div>
+
+          <div class="message-content">
+
+            <div class="message-header">
+              <span class="message-role">
+                AI Assistant
+              </span>
+            </div>
+
+            <div class="thinking">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-section">
+
+      <div class="input-area">
+
+        <input
+          type="text"
+          [(ngModel)]="query"
+          placeholder="Ask something about the hotel..."
+          (keyup.enter)="ask()"
+          [disabled]="loading"
+        />
+
+        <button
+          type="button"
+          class="send-button"
+          (click)="ask()"
+          [disabled]="loading || !query.trim()"
+        >
+          <span *ngIf="!loading">Send</span>
+          <span *ngIf="loading">Thinking...</span>
+        </button>
+
+      </div>
+
+      <span class="input-hint">
+        Press Enter to send
+      </span>
+
+    </div>
+
+  </div>
+
+</div>

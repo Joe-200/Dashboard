@@ -1,0 +1,84 @@
+<div class="app-container">
+
+  <!-- Navigation -->
+  <nav class="dashboard-navbar">
+
+    <!-- Brand -->
+    <div class="nav-brand">
+      <div class="brand-mark">H</div>
+
+      <div class="brand-info">
+        <span class="brand-name">Luxury Hotel</span>
+        <span class="brand-label">Management</span>
+      </div>
+    </div>
+
+
+    <!-- Navigation -->
+    <ul class="nav-links">
+
+      <li>
+        <a
+          routerLink="/rooms"
+          routerLinkActive="active"
+        >
+          Rooms
+        </a>
+      </li>
+
+      <li>
+        <a
+          routerLink="/special-offers"
+          routerLinkActive="active"
+        >
+          Offers
+        </a>
+      </li>
+<li><a routerLink="/calendar" routerLinkActive="active">Calendar</a></li>
+      <li>
+        <a
+          routerLink="/ai"
+          routerLinkActive="active"
+        >
+          AI
+        </a>
+      </li>
+
+    </ul>
+
+
+    <!-- User -->
+    <div class="nav-user">
+
+      <div class="user-info">
+        <span class="user-name">
+          {{ user?.username }}
+        </span>
+
+        <span class="user-role">
+          {{ user?.role }}
+        </span>
+      </div>
+
+      <div class="user-avatar">
+        {{ user?.username?.charAt(0)?.toUpperCase() }}
+      </div>
+
+      <button
+        class="btn-logout"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </nav>
+
+
+  <!-- Main -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

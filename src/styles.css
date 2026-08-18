@@ -1,0 +1,20 @@
+:root {
+  /* UI */
+  --color-bg: #f5f5f3;
+  --color-surface: #ffffff;
+  --color-surface-dark: #111111;
+
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-border: #e5e5e5;
+
+  /* Functional */
+  --color-success: #16845b;
+  --color-warning: #b77900;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+}
+*{
+    margin: 0;
+    padding: 0;
+}
