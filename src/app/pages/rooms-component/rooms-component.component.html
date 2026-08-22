@@ -1,0 +1,1106 @@
+<div class="rooms-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <span class="eyebrow">FRONT DESK</span>
+      <h1>Rooms</h1>
+      <p>Manage rooms, availability and room information.</p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="openCreateCategoryModal()"
+      >
+        Manage Categories
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="openCreateRoomModal()"
+      >
+        Add Room
+      </button>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters-card">
+
+    <div class="filter-group">
+      <label>Status</label>
+
+      <select
+        class="form-control"
+        [(ngModel)]="filterStatus"
+        (change)="onFilterChange()"
+      >
+        <option value="">All statuses</option>
+        <option value="AVAILABLE">Available</option>
+        <option value="OCCUPIED">Occupied</option>
+        <option value="CLEANING">Cleaning</option>
+        <option value="MAINTENANCE">Maintenance</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Floor</label>
+
+      <input
+        type="number"
+        class="form-control"
+        placeholder="All floors"
+        [(ngModel)]="filterFloor"
+        (input)="onFilterChange()"
+      />
+    </div>
+
+    <div class="room-count">
+      <span>{{ totalElements }}</span>
+      rooms
+    </div>
+
+  </div>
+
+  <!-- LOADING -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="loading-spinner"></div>
+    <span>Loading rooms...</span>
+  </div>
+
+  <!-- EMPTY -->
+  <div
+    *ngIf="!loading && rooms.length === 0"
+    class="empty-state"
+  >
+    <h3>No rooms found</h3>
+
+    <p>
+      Try changing your filters or add a new room.
+    </p>
+
+    <button
+      class="btn btn-primary"
+      type="button"
+      (click)="openCreateRoomModal()"
+    >
+      Add Room
+    </button>
+  </div>
+
+  <!-- ROOMS -->
+  <div
+    *ngIf="!loading && rooms.length > 0"
+    class="rooms-grid"
+  >
+
+    <article
+      class="room-card"
+      *ngFor="let room of rooms"
+    >
+
+      <!-- IMAGE -->
+      <div class="room-image">
+
+        <img
+          *ngIf="room.imageUrl"
+          [src]="room.imageUrl"
+          [alt]="'Room ' + room.roomNumber"
+          loading="lazy"
+        />
+
+        <div
+          *ngIf="!room.imageUrl"
+          class="image-placeholder"
+        >
+          <span>NO IMAGE</span>
+        </div>
+
+        <span
+          class="status-badge"
+          [ngClass]="'status-' + room.status.toLowerCase()"
+        >
+          {{ getStatusLabel(room.status) }}
+        </span>
+
+        <span class="room-number">
+          {{ room.roomNumber }}
+        </span>
+
+      </div>
+
+      <!-- BODY -->
+      <div class="room-body">
+
+        <!-- HEADING -->
+        <div class="room-heading">
+
+          <div>
+            <h3>
+              {{ room.categoryName || 'Room' }}
+            </h3>
+
+            <span class="room-floor">
+              Floor {{ room.floor }}
+            </span>
+          </div>
+
+          <div class="room-price">
+            <strong>
+              {{ room.price | number:'1.0-2' }}
+            </strong>
+
+            <span>
+              SAR / night
+            </span>
+          </div>
+
+        </div>
+
+        <!-- DESCRIPTION -->
+        <p class="room-description">
+          {{ room.description || 'No description available.' }}
+        </p>
+
+        <!-- ALL DETAILS AS TAGS -->
+        <div class="room-tags">
+
+          <span class="room-tag">
+            {{ room.categoryName || 'Uncategorized' }}
+          </span>
+
+          <span class="room-tag">
+            {{ room.numBeds }}
+            {{ room.numBeds === 1 ? 'Bed' : 'Beds' }}
+          </span>
+
+          <span class="room-tag">
+            {{ getBedTypeLabel(room.bedType) }}
+          </span>
+
+          <span class="room-tag">
+            {{ room.maxAdults }}
+            {{ room.maxAdults === 1 ? 'Adult' : 'Adults' }}
+          </span>
+
+          <span
+            class="room-tag"
+            *ngIf="room.maxKids > 0"
+          >
+            {{ room.maxKids }}
+            {{ room.maxKids === 1 ? 'Kid' : 'Kids' }}
+          </span>
+
+          <span
+            class="room-tag"
+            *ngIf="room.hasWifi"
+          >
+            Wi-Fi
+          </span>
+
+          <span
+            class="room-tag"
+            *ngIf="room.numTvs > 0"
+          >
+            {{ room.numTvs }}
+            {{ room.numTvs === 1 ? 'TV' : 'TVs' }}
+          </span>
+
+          <span
+            class="room-tag"
+            *ngIf="getViewLabel(room.viewType)"
+          >
+            {{ getViewLabel(room.viewType) }} View
+          </span>
+
+          <span class="room-tag">
+            Room #{{ room.id }}
+          </span>
+
+        </div>
+
+        <!-- ACTION -->
+        <div class="room-actions">
+
+          <button
+            type="button"
+            class="btn btn-edit"
+            (click)="openEditRoomModal(room)"
+          >
+            Edit Room
+          </button>
+
+        </div>
+
+      </div>
+
+    </article>
+
+  </div>
+
+  <!-- PAGINATION -->
+  <div
+    *ngIf="!loading && totalPages > 1"
+    class="pagination-container"
+  >
+
+    <span>
+      Page {{ currentPage + 1 }} of {{ totalPages }}
+    </span>
+
+    <div class="pagination">
+
+      <button
+        [disabled]="currentPage === 0"
+        (click)="onPageChange(currentPage - 1)"
+      >
+        Previous
+      </button>
+
+      <button
+        *ngFor="let p of [].constructor(totalPages); let i = index"
+        [class.active]="i === currentPage"
+        (click)="onPageChange(i)"
+      >
+        {{ i + 1 }}
+      </button>
+
+      <button
+        [disabled]="currentPage === totalPages - 1"
+        (click)="onPageChange(currentPage + 1)"
+      >
+        Next
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     ROOM MODAL
+========================================================= -->
+
+<div
+  *ngIf="showRoomModal"
+  class="custom-modal-overlay"
+  (click)="closeRoomModal()"
+>
+
+  <div
+    class="custom-modal"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div class="custom-modal-header">
+
+      <div>
+        <span class="modal-eyebrow">
+          ROOM MANAGEMENT
+        </span>
+
+        <h2>
+          {{ isEditRoom ? 'Edit Room' : 'Add Room' }}
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        (click)="closeRoomModal()"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="custom-modal-body">
+
+      <form
+        [formGroup]="roomForm"
+        (ngSubmit)="saveRoom()"
+      >
+
+        <!-- ROOM NUMBER + CATEGORY -->
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Room Number
+            </label>
+
+            <input
+              type="text"
+              class="form-control"
+              formControlName="roomNumber"
+              placeholder="101"
+            />
+
+            <div
+              class="error"
+              *ngIf="
+                roomForm.get('roomNumber')?.invalid &&
+                roomForm.get('roomNumber')?.touched
+              "
+            >
+              Room number is required.
+            </div>
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <select
+              class="form-control"
+              formControlName="categoryId"
+            >
+
+              <option [ngValue]="null">
+                Select category
+              </option>
+
+              <option
+                *ngFor="let cat of categories"
+                [ngValue]="cat.id"
+              >
+                {{ cat.name }}
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <!-- FLOOR + VIEW -->
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Floor
+            </label>
+
+            <input
+              type="number"
+              class="form-control"
+              formControlName="floor"
+              min="1"
+            />
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              View
+            </label>
+
+            <select
+              class="form-control"
+              formControlName="viewType"
+            >
+
+              <option value="">
+                Select view
+              </option>
+
+              <option value="CITY">
+                City
+              </option>
+
+              <option value="PANORAMIC">
+                Panoramic
+              </option>
+
+              <option value="SEA">
+                Sea
+              </option>
+
+              <option value="GARDEN">
+                Garden
+              </option>
+
+              <option value="MOUNTAIN">
+                Mountain
+              </option>
+
+              <option value="POOL">
+                Pool
+              </option>
+
+              <option value="RIVER">
+                River
+              </option>
+
+              <option value="LANDMARK">
+                Landmark
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+
+          <label>
+            Description
+          </label>
+
+          <textarea
+            class="form-control textarea"
+            formControlName="description"
+            rows="3"
+            placeholder="Describe the room..."
+          ></textarea>
+
+        </div>
+
+        <!-- STATUS -->
+        <div
+          class="form-group"
+          *ngIf="isEditRoom"
+        >
+
+          <label>
+            Status
+          </label>
+
+          <select
+            class="form-control"
+            formControlName="status"
+          >
+
+            <option value="AVAILABLE">
+              Available
+            </option>
+
+            <option value="OCCUPIED">
+              Occupied
+            </option>
+
+            <option value="CLEANING">
+              Cleaning
+            </option>
+
+            <option value="MAINTENANCE">
+              Maintenance
+            </option>
+
+          </select>
+
+        </div>
+
+        <!-- IMAGE UPLOAD -->
+        <div class="form-group">
+
+          <label>
+            Room Image
+          </label>
+
+          <input
+            type="file"
+            class="form-control file-input"
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            (change)="onFileSelected($event)"
+          />
+
+          <small>
+            The image will automatically be resized, compressed and converted to WebP.
+          </small>
+
+          <div
+            class="image-processing"
+            *ngIf="imageProcessing"
+          >
+            Processing image...
+          </div>
+
+          <div
+            class="image-preview"
+            *ngIf="imagePreview"
+          >
+
+            <img
+              [src]="imagePreview"
+              alt="Room preview"
+            />
+
+            <div class="image-preview-info">
+
+              <strong>
+                {{ imageFile?.name }}
+              </strong>
+
+              <span>
+                {{ getFileSize(imageFile) }}
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="custom-modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeRoomModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="
+              roomForm.invalid ||
+              loading ||
+              imageUploading ||
+              imageProcessing
+            "
+          >
+
+            {{
+              loading
+                ? 'Saving...'
+                : isEditRoom
+                  ? 'Save Changes'
+                  : 'Create Room'
+            }}
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     CATEGORY MANAGEMENT MODAL
+========================================================= -->
+
+<div
+  *ngIf="showCategoryModal"
+  class="custom-modal-overlay"
+  (click)="closeCategoryModal()"
+>
+
+  <div
+    class="custom-modal category-modal"
+    (click)="$event.stopPropagation()"
+  >
+
+    <div class="custom-modal-header">
+
+      <div>
+
+        <span class="modal-eyebrow">
+          ROOM MANAGEMENT
+        </span>
+
+        <h2>
+          Manage Categories
+        </h2>
+
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        (click)="closeCategoryModal()"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="custom-modal-body">
+
+      <!-- CATEGORY FORM -->
+      <div class="section-header">
+
+        <h3>
+          {{ isEditCategory ? 'Edit Category' : 'Add Category' }}
+        </h3>
+
+      </div>
+
+      <form
+        [formGroup]="categoryForm"
+        (ngSubmit)="saveCategory()"
+      >
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Name
+            </label>
+
+            <input
+              type="text"
+              class="form-control"
+              formControlName="name"
+              placeholder="Double"
+            />
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              View
+            </label>
+
+            <select
+              class="form-control"
+              formControlName="viewType"
+            >
+
+              <option value="">
+                Select view
+              </option>
+
+              <option value="CITY">
+                City
+              </option>
+
+              <option value="PANORAMIC">
+                Panoramic
+              </option>
+
+              <option value="SEA">
+                Sea
+              </option>
+
+              <option value="GARDEN">
+                Garden
+              </option>
+
+              <option value="MOUNTAIN">
+                Mountain
+              </option>
+
+              <option value="POOL">
+                Pool
+              </option>
+
+              <option value="RIVER">
+                River
+              </option>
+
+              <option value="LANDMARK">
+                Landmark
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <div class="form-group">
+
+          <label>
+            Description
+          </label>
+
+          <textarea
+            class="form-control textarea"
+            formControlName="description"
+            rows="3"
+          ></textarea>
+
+        </div>
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Price
+            </label>
+
+            <div class="price-input">
+
+              <input
+                type="number"
+                class="form-control"
+                formControlName="price"
+                min="0"
+              />
+
+              <span>SAR</span>
+
+            </div>
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              Beds
+            </label>
+
+            <input
+              type="number"
+              class="form-control"
+              formControlName="numBeds"
+              min="1"
+            />
+
+          </div>
+
+        </div>
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Bed Type
+            </label>
+
+            <select
+              class="form-control"
+              formControlName="bedType"
+            >
+
+              <option value="">
+                Select bed type
+              </option>
+
+              <option value="SINGLE">
+                Single
+              </option>
+
+              <option value="DOUBLE">
+                Double
+              </option>
+
+              <option value="QUEEN">
+                Queen
+              </option>
+
+              <option value="KING">
+                King
+              </option>
+
+              <option value="TWIN">
+                Twin
+              </option>
+
+            </select>
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              TVs
+            </label>
+
+            <input
+              type="number"
+              class="form-control"
+              formControlName="numTvs"
+              min="0"
+            />
+
+          </div>
+
+        </div>
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label>
+              Adults
+            </label>
+
+            <input
+              type="number"
+              class="form-control"
+              formControlName="maxAdults"
+              min="1"
+            />
+
+          </div>
+
+          <div class="form-group">
+
+            <label>
+              Kids
+            </label>
+
+            <input
+              type="number"
+              class="form-control"
+              formControlName="maxKids"
+              min="0"
+            />
+
+          </div>
+
+        </div>
+
+        <div class="wifi-row">
+
+          <div>
+            <strong>Wi-Fi</strong>
+            <span>Available in this category</span>
+          </div>
+
+          <input
+            type="checkbox"
+            formControlName="hasWifi"
+          />
+
+        </div>
+
+        <!-- CATEGORY IMAGE -->
+        <div class="form-group">
+
+          <label>
+            Category Image
+          </label>
+
+          <input
+            type="file"
+            class="form-control file-input"
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            (change)="onCategoryFileSelected($event)"
+          />
+
+          <div
+            class="image-preview"
+            *ngIf="categoryImagePreview"
+          >
+
+            <img
+              [src]="categoryImagePreview"
+              alt="Category preview"
+            />
+
+            <div class="image-preview-info">
+
+              <strong>
+                {{ categoryImageFile?.name }}
+              </strong>
+
+              <span>
+                {{ getFileSize(categoryImageFile) }}
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="custom-modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeCategoryModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="categoryForm.invalid || categoriesLoading"
+          >
+            {{ isEditCategory ? 'Save Changes' : 'Create Category' }}
+          </button>
+
+        </div>
+
+      </form>
+
+
+      <!-- CATEGORY LIST -->
+      <div class="category-divider"></div>
+
+      <div class="section-header">
+
+        <h3>
+          Categories
+        </h3>
+
+        <span class="category-count">
+          {{ categories.length }}
+        </span>
+
+      </div>
+
+      <div
+        *ngIf="categoriesLoading"
+        class="category-loading"
+      >
+        Loading categories...
+      </div>
+
+      <div
+        *ngIf="!categoriesLoading && categories.length === 0"
+        class="empty-categories"
+      >
+        No categories found.
+      </div>
+
+      <div
+        class="category-list"
+        *ngIf="!categoriesLoading && categories.length > 0"
+      >
+
+        <div
+          class="category-item"
+          *ngFor="let category of categories"
+        >
+
+          <!-- CATEGORY IMAGE -->
+          <div class="category-image">
+
+            <img
+              *ngIf="category.imageUrl"
+              [src]="category.imageUrl"
+              [alt]="category.name"
+              loading="lazy"
+            />
+
+            <div
+              *ngIf="!category.imageUrl"
+              class="category-image-placeholder"
+            >
+              No Image
+            </div>
+
+          </div>
+
+          <!-- CATEGORY INFO -->
+          <div class="category-content">
+
+            <div class="category-name">
+              {{ category.name }}
+            </div>
+
+            <div class="category-tags">
+
+              <span class="category-tag">
+                {{ category.price | number:'1.0-2' }} SAR
+              </span>
+
+              <span class="category-tag">
+                {{ category.numBeds }}
+                {{ category.numBeds === 1 ? 'Bed' : 'Beds' }}
+              </span>
+
+              <span class="category-tag">
+                {{ getBedTypeLabel(category.bedType) }}
+              </span>
+
+              <span class="category-tag">
+                {{ category.maxAdults }} Adults
+              </span>
+
+              <span
+                class="category-tag"
+                *ngIf="category.maxKids > 0"
+              >
+                {{ category.maxKids }} Kids
+              </span>
+
+              <span
+                class="category-tag"
+                *ngIf="category.hasWifi"
+              >
+                Wi-Fi
+              </span>
+
+              <span
+                class="category-tag"
+                *ngIf="category.numTvs > 0"
+              >
+                {{ category.numTvs }} TV
+              </span>
+
+              <span
+                class="category-tag"
+                *ngIf="getViewLabel(category.viewType)"
+              >
+                {{ getViewLabel(category.viewType) }} View
+              </span>
+
+            </div>
+
+            <div
+              class="category-description"
+              *ngIf="category.description"
+            >
+              {{ category.description }}
+            </div>
+
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="category-actions">
+
+            <button
+              type="button"
+              class="icon-button"
+              (click)="openEditCategoryModal(category)"
+            >
+              Edit
+            </button>
+
+            <button
+              type="button"
+              class="icon-button danger"
+              (click)="deleteCategory(category.id)"
+            >
+              Delete
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
