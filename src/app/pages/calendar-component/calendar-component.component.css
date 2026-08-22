@@ -1,19 +1,28 @@
+/* ============================================================
+   BASE
+============================================================ */
+
 * {
   box-sizing: border-box;
 }
-
-/* ============================================================
-   CONTAINER
-============================================================ */
 
 .calendar-container {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 1rem;
+
   color: #171717;
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
+
 
 /* ============================================================
    HEADER
@@ -23,27 +32,41 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+
   gap: 1.5rem;
   margin-bottom: 1.25rem;
+
   flex-wrap: wrap;
+}
+
+.header-title {
+  min-width: 220px;
 }
 
 .glass-header h2 {
   margin: 0;
+
   color: #171717;
+
   font-size: 1.7rem;
   font-weight: 700;
+
   letter-spacing: -0.04em;
 }
 
 .eyebrow {
   display: block;
+
   margin-bottom: 0.2rem;
+
   color: #737373;
+
   font-size: 0.65rem;
   font-weight: 700;
+
   letter-spacing: 0.14em;
 }
+
 
 /* ============================================================
    NAVIGATION
@@ -52,41 +75,109 @@
 .nav-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+
+  gap: 0.45rem;
+
+  flex-wrap: wrap;
 }
 
 .month-label {
   min-width: 125px;
+
   color: #171717;
-  font-size: 0.85rem;
+
+  font-size: 0.8rem;
   font-weight: 700;
+
   text-align: center;
 }
 
+.nav-arrow {
+  width: 38px;
+
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1.15rem;
+}
+
+
 /* ============================================================
-   NEW VIEW TOGGLE
+   VIEW TOGGLE
 ============================================================ */
 
 .view-toggle {
+  height: 38px;
+
   display: flex;
-  gap: 0.3rem;
+  align-items: center;
+
+  gap: 2px;
+
+  padding: 3px;
+
+  background: #f5f5f5;
+
   border: 1px solid #d4d4d4;
-  border-radius: 8px;
-  padding: 2px;
-  background: #fafafa;
-  margin-right: 0.25rem;
+  border-radius: 9px;
+
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  margin-right: 0.15rem;
 }
-.view-toggle .btn-glass {
+
+.toggle-btn {
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 13px;
+
   border: none;
-  height: 32px;
-  background: transparent;
   border-radius: 6px;
+
+  background: transparent;
+
+  color: #737373;
+
+  font-family: inherit;
+
+  font-size: 0.76rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
-.view-toggle .btn-glass.active {
+
+.toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+
+  color: #171717;
+}
+
+.toggle-btn.active {
   background: #171717;
+
   color: #fff;
-  transform: none;
+
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15);
 }
+
+.toggle-btn.active:hover {
+  background: #000;
+}
+
 
 /* ============================================================
    BUTTONS
@@ -94,119 +185,160 @@
 
 .btn-glass {
   height: 38px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   padding: 0 0.85rem;
+
   background: #fff;
+
   border: 1px solid #d4d4d4;
   border-radius: 8px;
+
   color: #171717;
+
   font-family: inherit;
-  font-size: 0.8rem;
+
+  font-size: 0.78rem;
   font-weight: 600;
+
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .btn-glass:hover {
   background: #f5f5f5;
+
   border-color: #bdbdbd;
+
   transform: translateY(-1px);
 }
 
+.btn-glass:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* ============================================================
+   PRIMARY BUTTON
+============================================================ */
+
 .btn-glass.primary {
   background: #171717;
+
   border-color: #171717;
+
   color: #fff;
 }
 
 .btn-glass.primary:hover {
   background: #000;
+
+  border-color: #000;
 }
+
+
+/* ============================================================
+   ACTIVE BUTTON
+============================================================ */
+
+.btn-glass.active {
+  background: #171717;
+
+  border-color: #171717;
+
+  color: #fff;
+}
+
+.btn-glass.active:hover {
+  background: #000;
+
+  border-color: #000;
+}
+
+
+/* ============================================================
+   TODAY
+============================================================ */
 
 .today-btn {
   background: #171717;
+
   border-color: #171717;
+
   color: #fff;
 }
 
 .today-btn:hover {
   background: #000;
+
+  border-color: #000;
 }
 
-.btn-glass:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
 
 /* ============================================================
-   NOTIFICATION BUTTON
+   MATCH RATES
 ============================================================ */
 
-.notification-btn {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+.match-btn {
+  min-width: 115px;
+
   background: #fff;
-  border: 1px solid #d4d4d4;
-  border-radius: 8px;
+
+  border-color: #d4d4d4;
+
   color: #171717;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+  font-weight: 600;
 }
 
-.notification-btn:hover {
+.match-btn:hover {
   background: #f5f5f5;
+
   border-color: #bdbdbd;
-  transform: translateY(-1px);
 }
 
-.notification-icon {
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #171717;
-}
-
-.notification-icon svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 
 /* ============================================================
-   NOTIFICATION BADGE
+   MATCH STATUS
 ============================================================ */
 
-.badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
+.rate-match-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #171717;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 0.55rem;
-  font-weight: 700;
-  line-height: 1;
+
+  min-height: 20px;
+
+  margin-bottom: 0.75rem;
 }
+
+.match-success {
+  color: #16a34a;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.match-error {
+  color: #dc2626;
+
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 
 /* ============================================================
    ERROR
@@ -214,13 +346,20 @@
 
 .error {
   padding: 0.75rem 1rem;
+
   margin-bottom: 1rem;
+
   background: #fef2f2;
+
   border: 1px solid #fecaca;
+
   border-radius: 8px;
+
   color: #991b1b;
+
   font-size: 0.8rem;
 }
+
 
 /* ============================================================
    LOADING
@@ -228,10 +367,14 @@
 
 .loading {
   padding: 2rem;
+
   color: #737373;
+
   text-align: center;
+
   font-size: 0.85rem;
 }
+
 
 /* ============================================================
    EMPTY
@@ -239,58 +382,86 @@
 
 .no-data {
   padding: 3rem;
+
   background: #fff;
+
   border: 1px solid #e5e5e5;
+
   border-radius: 14px;
+
   color: #737373;
+
   text-align: center;
+
   font-size: 0.85rem;
 }
 
+
 /* ============================================================
-   HORIZONTAL CALENDAR SCROLL
+   CALENDAR SCROLL
 ============================================================ */
 
 .calendar-scroll {
   width: 100%;
   max-width: 100%;
+
   overflow-x: auto;
   overflow-y: hidden;
+
   padding-bottom: 0.5rem;
+
   border-radius: 12px;
+
   scrollbar-width: none;
+
   -ms-overflow-style: none;
+
   cursor: grab;
+
   user-select: none;
+
   -webkit-overflow-scrolling: touch;
+
   touch-action: pan-x;
+
   scroll-behavior: smooth;
 }
 
 .calendar-scroll::-webkit-scrollbar {
   display: none;
+
   width: 0;
   height: 0;
 }
 
 .calendar-scroll.dragging {
   cursor: grabbing;
+
   scroll-behavior: auto;
 }
 
+
 /* ============================================================
-   CATEGORY TABLE (EXISTING)
+   CATEGORY TABLE
 ============================================================ */
 
 .category-table {
   width: max-content;
   min-width: max-content;
+
   margin-bottom: 1.5rem;
+
   background: #fff;
+
   border: 1px solid #e5e5e5;
+
   border-radius: 14px;
+
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 30px rgba(0, 0, 0, 0.04);
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 8px 30px rgba(0, 0, 0, 0.04);
 }
 
 .category-table:last-child {
@@ -300,29 +471,38 @@
 .category-table-header {
   display: flex;
   align-items: center;
+
   min-height: 70px;
+
   padding: 1rem 1.25rem;
+
   background: #fafafa;
+
   border-bottom: 1px solid #e5e5e5;
 }
 
 .category-info {
   display: flex;
   flex-direction: column;
+
   gap: 4px;
 }
 
 .category-name {
   color: #171717;
+
   font-size: 0.9rem;
   font-weight: 700;
+
   letter-spacing: -0.01em;
 }
 
 .category-base-price {
   color: #737373;
+
   font-size: 0.7rem;
 }
+
 
 /* ============================================================
    CALENDAR TABLE
@@ -333,28 +513,39 @@
   min-width: max-content;
 }
 
+
 /* ============================================================
    TABLE HEADER
 ============================================================ */
 
 .table-header {
   display: grid;
+
   width: max-content;
+
   min-height: 62px;
+
   background: #f5f5f5;
+
   border-bottom: 1px solid #e5e5e5;
 }
 
 .header-label {
   display: flex;
   align-items: center;
+
   padding: 0 1rem;
+
   background: #f5f5f5;
+
   border-right: 1px solid #e5e5e5;
+
   color: #525252;
+
   font-size: 0.72rem;
   font-weight: 700;
 }
+
 
 /* ============================================================
    DAY HEADER
@@ -362,25 +553,31 @@
 
 .day-header {
   min-width: 90px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
   border-right: 1px solid #e5e5e5;
 }
 
 .day-number {
   color: #171717;
+
   font-size: 0.85rem;
   font-weight: 700;
 }
 
 .weekday {
   margin-top: 3px;
+
   color: #737373;
+
   font-size: 0.65rem;
   font-weight: 500;
 }
+
 
 /* ============================================================
    DATA ROW
@@ -388,14 +585,18 @@
 
 .data-row {
   display: grid;
+
   width: max-content;
+
   min-height: 45px;
+
   border-bottom: 1px solid #eeeeee;
 }
 
 .data-row:last-child {
   border-bottom: none;
 }
+
 
 /* ============================================================
    ROW LABEL
@@ -404,13 +605,19 @@
 .row-label {
   display: flex;
   align-items: center;
+
   padding-left: 1rem;
+
   background: #fafafa;
+
   border-right: 1px solid #e5e5e5;
+
   color: #737373;
+
   font-size: 0.68rem;
   font-weight: 600;
 }
+
 
 /* ============================================================
    DATA CELL
@@ -418,13 +625,19 @@
 
 .data-cell {
   min-width: 90px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   background: #fff;
+
   border-right: 1px solid #eeeeee;
+
   color: #171717;
+
   font-size: 0.75rem;
+
   transition: background 0.15s ease;
 }
 
@@ -432,15 +645,18 @@
   background: #f8f8f8;
 }
 
+
 /* ============================================================
    BOOKED
 ============================================================ */
 
 .booked {
   color: #dc2626;
+
   font-size: 0.78rem;
   font-weight: 700;
 }
+
 
 /* ============================================================
    AVAILABLE
@@ -448,9 +664,11 @@
 
 .available {
   color: #16a34a;
+
   font-size: 0.78rem;
   font-weight: 600;
 }
+
 
 /* ============================================================
    PRICE
@@ -462,6 +680,7 @@
 
 .price-cell {
   cursor: pointer;
+
   background: #fcfcfc;
 }
 
@@ -471,96 +690,208 @@
 
 .price {
   color: #171717;
+
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .price.custom {
   padding: 3px 7px;
+
   background: #171717;
+
   border-radius: 5px;
+
   color: #fff;
+
   font-size: 0.72rem;
 }
 
+
 /* ============================================================
-   NEW ROOM TABLE
+   BULK PRICE INPUT
+============================================================ */
+
+.bulk-price-input {
+  width: 70px;
+
+  padding: 4px 5px;
+
+  background: #fff;
+
+  border: 1px solid #d4d4d4;
+
+  border-radius: 5px;
+
+  color: #171717;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  text-align: center;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.bulk-price-input:focus {
+  border-color: #171717;
+
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+.bulk-price-input.changed {
+  border-color: #2563eb;
+
+  background: #eff6ff;
+}
+
+
+/* ============================================================
+   ROOM TABLE
 ============================================================ */
 
 .room-table {
   width: max-content;
   min-width: max-content;
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 30px rgba(0,0,0,0.04);
-}
-.room-table:last-child { margin-bottom: 0; }
 
-/* UPDATED: flex-start and added gap */
+  margin-bottom: 1.5rem;
+
+  background: #fff;
+
+  border: 1px solid #e5e5e5;
+
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+.room-table:last-child {
+  margin-bottom: 0;
+}
+
+/* UPDATED: Button now on the left */
 .room-table-header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 1rem;
+  gap: 0.7rem;
+
   min-height: 70px;
+
   padding: 1rem 1.25rem;
+
   background: #fafafa;
+
   border-bottom: 1px solid #e5e5e5;
 }
 
 .room-info {
   display: flex;
   flex-direction: column;
+
   gap: 4px;
 }
+
 .room-name {
   color: #171717;
+
   font-size: 0.9rem;
   font-weight: 700;
+
   letter-spacing: -0.01em;
 }
+
 .room-details {
   color: #737373;
+
   font-size: 0.7rem;
 }
 
+.separator {
+  margin: 0 3px;
+
+  color: #bdbdbd;
+}
+
+.create-btn {
+  height: 32px;
+
+  padding: 0 1rem;
+
+  font-size: 0.75rem;
+}
+
+
 /* ============================================================
-   NEW STAY BLOCK
+   STAY BLOCK
 ============================================================ */
 
 .stay-block {
-  background: #e3f2fd;
-  border-left: 4px solid #1976d2;
-  padding: 4px 8px;
-  border-radius: 4px;
   width: 100%;
-  text-align: left;
+
+  padding: 5px 8px;
+
+  background: #f5f5f5;
+
+  border-left: 3px solid #171717;
+
+  border-radius: 4px;
+
+  color: #171717;
+
   font-size: 0.65rem;
   font-weight: 600;
-  color: #171717;
-  cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+
   line-height: 1.2;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
 }
+
 .stay-block:hover {
   transform: scale(1.02);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.1);
+
   z-index: 10;
 }
+
+.stay-guest {
+  display: block;
+}
+
 .stay-status {
   display: block;
+
+  margin-top: 2px;
+
+  color: #737373;
+
   font-size: 0.55rem;
   font-weight: 500;
-  color: #1976d2;
-  margin-top: 2px;
 }
+
 .available-room {
   color: #bdbdbd;
+
   font-size: 0.7rem;
 }
+
 
 /* ============================================================
    MODALS
@@ -568,40 +899,121 @@
 
 .modal-overlay {
   position: fixed;
+
   inset: 0;
+
   width: 100vw;
   height: 100vh;
+
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
   background: rgba(0, 0, 0, 0.45);
+
   backdrop-filter: blur(5px);
+
   z-index: 10000;
 }
 
 .modal-content {
   width: 90%;
   max-width: 420px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
   padding: 1.5rem;
+
   background: #fff;
+
   border: 1px solid #e5e5e5;
+
   border-radius: 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.15);
+
   color: #171717;
+
+  scrollbar-width: none;
+}
+
+.modal-content::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-content h3 {
-  margin: 0 0 1rem;
+  margin: 0;
+
   color: #171717;
+
   font-size: 1.1rem;
   font-weight: 700;
 }
 
 .modal-content p {
   margin: 0.35rem 0;
+
   color: #737373;
+
   font-size: 0.8rem;
 }
+
+
+/* ============================================================
+   MODAL HEADER
+============================================================ */
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  background: #fff;
+
+  border: 1px solid #d4d4d4;
+
+  border-radius: 8px;
+
+  color: #737373;
+
+  font-size: 1rem;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+
+  border-color: #bdbdbd;
+
+  color: #171717;
+}
+
 
 /* ============================================================
    FORM
@@ -613,232 +1025,86 @@
 
 .form-group label {
   display: block;
+
   margin-bottom: 0.35rem;
+
   color: #525252;
+
   font-size: 0.78rem;
   font-weight: 600;
 }
 
 .form-control {
   width: 100%;
+
   min-height: 42px;
+
   padding: 0 0.75rem;
+
   background: #fafafa;
+
   border: 1px solid #d4d4d4;
+
   border-radius: 8px;
+
   color: #171717;
+
   font-family: inherit;
+
   font-size: 0.82rem;
+
   outline: none;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .form-control:focus {
   background: #fff;
+
   border-color: #171717;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
 textarea.form-control {
   min-height: 90px;
+
   padding: 0.75rem;
+
   resize: vertical;
 }
 
 .form-error {
   margin-top: 0.4rem;
+
   color: #dc2626;
+
   font-size: 0.72rem;
 }
 
-/* ============================================================
-   MODAL HEADER
-============================================================ */
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: #fff;
-  border: 1px solid #d4d4d4;
-  border-radius: 8px;
-  color: #737373;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.close-btn:hover {
-  background: #f5f5f5;
-  border-color: #bdbdbd;
-  color: #171717;
-}
 
 /* ============================================================
-   NOTIFICATION MODAL
+   FORM ROW
 ============================================================ */
 
-.notification-modal {
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 1.5rem;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.notification-modal::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-/* ============================================================
-   REQUEST LIST
-============================================================ */
-
-.request-list {
+.form-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
 
-/* ============================================================
-   REQUEST CARD
-============================================================ */
-
-.request-card {
-  padding: 1rem;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.request-card:hover {
-  background: #f5f5f5;
-  border-color: #d4d4d4;
-}
-
-.request-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.65rem;
-  border-bottom: 1px solid #e5e5e5;
 }
 
-.guest-name {
-  color: #171717;
-  font-size: 1rem;
-  font-weight: 700;
+.form-row .form-group {
+  flex: 1;
 }
 
-.request-date {
-  color: #737373;
-  font-size: 0.7rem;
+.empty-form-group {
+  visibility: hidden;
 }
 
-/* ============================================================
-   REQUEST DETAILS
-============================================================ */
-
-.request-details {
-  color: #525252;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.request-details div {
-  margin: 0.25rem 0;
-}
-
-.request-details strong {
-  color: #171717;
-  font-weight: 600;
-}
-
-.notes {
-  margin-top: 0.65rem !important;
-  padding-top: 0.65rem;
-  border-top: 1px solid #e5e5e5;
-  color: #737373;
-  font-style: italic;
-}
-
-/* ============================================================
-   REQUEST ACTIONS
-============================================================ */
-
-.request-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e5e5e5;
-}
-
-/* ============================================================
-   ACCEPT / REJECT
-============================================================ */
-
-.btn-glass.accept {
-  background: #171717;
-  border-color: #171717;
-  color: #fff;
-}
-
-.btn-glass.accept:hover {
-  background: #000;
-  border-color: #000;
-}
-
-.btn-glass.reject {
-  background: #fff;
-  border-color: #d4d4d4;
-  color: #171717;
-}
-
-.btn-glass.reject:hover {
-  background: #f5f5f5;
-  border-color: #bdbdbd;
-}
-
-.btn-glass.danger {
-  background: #dc2626;
-  border-color: #dc2626;
-  color: #fff;
-}
-
-.btn-glass.danger:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-
-/* ============================================================
-   EMPTY REQUESTS / ROOMS
-============================================================ */
-
-.no-requests,
-.no-rooms {
-  padding: 1rem;
-  text-align: center;
-  color: #737373;
-  font-size: 0.8rem;
-}
 
 /* ============================================================
    MODAL ACTIONS
@@ -847,122 +1113,606 @@ textarea.form-control {
 .modal-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+
   gap: 0.5rem;
+
   margin-top: 1.25rem;
+
   padding-top: 1rem;
+
   border-top: 1px solid #eeeeee;
 }
 
+
 /* ============================================================
-   STAY MODAL (Details)
+   RATE MATCH MODAL
+============================================================ */
+
+.rate-match-modal {
+  max-width: 520px;
+}
+
+.rate-match-body {
+  padding: 0.25rem 0;
+}
+
+.info-hint {
+  margin-bottom: 1.25rem;
+
+  padding: 0.75rem 1rem;
+
+  background: #f5f5f5;
+
+  border-left: 3px solid #171717;
+
+  border-radius: 8px;
+}
+
+.info-hint p {
+  margin: 0 0 0.6rem;
+
+  color: #525252;
+
+  font-size: 0.8rem;
+}
+
+.url-display {
+  display: flex;
+
+  gap: 0.5rem;
+
+  font-size: 0.75rem;
+
+  color: #737373;
+}
+
+.url-display .label {
+  color: #171717;
+
+  font-weight: 600;
+}
+
+.url-display .url {
+  color: #525252;
+
+  word-break: break-all;
+
+  font-family: monospace;
+}
+
+
+/* ============================================================
+   NOTIFICATION MODAL
+============================================================ */
+
+.notification-modal {
+  width: 90%;
+
+  max-width: 700px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+}
+
+
+/* ============================================================
+   REQUEST CARD
+============================================================ */
+
+.request-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.75rem;
+}
+
+.request-card {
+  padding: 1rem;
+
+  background: #fafafa;
+
+  border: 1px solid #e5e5e5;
+
+  border-radius: 10px;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.request-card:hover {
+  background: #f5f5f5;
+
+  border-color: #d4d4d4;
+}
+
+.request-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 0.75rem;
+
+  padding-bottom: 0.65rem;
+
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.guest-name {
+  color: #171717;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.request-date {
+  color: #737373;
+
+  font-size: 0.7rem;
+}
+
+
+/* ============================================================
+   REQUEST DETAILS
+============================================================ */
+
+.request-details {
+  color: #525252;
+
+  font-size: 0.8rem;
+
+  line-height: 1.5;
+}
+
+.request-details div {
+  display: flex;
+
+  gap: 0.5rem;
+
+  margin: 0.35rem 0;
+}
+
+.request-details strong {
+  min-width: 95px;
+
+  color: #171717;
+
+  font-weight: 600;
+}
+
+.notes {
+  display: block !important;
+
+  margin-top: 0.65rem !important;
+
+  padding-top: 0.65rem;
+
+  border-top: 1px solid #e5e5e5;
+
+  color: #737373;
+
+  font-style: italic;
+}
+
+
+/* ============================================================
+   REQUEST ACTIONS
+============================================================ */
+
+.request-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 0.5rem;
+
+  margin-top: 1rem;
+
+  padding-top: 0.75rem;
+
+  border-top: 1px solid #e5e5e5;
+}
+
+
+/* ============================================================
+   ACCEPT / REJECT
+============================================================ */
+
+.btn-glass.accept {
+  background: #171717;
+
+  border-color: #171717;
+
+  color: #fff;
+}
+
+.btn-glass.accept:hover {
+  background: #000;
+
+  border-color: #000;
+}
+
+.btn-glass.reject {
+  background: #fff;
+
+  border-color: #d4d4d4;
+
+  color: #171717;
+}
+
+.btn-glass.reject:hover {
+  background: #f5f5f5;
+
+  border-color: #bdbdbd;
+}
+
+.btn-glass.danger {
+  background: #dc2626;
+
+  border-color: #dc2626;
+
+  color: #fff;
+}
+
+.btn-glass.danger:hover {
+  background: #b91c1c;
+
+  border-color: #b91c1c;
+}
+
+
+/* ============================================================
+   EMPTY REQUEST / ROOM
+============================================================ */
+
+.no-requests,
+.no-rooms {
+  padding: 1rem;
+
+  color: #737373;
+
+  font-size: 0.8rem;
+
+  text-align: center;
+}
+
+
+/* ============================================================
+   STAY MODAL
 ============================================================ */
 
 .stay-modal {
   max-width: 500px;
 }
+
 .stay-details-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+
+  gap: 0;
+
   margin-top: 10px;
 }
+
 .detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  padding: 0.75rem 0;
+
+  border-bottom: 1px solid #f0f0f0;
+
   color: #525252;
-  font-size: 0.9rem;
-}
-.detail-row strong {
-  color: #171717;
-  font-weight: 600;
-}
-.total-charge {
-  padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
-  margin-top: 8px;
-  font-size: 1rem;
+
+  font-size: 0.8rem;
 }
 
+.detail-row strong {
+  flex-shrink: 0;
+
+  color: #737373;
+
+  font-size: 0.7rem;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.04em;
+}
+
+.detail-row span {
+  color: #171717;
+
+  text-align: right;
+}
+
+.total-charge {
+  margin-top: 0.4rem;
+
+  padding-top: 1rem;
+
+  border-top: 1px solid #e5e5e5;
+
+  border-bottom: none;
+
+  font-size: 0.95rem;
+}
+
+.total-charge strong {
+  color: #171717;
+}
+
+.total-charge span {
+  font-size: 1rem;
+
+  font-weight: 700;
+}
+
+
 /* ============================================================
-   NEW CREATE STAY MODAL & FORM
+   CREATE STAY MODAL
 ============================================================ */
 
 .create-stay-modal {
   max-width: 550px;
 }
+
 .create-stay-body {
   margin-top: 10px;
 }
+
 .room-badge {
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 8px 12px;
   margin-bottom: 16px;
-  font-size: 0.85rem;
+
+  padding: 9px 12px;
+
+  background: #f5f5f5;
+
+  border: 1px solid #e5e5e5;
+
+  border-radius: 8px;
+
   color: #525252;
+
+  font-size: 0.8rem;
 }
-.form-row {
-  display: flex;
-  gap: 1rem;
+
+.room-badge strong {
+  color: #171717;
 }
-.form-row .form-group {
-  flex: 1;
-}
-.date-group input[type="date"] {
-  padding: 0.5rem 0.75rem;
-}
-.create-btn {
-  margin-left: 0; /* Removed auto, behaves as a normal flex item now */
-  height: 32px;
-  padding: 0 1rem;
-  font-size: 0.75rem;
-}
+
 
 /* ============================================================
    RESPONSIVE
 ============================================================ */
 
 @media (max-width: 768px) {
+
   .calendar-container {
     padding: 1rem 0.75rem;
   }
+
+
+  /* HEADER */
+
   .glass-header {
     flex-direction: column;
+
     align-items: stretch;
   }
+
+  .header-title {
+    min-width: 0;
+  }
+
   .nav-controls {
+    width: 100%;
+
+    justify-content: flex-start;
+  }
+
+
+  /* VIEW TOGGLE */
+
+  .view-toggle {
+    width: 100%;
+
+    margin-right: 0;
+  }
+
+  .toggle-btn {
+    flex: 1;
+
     justify-content: center;
-    flex-wrap: wrap;
   }
-  .notification-btn {
-    flex-shrink: 0;
-  }
-  .notification-modal {
-    width: 95%;
-    max-width: 700px;
-  }
-  .request-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .request-actions {
-    justify-content: stretch;
-  }
-  .request-actions .btn-glass {
+
+
+  /* HEADER CONTROLS */
+
+  .match-btn {
     flex: 1;
   }
-  .view-toggle {
-    margin-right: 0;
+
+  .today-btn {
+    flex: 1;
+  }
+
+  .month-label {
+    flex: 1;
+
+    min-width: 100px;
+  }
+
+
+  /* REQUEST TOOLBAR */
+
+  .request-toolbar {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
+  /* REQUEST HEADER */
+
+  .request-list-header {
+    display: none;
+  }
+
+
+  /* REQUESTS MOBILE VIEW */
+
+  .request-item {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 0.75rem;
+
+    padding: 1rem;
+  }
+
+  .request-item-main,
+  .request-item-dates,
+  .request-item-meta,
+  .request-total-wrapper,
+  .request-item-actions {
     width: 100%;
   }
-  .view-toggle .btn-glass {
-    flex: 1;
-  }
-}
 
-@media (max-width: 480px) {
+  .request-total-wrapper {
+    align-items: flex-start;
+
+    padding-top: 0.5rem;
+
+    border-top: 1px solid #f0f0f0;
+
+    text-align: left;
+  }
+
+  .request-total {
+    text-align: left;
+  }
+
+  .request-item-actions {
+    justify-content: flex-end;
+
+    padding-top: 0.5rem;
+
+    border-top: 1px solid #f0f0f0;
+  }
+
   .form-row {
     flex-direction: column;
+
     gap: 0;
   }
+
+}
+
+
+@media (max-width: 576px) {
+
+  .modal-content {
+    width: 95%;
+
+    padding: 1.15rem;
+  }
+
+  .request-detail-body .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+
+    align-items: stretch;
+  }
+
+  .modal-actions .btn-glass {
+    width: 100%;
+  }
+
+}
+
+/* ============================================================
+   BULK RANGE TOOL
+============================================================ */
+
+.bulk-range-tool {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.bulk-range-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bulk-range-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+.bulk-range-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #525252;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bulk-range-group .form-control {
+  min-height: 36px;
+  font-size: 0.8rem;
+}
+
+.bulk-range-action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ============================================================
+   CATEGORY CHECKBOXES (Rate Match Modal)
+============================================================ */
+
+.category-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #171717;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }

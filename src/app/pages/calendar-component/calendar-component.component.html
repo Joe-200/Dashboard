@@ -2,63 +2,103 @@
 
   <!-- ============================================================
        HEADER
-  ============================================================= -->
+  ============================================================ -->
 
   <div class="glass-header">
-    <div>
+
+    <div class="header-title">
       <span class="eyebrow">ROOM MANAGEMENT</span>
       <h2>Room Availability & Rates</h2>
     </div>
 
     <div class="nav-controls">
-      <!-- ============================================================
-           NEW VIEW TOGGLE
-      ============================================================= -->
+
+      <!-- VIEW TOGGLE -->
       <div class="view-toggle">
-        <button 
-          type="button" 
-          class="btn-glass" 
+
+        <button
+          type="button"
+          class="toggle-btn"
           [class.active]="viewMode === 'rates'"
           (click)="switchView('rates')">
           Rate View
         </button>
-        <button 
-          type="button" 
-          class="btn-glass" 
+
+        <button
+          type="button"
+          class="toggle-btn"
           [class.active]="viewMode === 'rooms'"
           (click)="switchView('rooms')">
-          Room Occupancy
+          Rooms
         </button>
+
       </div>
 
-      <!-- NOTIFICATIONS -->
-      <button class="btn-glass notification-btn" type="button" (click)="openNotificationModal()" aria-label="Pending reservation requests">
-        <span class="notification-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-            <path d="M10 21h4" />
-          </svg>
-        </span>
-        <span class="badge" *ngIf="pendingRequests.length > 0">
-          {{ pendingRequests.length }}
-        </span>
+      <!-- MATCH RATES — RATES VIEW ONLY -->
+      <button
+        *ngIf="viewMode === 'rates'"
+        type="button"
+        class="btn-glass match-btn"
+        (click)="openRateMatchModal()">
+        Match Rates
       </button>
 
       <!-- PREVIOUS MONTH -->
-      <button class="btn-glass" type="button" (click)="previousMonth()">‹</button>
+      <button
+        type="button"
+        class="btn-glass nav-arrow"
+        (click)="previousMonth()">
+        ‹
+      </button>
+
       <!-- MONTH -->
-      <span class="month-label">{{ monthName }}</span>
+      <span class="month-label">
+        {{ monthName }}
+      </span>
+
       <!-- NEXT MONTH -->
-      <button class="btn-glass" type="button" (click)="nextMonth()">›</button>
+      <button
+        type="button"
+        class="btn-glass nav-arrow"
+        (click)="nextMonth()">
+        ›
+      </button>
+
       <!-- TODAY -->
-      <button class="btn-glass today-btn" type="button" (click)="today()">Today</button>
+      <button
+        type="button"
+        class="btn-glass today-btn"
+        (click)="today()">
+        Today
+      </button>
+
+      <!-- BULK EDIT — RATES VIEW ONLY -->
+      <button
+        *ngIf="viewMode === 'rates'"
+        type="button"
+        class="btn-glass"
+        [class.active]="bulkEditMode"
+        (click)="toggleBulkEdit()">
+        {{ bulkEditMode ? 'Exit Bulk Edit' : 'Bulk Edit' }}
+      </button>
+
+      <!-- SAVE ALL — BULK EDIT ONLY -->
+      <button
+        *ngIf="viewMode === 'rates' && bulkEditMode"
+        type="button"
+        class="btn-glass primary"
+        [disabled]="bulkSaving"
+        (click)="saveAllBulkChanges()">
+        {{ bulkSaving ? 'Saving...' : 'Save All Changes' }}
+      </button>
+
     </div>
+
   </div>
 
-
   <!-- ============================================================
-       ERROR & LOADING
-  ============================================================= -->
+       GLOBAL ERROR & LOADING
+  ============================================================ -->
 
   <div *ngIf="error" class="error">{{ error }}</div>
   <div *ngIf="loading" class="loading">Loading...</div>
@@ -66,32 +106,86 @@
   <div *ngIf="staysLoading && viewMode === 'rooms'" class="loading">Loading rooms & reservations...</div>
   <div *ngIf="!staysLoading && viewMode === 'rooms' && rooms.length === 0" class="no-data">No rooms found.</div>
 
+  <!-- ============================================================
+       BULK EDIT RANGE TOOL (only when bulkEditMode)
+  ============================================================ -->
+
+  <div *ngIf="viewMode === 'rates' && bulkEditMode" class="bulk-range-tool">
+    <div class="bulk-range-row">
+      <div class="bulk-range-group">
+        <label for="rangeCategory">Category</label>
+        <select id="rangeCategory" class="form-control" [(ngModel)]="rangeCategoryId">
+          <option [value]="null">Choose a category</option>
+          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+      <div class="bulk-range-group">
+        <label for="rangeStart">From</label>
+        <input id="rangeStart" type="date" class="form-control" [(ngModel)]="rangeStart" />
+      </div>
+      <div class="bulk-range-group">
+        <label for="rangeEnd">To</label>
+        <input id="rangeEnd" type="date" class="form-control" [(ngModel)]="rangeEnd" />
+      </div>
+      <div class="bulk-range-group">
+        <label for="rangePrice">Price</label>
+        <input id="rangePrice" type="number" class="form-control" [(ngModel)]="rangePrice" step="0.01" min="0" />
+      </div>
+      <div class="bulk-range-group bulk-range-action">
+        <button type="button" class="btn-glass primary" (click)="applyRangeToBulk()"
+                [disabled]="!rangeCategoryId || !rangeStart || !rangeEnd || rangePrice < 0">
+          Apply Range
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============================================================
-       MAIN SCROLL CONTAINER (DRAG SUPPORT FOR BOTH VIEWS)
-  ============================================================= -->
+       MAIN CALENDAR SCROLL
+  ============================================================ -->
 
-  <div 
+  <div
     #calendarScroll
     class="calendar-scroll"
-    *ngIf="(!loading && categories.length > 0 && viewMode === 'rates') || (!staysLoading && rooms.length > 0 && viewMode === 'rooms')"
+
+    *ngIf="
+      (!loading && categories.length > 0 && viewMode === 'rates')
+      ||
+      (!staysLoading && rooms.length > 0 && viewMode === 'rooms')
+    "
+
     (mousedown)="startDrag($event, calendarScroll)"
     (mousemove)="drag($event, calendarScroll)"
     (mouseup)="stopDrag(calendarScroll)"
     (mouseleave)="stopDrag(calendarScroll)">
 
-    <!-- ================================================================
-         EXISTING RATE VIEW
-    ================================================================ -->
+    <!-- ==========================================================
+         RATE VIEW
+    ========================================================== -->
+
     <div *ngIf="viewMode === 'rates'">
+
+      <!-- Match feedback -->
+      <div *ngIf="rateMatchSuccess || rateMatchError" class="rate-match-status">
+        <span *ngIf="rateMatchSuccess" class="match-success">{{ rateMatchSuccess }}</span>
+        <span *ngIf="rateMatchError" class="match-error">{{ rateMatchError }}</span>
+      </div>
+
+      <!-- CATEGORY TABLES -->
       <div class="category-table" *ngFor="let category of categories">
+
+        <!-- CATEGORY HEADER -->
         <div class="category-table-header">
           <div class="category-info">
             <div class="category-name">{{ category.name }}</div>
-            <div class="category-base-price">Base: {{ category.price | currency:'USD':'symbol':'1.0-0' }}</div>
+            <div class="category-base-price">Base: {{ category.price | number:'1.0-0' }}</div>
           </div>
         </div>
+
+        <!-- CALENDAR -->
         <div class="calendar-table">
+
+          <!-- HEADER -->
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Room</div>
             <div class="day-header" *ngFor="let day of days">
@@ -99,57 +193,101 @@
               <span class="weekday">{{ day.toLocaleString('default', { weekday: 'short' }) }}</span>
             </div>
           </div>
+
+          <!-- BOOKED -->
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Booked</div>
             <div class="data-cell" *ngFor="let day of days">
               <span class="booked">{{ getRate(category.id, day)?.bookedRooms ?? 0 }}</span>
             </div>
           </div>
+
+          <!-- AVAILABLE -->
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Available</div>
             <div class="data-cell" *ngFor="let day of days">
               <span class="available">
-                {{ getRate(category.id, day)?.availableRooms ?? (category.numBeds - (getRate(category.id, day)?.bookedRooms ?? 0)) }}
+                {{
+                  getRate(category.id, day)?.availableRooms
+                  ??
+                  (category.numBeds -
+                  (getRate(category.id, day)?.bookedRooms ?? 0))
+                }}
               </span>
             </div>
           </div>
+
+          <!-- PRICE -->
           <div class="data-row price-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Price</div>
-            <div class="data-cell price-cell" *ngFor="let day of days" (click)="openEditModal(category.id, day)">
-              <span class="price" [class.custom]="isCustomRate(getRate(category.id, day))">
-                {{ (getRate(category.id, day)?.price ?? getDefaultPrice(category.id)) | currency:'USD':'symbol':'1.0-0' }}
+            <div class="data-cell price-cell" *ngFor="let day of days"
+                 (click)="!bulkEditMode && openEditModal(category.id, day)">
+              <!-- NORMAL MODE -->
+              <span *ngIf="!bulkEditMode" class="price"
+                    [class.custom]="isCustomRate(getRate(category.id, day))">
+                {{
+                  getRate(category.id, day)?.price
+                  ?? getDefaultPrice(category.id)
+                  | number:'1.0-2'
+                }}
               </span>
+              <!-- BULK EDIT MODE -->
+              <ng-container *ngIf="bulkEditMode">
+                <input
+                  type="number"
+                  class="bulk-price-input"
+                  [ngModel]="
+                    bulkPriceChanges[category.id]?.[getDateKey(day)]
+                    ??
+                    getRate(category.id, day)?.price
+                    ??
+                    getDefaultPrice(category.id)
+                  "
+                  (ngModelChange)="onBulkPriceChange(category.id, day, $event)"
+                  step="0.01"
+                  min="0"
+                />
+              </ng-container>
             </div>
           </div>
+
         </div>
       </div>
+
     </div>
 
-    <!-- ================================================================
-         NEW ROOM OCCUPANCY VIEW
-    ================================================================ -->
-    <div *ngIf="viewMode === 'rooms'">
-      <div class="room-table" *ngFor="let room of rooms">
-        
-        <!-- UPDATED HEADER: BUTTON MOVED TO THE BEGINNING -->
-        <div class="room-table-header">
-          <button 
-            type="button" 
-            class="btn-glass primary create-btn" 
-            (click)="openCreateStayModal(room)">
-            + Book Room
-          </button>
+    <!-- ==========================================================
+         ROOM OCCUPANCY VIEW
+    ========================================================== -->
 
+    <div *ngIf="viewMode === 'rooms'">
+
+      <div class="room-table" *ngFor="let room of rooms">
+
+        <!-- ROOM HEADER -->
+        <div class="room-table-header">
+          <button type="button" class="btn-glass primary create-btn"
+                  (click)="openCreateStayModal(room)">
+            Book Room
+          </button>
           <div class="room-info">
             <div class="room-name">Room {{ room.roomNumber }}</div>
             <div class="room-details">
-              Floor {{ room.floor }} • {{ room.status }}
-              <span *ngIf="room.viewType">• {{ room.viewType }}</span>
+              Floor {{ room.floor }}
+              <span class="separator">•</span>
+              {{ room.status }}
+              <span *ngIf="room.viewType">
+                <span class="separator">•</span>
+                {{ room.viewType }}
+              </span>
             </div>
           </div>
         </div>
 
+        <!-- ROOM CALENDAR -->
         <div class="calendar-table">
+
+          <!-- HEADER -->
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Guest</div>
             <div class="day-header" *ngFor="let day of days">
@@ -158,237 +296,330 @@
             </div>
           </div>
 
+          <!-- RESERVED -->
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Reserved</div>
             <div class="data-cell" *ngFor="let day of days">
               <ng-container *ngIf="getStayForRoomAndDate(room.id, day) as stay">
                 <div class="stay-block" (click)="openStayDetails(stay)">
-                  {{ stay.guestName }}
+                  <span class="stay-guest">{{ stay.guestName }}</span>
                   <span class="stay-status">{{ stay.status }}</span>
                 </div>
               </ng-container>
               <span class="available-room" *ngIf="!getStayForRoomAndDate(room.id, day)">—</span>
             </div>
           </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       RATE MATCH MODAL (with category selection)
+  ============================================================ -->
+
+  <div *ngIf="showRateMatchModal" class="modal-overlay" (click)="closeRateMatchModal()">
+    <div class="modal-content rate-match-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Match Rates from Booking.com</h3>
+        <button type="button" class="close-btn" (click)="closeRateMatchModal()">×</button>
+      </div>
+
+      <div class="rate-match-body">
+        <div class="info-hint">
+          <p>Prices will be matched to today's rates for selected categories.</p>
+          <div class="url-display">
+            <span class="label">Hotel</span>
+            <span class="url">{{ DEFAULT_HOTEL_URL }}</span>
+          </div>
+        </div>
+
+        <!-- Category selection checkboxes -->
+        <div class="form-group">
+          <label>Select categories to match:</label>
+          <div class="category-checkboxes">
+            <label *ngFor="let cat of categories" class="checkbox-label">
+              <input type="checkbox" [checked]="selectedCategoriesForMatch.has(cat.id)"
+                     (change)="toggleCategoryForMatch(cat.id, $event)" />
+              {{ cat.name }}
+            </label>
+          </div>
+        </div>
+
+        <form [formGroup]="rateMatchForm" (ngSubmit)="executeRateMatch()">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="rm-checkin">Check-in Date</label>
+              <input id="rm-checkin" type="date" class="form-control" formControlName="checkin" />
+              <div class="form-error" *ngIf="rateMatchForm.get('checkin')?.invalid && rateMatchForm.get('checkin')?.touched">
+                Check-in is required
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="rm-checkout">Check-out Date</label>
+              <input id="rm-checkout" type="date" class="form-control" formControlName="checkout" />
+              <div class="form-error" *ngIf="rateMatchForm.get('checkout')?.invalid && rateMatchForm.get('checkout')?.touched">
+                Check-out is required
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" formControlName="url" />
+          <input type="hidden" formControlName="lang" />
+          <input type="hidden" formControlName="currency" />
+
+          <div *ngIf="rateMatchError" class="match-error">{{ rateMatchError }}</div>
+          <div *ngIf="rateMatchSuccess" class="match-success">{{ rateMatchSuccess }}</div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-glass" (click)="closeRateMatchModal()">Cancel</button>
+            <button type="submit" class="btn-glass primary"
+                    [disabled]="rateMatchForm.invalid || rateMatchLoading || selectedCategoriesForMatch.size === 0">
+              {{ rateMatchLoading ? 'Matching...' : 'Match Rates' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       NOTIFICATION MODAL (unchanged)
+  ============================================================ -->
+
+  <div *ngIf="showNotificationModal" class="modal-overlay" (click)="closeNotificationModal()">
+    <div class="modal-content notification-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Pending Reservation Requests</h3>
+        <button type="button" class="close-btn" (click)="closeNotificationModal()">×</button>
+      </div>
+
+      <div *ngIf="requestsError" class="error">{{ requestsError }}</div>
+      <div *ngIf="requestsLoading" class="loading">Loading requests...</div>
+      <div *ngIf="!requestsLoading && pendingRequests.length === 0" class="no-data">No pending requests.</div>
+
+      <div class="request-list" *ngIf="!requestsLoading && pendingRequests.length > 0">
+        <div class="request-card" *ngFor="let req of pendingRequests">
+          <div class="request-header">
+            <span class="guest-name">{{ req.guestName }}</span>
+            <span class="request-date">{{ req.createdAt | date:'short' }}</span>
+          </div>
+          <div class="request-details">
+            <div><strong>Email</strong> {{ req.guestEmail }}</div>
+            <div><strong>Phone</strong> {{ req.guestPhone }}</div>
+            <div><strong>Nationality</strong> {{ req.nationality }}</div>
+            <div><strong>Identification</strong> {{ req.identification }}</div>
+            <div><strong>Category</strong> {{ req.categoryName }}</div>
+            <div><strong>Stay</strong> {{ req.checkInDate }} → {{ req.checkOutDate }}</div>
+            <div><strong>Guests</strong> {{ req.numAdults }} adults, {{ req.numKids }} kids</div>
+            <div><strong>Quoted total</strong> {{ req.quotedTotalCharge | number:'1.0-2' }}</div>
+            <div *ngIf="req.notes" class="notes"><strong>Notes</strong> {{ req.notes }}</div>
+          </div>
+          <div class="request-actions">
+            <button type="button" class="btn-glass accept" (click)="openAcceptModal(req.id, req.categoryId)">Accept</button>
+            <button type="button" class="btn-glass reject" (click)="openRejectModal(req.id)">Reject</button>
+          </div>
         </div>
       </div>
     </div>
-
   </div>
-</div>
 
+  <!-- ============================================================
+       ACCEPT MODAL
+  ============================================================ -->
 
-<!-- ============================================================
-     NOTIFICATION MODAL (EXISTING)
-============================================================= -->
-<div *ngIf="showNotificationModal" class="modal-overlay" (click)="closeNotificationModal()">
-  <div class="modal-content notification-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Pending Reservation Requests</h3>
-      <button type="button" class="close-btn" aria-label="Close" (click)="closeNotificationModal()">✕</button>
-    </div>
-    <div *ngIf="requestsError" class="error">{{ requestsError }}</div>
-    <div *ngIf="requestsLoading" class="loading">Loading requests...</div>
-    <div *ngIf="!requestsLoading && pendingRequests.length === 0" class="no-requests">No pending requests.</div>
-    <div class="request-list" *ngIf="!requestsLoading && pendingRequests.length > 0">
-      <div class="request-card" *ngFor="let req of pendingRequests">
-        <div class="request-header">
-          <span class="guest-name">{{ req.guestName }}</span>
-          <span class="request-date">{{ req.createdAt | date:'short' }}</span>
-        </div>
-        <div class="request-details">
-          <div><strong>Email:</strong> {{ req.guestEmail }}</div>
-          <div><strong>Phone:</strong> {{ req.guestPhone }}</div>
-          <div><strong>Nationality:</strong> {{ req.nationality }}</div>
-          <div><strong>Identification:</strong> {{ req.identification }}</div>
-          <div><strong>Category:</strong> {{ req.categoryName }}</div>
-          <div><strong>Check-in:</strong> {{ req.checkInDate }} &nbsp; <strong>Check-out:</strong> {{ req.checkOutDate }}</div>
-          <div><strong>Adults:</strong> {{ req.numAdults }} &nbsp; <strong>Kids:</strong> {{ req.numKids }}</div>
-          <div><strong>Quoted total:</strong> {{ req.quotedTotalCharge | currency:'USD':'symbol':'1.0-0' }}</div>
-          <div *ngIf="req.notes" class="notes"><strong>Notes:</strong> {{ req.notes }}</div>
-        </div>
-        <div class="request-actions">
-          <button type="button" class="btn-glass accept" (click)="openAcceptModal(req.id, req.categoryId)">Accept</button>
-          <button type="button" class="btn-glass reject" (click)="openRejectModal(req.id)">Reject</button>
-        </div>
+  <div *ngIf="showAcceptModal" class="modal-overlay" (click)="closeAcceptModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Accept Request</h3>
+        <button type="button" class="close-btn" (click)="closeAcceptModal()">×</button>
       </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ============================================================
-     ACCEPT MODAL (EXISTING)
-============================================================= -->
-<div *ngIf="showAcceptModal" class="modal-overlay" (click)="closeAcceptModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <h3>Accept Request</h3>
-    <p>Assign a room to this guest.</p>
-    <div *ngIf="acceptLoading" class="loading">Loading rooms...</div>
-    <div class="form-group" *ngIf="!acceptLoading">
-      <label for="roomSelect">Select Room</label>
-      <select id="roomSelect" class="form-control" [(ngModel)]="selectedRoomId">
-        <option [value]="null">Choose a room</option>
-        <option *ngFor="let room of availableRooms" [value]="room.id">{{ room.roomNumber }} (Floor {{ room.floor }})</option>
-      </select>
-    </div>
-    <div *ngIf="availableRooms.length === 0 && !acceptLoading" class="no-rooms">No available rooms for this category.</div>
-    <div class="modal-actions">
-      <button type="button" class="btn-glass" (click)="closeAcceptModal()">Cancel</button>
-      <button type="button" class="btn-glass primary" [disabled]="!selectedRoomId || acceptLoading" (click)="confirmAccept()">
-        {{ acceptLoading ? 'Accepting...' : 'Accept' }}
-      </button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ============================================================
-     REJECT MODAL (EXISTING)
-============================================================= -->
-<div *ngIf="showRejectModal" class="modal-overlay" (click)="closeRejectModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <h3>Reject Request</h3>
-    <p>Please provide a reason for rejection.</p>
-    <div class="form-group">
-      <label for="rejectReason">Reason</label>
-      <textarea id="rejectReason" class="form-control" rows="3" [(ngModel)]="rejectReason" placeholder="Explain why this request is rejected..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="btn-glass" (click)="closeRejectModal()">Cancel</button>
-      <button type="button" class="btn-glass danger" [disabled]="!rejectReason.trim() || rejectLoading" (click)="confirmReject()">
-        {{ rejectLoading ? 'Rejecting...' : 'Reject' }}
-      </button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ============================================================
-     EDIT PRICE MODAL (EXISTING)
-============================================================= -->
-<div *ngIf="showEditModal" class="modal-overlay" (click)="closeModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <h3>Set Custom Price</h3>
-    <p><strong>Category:</strong> {{ getCategoryName(selectedCategoryId) }}</p>
-    <p><strong>Date:</strong> {{ selectedDate }}</p>
-    <form [formGroup]="editForm" (ngSubmit)="savePrice()">
-      <div class="form-group">
-        <label for="price">Price per night</label>
-        <input id="price" type="number" class="form-control" formControlName="price" step="0.01" />
-        <div class="form-error" *ngIf="editForm.get('price')?.invalid && editForm.get('price')?.touched">
-          Please enter a valid price.
-        </div>
+      <p>Assign a room to this guest.</p>
+      <div *ngIf="acceptLoading" class="loading">Loading rooms...</div>
+      <div class="form-group" *ngIf="!acceptLoading">
+        <label for="roomSelect">Select Room</label>
+        <select id="roomSelect" class="form-control" [(ngModel)]="selectedRoomId">
+          <option [value]="null">Choose a room</option>
+          <option *ngFor="let room of availableRooms" [value]="room.id">
+            {{ room.roomNumber }} — Floor {{ room.floor }}
+          </option>
+        </select>
       </div>
+      <div *ngIf="availableRooms.length === 0 && !acceptLoading" class="no-rooms">No available rooms for this category.</div>
       <div class="modal-actions">
-        <button type="button" class="btn-glass" (click)="closeModal()">Cancel</button>
-        <button type="submit" class="btn-glass primary" [disabled]="editForm.invalid || saving">
-          {{ saving ? 'Saving...' : 'Save' }}
+        <button type="button" class="btn-glass" (click)="closeAcceptModal()">Cancel</button>
+        <button type="button" class="btn-glass primary"
+                [disabled]="!selectedRoomId || acceptLoading"
+                (click)="confirmAccept()">
+          {{ acceptLoading ? 'Accepting...' : 'Accept' }}
         </button>
       </div>
-    </form>
-  </div>
-</div>
-
-
-<!-- ============================================================
-     STAY DETAILS MODAL (EXISTING)
-============================================================= -->
-<div *ngIf="showStayModal" class="modal-overlay" (click)="closeStayModal()">
-  <div class="modal-content stay-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Reservation Details</h3>
-      <button type="button" class="close-btn" (click)="closeStayModal()">✕</button>
-    </div>
-    <div *ngIf="selectedStay" class="stay-details-body">
-      <div class="detail-row"><strong>Guest:</strong> {{ selectedStay.guestName }}</div>
-      <div class="detail-row"><strong>Room:</strong> {{ selectedStay.roomNumber }}</div>
-      <div class="detail-row"><strong>Status:</strong> {{ selectedStay.status }}</div>
-      <div class="detail-row"><strong>Check-in:</strong> {{ selectedStay.expectedCheckInDate | date:'mediumDate' }}</div>
-      <div class="detail-row"><strong>Check-out:</strong> {{ selectedStay.expectedCheckOutDate | date:'mediumDate' }}</div>
-      <div class="detail-row"><strong>Guests:</strong> {{ selectedStay.numAdults }} Adults, {{ selectedStay.numKids }} Kids</div>
-      <div class="detail-row"><strong>Contact:</strong> {{ selectedStay.guestPhone }} • {{ selectedStay.email }}</div>
-      <div class="detail-row total-charge"><strong>Total Charge:</strong> {{ selectedStay.totalCharge | currency:'USD':'symbol':'1.0-0' }}</div>
     </div>
   </div>
-</div>
 
+  <!-- ============================================================
+       REJECT MODAL
+  ============================================================ -->
 
-<!-- ============================================================
-     NEW CREATE STAY MODAL
-============================================================= -->
-<div *ngIf="showCreateStayModal" class="modal-overlay" (click)="closeCreateStayModal()">
-  <div class="modal-content create-stay-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Create Reservation</h3>
-      <button type="button" class="close-btn" (click)="closeCreateStayModal()">✕</button>
+  <div *ngIf="showRejectModal" class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Reject Request</h3>
+        <button type="button" class="close-btn" (click)="closeRejectModal()">×</button>
+      </div>
+      <p>Please provide a reason for rejection.</p>
+      <div class="form-group">
+        <label for="rejectReason">Reason</label>
+        <textarea id="rejectReason" class="form-control" rows="3"
+                  [(ngModel)]="rejectReason"
+                  placeholder="Explain why this request is rejected..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-glass" (click)="closeRejectModal()">Cancel</button>
+        <button type="button" class="btn-glass danger"
+                [disabled]="!rejectReason.trim() || rejectLoading"
+                (click)="confirmReject()">
+          {{ rejectLoading ? 'Rejecting...' : 'Reject' }}
+        </button>
+      </div>
     </div>
+  </div>
 
-    <div *ngIf="selectedRoomForStay" class="create-stay-body">
-      <div class="room-badge">Assigning to: <strong>Room {{ selectedRoomForStay.roomNumber }}</strong></div>
+  <!-- ============================================================
+       EDIT PRICE MODAL
+  ============================================================ -->
 
-      <form [formGroup]="createStayForm" (ngSubmit)="confirmCreateStay()">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="guestName">Guest Name *</label>
-            <input id="guestName" type="text" class="form-control" formControlName="guestName" placeholder="John Doe" />
-            <div class="form-error" *ngIf="createStayForm.get('guestName')?.invalid && createStayForm.get('guestName')?.touched">Name is required</div>
-          </div>
-          <div class="form-group">
-            <label for="phone">Phone *</label>
-            <input id="phone" type="text" class="form-control" formControlName="phone" placeholder="+1 234 567 890" />
-            <div class="form-error" *ngIf="createStayForm.get('phone')?.invalid && createStayForm.get('phone')?.touched">Phone is required</div>
+  <div *ngIf="showEditModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Set Custom Price</h3>
+        <button type="button" class="close-btn" (click)="closeModal()">×</button>
+      </div>
+      <p><strong>Category</strong> {{ getCategoryName(selectedCategoryId) }}</p>
+      <p><strong>Date</strong> {{ selectedDate }}</p>
+      <form [formGroup]="editForm" (ngSubmit)="savePrice()">
+        <div class="form-group">
+          <label for="price">Price per night</label>
+          <input id="price" type="number" class="form-control" formControlName="price" step="0.01" min="0" />
+          <div class="form-error" *ngIf="editForm.get('price')?.invalid && editForm.get('price')?.touched">
+            Please enter a valid price.
           </div>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" type="email" class="form-control" formControlName="email" placeholder="guest@hotel.com" />
-          </div>
-          <div class="form-group">
-            <label for="nationality">Nationality</label>
-            <input id="nationality" type="text" class="form-control" formControlName="nationality" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="identification">ID / Passport</label>
-            <input id="identification" type="text" class="form-control" formControlName="identification" />
-          </div>
-          <div class="form-group">
-            <label for="numAdults">Adults *</label>
-            <input id="numAdults" type="number" class="form-control" formControlName="numAdults" min="1" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="numKids">Kids</label>
-            <input id="numKids" type="number" class="form-control" formControlName="numKids" min="0" />
-          </div>
-          <div class="form-group date-group">
-            <label for="checkInDate">Check-in *</label>
-            <input id="checkInDate" type="date" class="form-control" formControlName="checkInDate" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group date-group">
-            <label for="checkOutDate">Check-out *</label>
-            <input id="checkOutDate" type="date" class="form-control" formControlName="checkOutDate" />
-          </div>
-          <div class="form-group"></div> <!-- spacer to align grid -->
-        </div>
-
         <div class="modal-actions">
-          <button type="button" class="btn-glass" (click)="closeCreateStayModal()">Cancel</button>
-          <button type="submit" class="btn-glass primary" [disabled]="createStayForm.invalid || creatingStay">
-            {{ creatingStay ? 'Booking...' : 'Book Room' }}
+          <button type="button" class="btn-glass" (click)="closeModal()">Cancel</button>
+          <button type="submit" class="btn-glass primary" [disabled]="editForm.invalid || saving">
+            {{ saving ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- ============================================================
+       STAY DETAILS MODAL
+  ============================================================ -->
+
+  <div *ngIf="showStayModal" class="modal-overlay" (click)="closeStayModal()">
+    <div class="modal-content stay-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Reservation Details</h3>
+        <button type="button" class="close-btn" (click)="closeStayModal()">×</button>
+      </div>
+      <div *ngIf="selectedStay" class="stay-details-body">
+        <div class="detail-row"><strong>Guest</strong> <span>{{ selectedStay.guestName }}</span></div>
+        <div class="detail-row"><strong>Room</strong> <span>{{ selectedStay.roomNumber }}</span></div>
+        <div class="detail-row"><strong>Status</strong> <span>{{ selectedStay.status }}</span></div>
+        <div class="detail-row"><strong>Check-in</strong> <span>{{ selectedStay.expectedCheckInDate | date:'mediumDate' }}</span></div>
+        <div class="detail-row"><strong>Check-out</strong> <span>{{ selectedStay.expectedCheckOutDate | date:'mediumDate' }}</span></div>
+        <div class="detail-row"><strong>Guests</strong> <span>{{ selectedStay.numAdults }} Adults, {{ selectedStay.numKids }} Kids</span></div>
+        <div class="detail-row"><strong>Contact</strong> <span>{{ selectedStay.guestPhone }} <span class="separator">•</span> {{ selectedStay.email }}</span></div>
+        <div class="detail-row total-charge"><strong>Total Charge</strong> <span>{{ selectedStay.totalCharge | number:'1.0-2' }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CREATE STAY MODAL
+  ============================================================ -->
+
+  <div *ngIf="showCreateStayModal" class="modal-overlay" (click)="closeCreateStayModal()">
+    <div class="modal-content create-stay-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Reservation</h3>
+        <button type="button" class="close-btn" (click)="closeCreateStayModal()">×</button>
+      </div>
+      <div *ngIf="selectedRoomForStay" class="create-stay-body">
+        <div class="room-badge">
+          Assigning to <strong>Room {{ selectedRoomForStay.roomNumber }}</strong>
+        </div>
+        <form [formGroup]="createStayForm" (ngSubmit)="confirmCreateStay()">
+          <!-- GUEST / PHONE -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="guestName">Guest Name</label>
+              <input id="guestName" type="text" class="form-control" formControlName="guestName" placeholder="John Doe" />
+              <div class="form-error" *ngIf="createStayForm.get('guestName')?.invalid && createStayForm.get('guestName')?.touched">Name is required</div>
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input id="phone" type="text" class="form-control" formControlName="phone" placeholder="+1 234 567 890" />
+              <div class="form-error" *ngIf="createStayForm.get('phone')?.invalid && createStayForm.get('phone')?.touched">Phone is required</div>
+            </div>
+          </div>
+          <!-- EMAIL / NATIONALITY -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input id="email" type="email" class="form-control" formControlName="email" placeholder="guest@hotel.com" />
+            </div>
+            <div class="form-group">
+              <label for="nationality">Nationality</label>
+              <input id="nationality" type="text" class="form-control" formControlName="nationality" />
+            </div>
+          </div>
+          <!-- ID / ADULTS -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="identification">ID / Passport</label>
+              <input id="identification" type="text" class="form-control" formControlName="identification" />
+            </div>
+            <div class="form-group">
+              <label for="numAdults">Adults</label>
+              <input id="numAdults" type="number" class="form-control" formControlName="numAdults" min="1" />
+            </div>
+          </div>
+          <!-- KIDS / CHECK-IN -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="numKids">Kids</label>
+              <input id="numKids" type="number" class="form-control" formControlName="numKids" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="checkInDate">Check-in</label>
+              <input id="checkInDate" type="date" class="form-control" formControlName="checkInDate" />
+            </div>
+          </div>
+          <!-- CHECK-OUT -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="checkOutDate">Check-out</label>
+              <input id="checkOutDate" type="date" class="form-control" formControlName="checkOutDate" />
+            </div>
+            <div class="form-group empty-form-group"></div>
+          </div>
+          <!-- ACTIONS -->
+          <div class="modal-actions">
+            <button type="button" class="btn-glass" (click)="closeCreateStayModal()">Cancel</button>
+            <button type="submit" class="btn-glass primary" [disabled]="createStayForm.invalid || creatingStay">
+              {{ creatingStay ? 'Booking...' : 'Book Room' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </div>

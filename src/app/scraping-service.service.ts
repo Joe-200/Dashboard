@@ -35,17 +35,14 @@ export interface ScrapedData {
   providedIn: 'root'
 })
 export class ScrapingService {
-private baseUrl = `${environment.apiUrl}/api/v1/scrape`;  private httpWithoutInterceptors: HttpClient;
-  // 👇 Hardcoded tenant ID – replace with your dynamic source if needed
-  private tenantId = 'hotel1';
+  private baseUrl = `${environment.scrapeApiBaseUrl}/api/v1/scrape`;
+  private httpWithoutInterceptors: HttpClient;
 
   constructor(private http: HttpClient, private httpBackend: HttpBackend) {
-    // Create a client without interceptors to prevent JWT injection
     this.httpWithoutInterceptors = new HttpClient(httpBackend);
   }
 
   scrapeBooking(request: ScrapeRequest): Observable<ScrapedData> {
-    // Validate
     if (!request.checkin || !request.checkout) {
       return throwError(() => new Error('Check-in and check-out dates are required.'));
     }
@@ -53,14 +50,12 @@ private baseUrl = `${environment.apiUrl}/api/v1/scrape`;  private httpWithoutInt
       return throwError(() => new Error('Either URL or code must be provided.'));
     }
 
-    // Use the API key from environment (not JWT) + manually add X-Tenant-ID
     const headers = new HttpHeaders()
       .set('Authorization', `Bearer ${environment.scrapeApiKey}`)
       .set('Content-Type', 'application/json')
-      .set('ngrok-skip-browser-warning', 'true')
-      .set('X-Tenant-ID', this.tenantId);   // <-- NOW INCLUDED
+      .set('ngrok-skip-browser-warning', 'true');   // ✅ exactly as docs say
 
-    console.log('📤 Sending scrape request:', { url: this.baseUrl, body: request });
+    console.log('📤 Sending scrape request to:', this.baseUrl);
 
     return this.httpWithoutInterceptors.post<ScrapedData>(this.baseUrl, request, { headers }).pipe(
       catchError((error) => {

@@ -1,0 +1,336 @@
+<!-- ============================================================
+     RESERVATION REQUESTS – ENHANCED
+============================================================ -->
+<div class="requests-container">
+
+  <!-- ==========================================================
+       TOOLBAR: Search + Filters
+  ========================================================== -->
+  <div class="toolbar">
+
+    <!-- Search -->
+    <div class="search-group">
+      <div class="search-wrapper">
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Search by guest, email or phone..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+        />
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          class="clear-search"
+          (click)="clearSearch()"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Status filter -->
+    <div class="filter-group">
+      <label for="statusFilter">Status</label>
+      <select
+        id="statusFilter"
+        class="form-control"
+        [(ngModel)]="statusFilter"
+        (change)="onFilterChange()"
+      >
+        <option value="">All Statuses</option>
+        <option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+        <option value="EXPIRED">Expired</option>
+      </select>
+    </div>
+
+    <!-- Date range -->
+    <div class="filter-group date-group date-from-gap">
+      <label for="dateFrom">Check‑in from</label>
+      <input
+        type="date"
+        id="dateFrom"
+        class="form-control"
+        [(ngModel)]="dateFrom"
+        (change)="onFilterChange()"
+      />
+    </div>
+    <div class="filter-group date-group">
+      <label for="dateTo">Check‑in to</label>
+      <input
+        type="date"
+        id="dateTo"
+        class="form-control"
+        [(ngModel)]="dateTo"
+        (change)="onFilterChange()"
+      />
+    </div>
+
+    <!-- Refresh -->
+    <button
+      type="button"
+      class="btn-glass refresh-btn"
+      [disabled]="loading"
+      (click)="loadRequests()"
+    >
+      {{ loading ? 'Refreshing...' : 'Refresh' }}
+    </button>
+
+    <!-- Clear all filters -->
+    <button
+      type="button"
+      class="btn-glass clear-filters"
+      (click)="clearFilters()"
+    >
+      Clear Filters
+    </button>
+  </div>
+
+  <!-- ==========================================================
+       ERROR / LOADING / EMPTY
+  ========================================================== -->
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Loading requests...</div>
+  <div *ngIf="!loading && filteredRequests.length === 0" class="no-data">
+    No requests found.
+  </div>
+
+  <!-- ==========================================================
+       REQUEST LIST
+  ========================================================== -->
+  <div class="request-compact-list" *ngIf="!loading && filteredRequests.length > 0">
+
+    <!-- Table‑style header -->
+    <div class="request-list-header">
+      <div>Guest</div>
+      <div>Stay Dates</div>
+      <div>Guests</div>
+      <div>Total</div>
+      <div>Status</div>
+      <div class="header-actions">Actions</div>
+    </div>
+
+    <!-- Request items -->
+    <div
+      class="request-item"
+      *ngFor="let req of filteredRequests"
+      (click)="openDetails(req)"
+    >
+      <div class="request-item-content">
+        <!-- Guest -->
+        <div class="request-item-main">
+          <span class="guest-name">{{ req.guestName }}</span>
+          <span class="guest-email">{{ req.guestEmail }}</span>
+        </div>
+
+        <!-- Dates -->
+        <div class="request-item-dates">
+          <span class="date-label">From</span>
+          <span class="date-value">{{ req.checkInDate }}</span>
+          <span class="date-arrow">→</span>
+          <span class="date-value">{{ req.checkOutDate }}</span>
+        </div>
+
+        <!-- Guest count -->
+        <div class="request-item-meta">
+          <span>{{ req.numAdults }} adult{{ req.numAdults > 1 ? 's' : '' }}</span>
+          <span class="meta-sep">•</span>
+          <span>{{ req.numKids }} kid{{ req.numKids !== 1 ? 's' : '' }}</span>
+        </div>
+
+        <!-- Total -->
+        <div class="request-total">
+          {{ req.quotedTotalCharge | number:'1.0-2' }}
+        </div>
+
+        <!-- Status badge -->
+        <div class="request-status">
+          <span class="status-badge" [class]="req.status.toLowerCase()">
+            {{ req.status }}
+          </span>
+        </div>
+
+        <!-- Actions -->
+        <div
+          class="request-item-actions"
+          *ngIf="req.status === 'PENDING'"
+          (click)="$event.stopPropagation()"
+        >
+          <button type="button" class="btn-glass accept" (click)="openAccept(req.id, req.categoryId)">
+            Accept
+          </button>
+          <button type="button" class="btn-glass reject" (click)="openReject(req.id)">
+            Reject
+          </button>
+        </div>
+        <div class="request-item-actions" *ngIf="req.status !== 'PENDING'">
+          <span class="no-action">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       PAGINATION
+  ========================================================== -->
+  <div class="pagination-controls" *ngIf="totalRequests > 0">
+    <button
+      type="button"
+      class="btn-glass pagination-btn"
+      (click)="changePage(currentPage - 1)"
+      [disabled]="currentPage === 0"
+    >
+      ‹
+    </button>
+    <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+    <button
+      type="button"
+      class="btn-glass pagination-btn"
+      (click)="changePage(currentPage + 1)"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      ›
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     REQUEST DETAILS MODAL (ENHANCED)
+============================================================ -->
+<div
+  *ngIf="showDetailsModal && selectedRequest"
+  class="modal-overlay"
+  (click)="closeDetails()"
+>
+  <div class="modal-content request-detail-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Request Details</h3>
+      <button type="button" class="close-btn" (click)="closeDetails()">✕</button>
+    </div>
+
+    <div class="request-detail-body">
+      <div class="detail-grid">
+        <div><strong>Guest</strong><span>{{ selectedRequest.guestName }}</span></div>
+        <div><strong>Email</strong><span>{{ selectedRequest.guestEmail }}</span></div>
+        <div><strong>Phone</strong><span>{{ selectedRequest.guestPhone }}</span></div>
+        <div><strong>Nationality</strong><span>{{ selectedRequest.nationality }}</span></div>
+        <div><strong>Identification</strong><span>{{ selectedRequest.identification }}</span></div>
+        <div><strong>Category</strong><span>{{ selectedRequest.categoryName }}</span></div>
+        <div><strong>Check‑in</strong><span>{{ selectedRequest.checkInDate }}</span></div>
+        <div><strong>Check‑out</strong><span>{{ selectedRequest.checkOutDate }}</span></div>
+        <div><strong>Adults</strong><span>{{ selectedRequest.numAdults }}</span></div>
+        <div><strong>Kids</strong><span>{{ selectedRequest.numKids }}</span></div>
+        <div><strong>Quoted total</strong><span>{{ selectedRequest.quotedTotalCharge | number:'1.0-2' }}</span></div>
+        <div>
+          <strong>Status</strong>
+          <span><span class="status-badge" [class]="selectedRequest.status.toLowerCase()">{{ selectedRequest.status }}</span></span>
+        </div>
+        <div *ngIf="selectedRequest.notes" class="full-width"><strong>Notes</strong><span>{{ selectedRequest.notes }}</span></div>
+        <div *ngIf="selectedRequest.rejectionReason" class="full-width"><strong>Rejection reason</strong><span>{{ selectedRequest.rejectionReason }}</span></div>
+        <div *ngIf="selectedRequest.processedByUserId" class="full-width">
+          <strong>Processed by</strong>
+          <span>User #{{ selectedRequest.processedByUserId }} at {{ selectedRequest.processedAt | date:'short' }}</span>
+        </div>
+        <div class="full-width"><strong>Created</strong><span>{{ selectedRequest.createdAt | date:'short' }}</span></div>
+      </div>
+
+      <div class="modal-actions" *ngIf="selectedRequest.status === 'PENDING'">
+        <button type="button" class="btn-glass accept" (click)="openAccept(selectedRequest.id, selectedRequest.categoryId); closeDetails()">
+          Accept
+        </button>
+        <button type="button" class="btn-glass reject" (click)="openReject(selectedRequest.id); closeDetails()">
+          Reject
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ACCEPT MODAL
+============================================================ -->
+<div
+  *ngIf="showAcceptModal"
+  class="modal-overlay"
+  (click)="closeAccept()"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Accept Request</h3>
+      <button type="button" class="close-btn" (click)="closeAccept()">✕</button>
+    </div>
+
+    <p>Assign a room to this guest.</p>
+
+    <div *ngIf="acceptLoading" class="loading">Loading rooms...</div>
+
+    <div class="form-group" *ngIf="!acceptLoading">
+      <label for="roomSelect">Select Room</label>
+      <select id="roomSelect" class="form-control" [(ngModel)]="selectedRoomId">
+        <option [value]="null">Choose a room</option>
+        <option *ngFor="let room of availableRooms" [value]="room.id">
+          {{ room.roomNumber }} — Floor {{ room.floor }}
+        </option>
+      </select>
+    </div>
+
+    <div *ngIf="availableRooms.length === 0 && !acceptLoading" class="no-rooms">
+      No available rooms for this category.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-glass" (click)="closeAccept()">Cancel</button>
+      <button
+        type="button"
+        class="btn-glass primary"
+        [disabled]="!selectedRoomId || acceptLoading"
+        (click)="confirmAccept()"
+      >
+        {{ acceptLoading ? 'Accepting...' : 'Accept' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     REJECT MODAL
+============================================================ -->
+<div
+  *ngIf="showRejectModal"
+  class="modal-overlay"
+  (click)="closeReject()"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Reject Request</h3>
+      <button type="button" class="close-btn" (click)="closeReject()">✕</button>
+    </div>
+
+    <p>Please provide a reason for rejection.</p>
+
+    <div class="form-group">
+      <label for="rejectReason">Reason</label>
+      <textarea
+        id="rejectReason"
+        class="form-control"
+        rows="3"
+        [(ngModel)]="rejectReason"
+        placeholder="Explain why this request is rejected..."
+      ></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-glass" (click)="closeReject()">Cancel</button>
+      <button
+        type="button"
+        class="btn-glass danger"
+        [disabled]="!rejectReason.trim() || rejectLoading"
+        (click)="confirmReject()"
+      >
+        {{ rejectLoading ? 'Rejecting...' : 'Reject' }}
+      </button>
+    </div>
+  </div>
+</div>

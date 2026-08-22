@@ -40,17 +40,6 @@ export interface StayDetailsResponse {
   totalCharge: number;
 }
 
-export interface ApproveRequest {
-  roomId: number;
-}
-
-export interface RejectRequest {
-  reason: string;
-}
-
-// ============================================================
-// NEW: CREATE STAY REQUEST INTERFACE (Based on your Swagger)
-// ============================================================
 export interface CreateStayRequest {
   guestName: string;
   phone: string;
@@ -65,21 +54,41 @@ export interface CreateStayRequest {
   dateRangeValid?: boolean;
 }
 
+// Paged response for requests
+export interface PagedModelReservationRequestResponse {
+  content: ReservationRequest[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReservationRequestService {
-  // 1. Base for Reservation Request endpoints
   private baseUrl = `${environment.apiUrl}/api/dashboard/front-desk/reservation-requests`;
-  
-  // 2. Base for Stays endpoints (CORRECTED)
   private staysUrl = `${environment.apiUrl}/api/dashboard/front-desk/stays`;
 
   constructor(private http: HttpClient) {}
 
-  getPendingRequests(page: number = 0, size: number = 20): Observable<{ content: ReservationRequest[], page: any }> {
+  // Existing: get pending requests
+  getPendingRequests(page: number = 0, size: number = 20): Observable<PagedModelReservationRequestResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    return this.http.get<{ content: ReservationRequest[], page: any }>(this.baseUrl, { params });
+    return this.http.get<PagedModelReservationRequestResponse>(this.baseUrl, { params });
+  }
+
+  // NEW: get requests with optional status filter and pagination
+  getRequests(status?: string, page: number = 0, size: number = 20): Observable<PagedModelReservationRequestResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<PagedModelReservationRequestResponse>(this.baseUrl, { params });
   }
 
   approveRequest(id: number, roomId: number): Observable<ReservationRequest> {
@@ -98,9 +107,6 @@ export class ReservationRequestService {
     return this.http.get<{ content: StayDetailsResponse[] }>(`${this.staysUrl}?${params}`);
   }
 
-  // ============================================================
-  // NEW: CREATE STAY
-  // ============================================================
   createStay(data: CreateStayRequest): Observable<StayDetailsResponse> {
     const payload = { ...data, dateRangeValid: true };
     return this.http.post<StayDetailsResponse>(this.staysUrl, payload);

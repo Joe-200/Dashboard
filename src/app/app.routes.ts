@@ -6,6 +6,7 @@ import { RoomsComponent } from './pages/rooms-component/rooms-component.componen
 import { SpecialOffersComponent } from './pages/special-offers-component/special-offers-component.component';
 import { AiComponent } from './pages/ai-component/ai-component.component';
 import { CalendarComponent } from './pages/calendar-component/calendar-component.component';
+import { RequestsViewComponent } from './pages/requests-view-component/requests-view-component.component';
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
@@ -17,7 +18,8 @@ export const routes: Routes = [
       { path: 'special-offers', component: SpecialOffersComponent },
       { path: 'ai', component: AiComponent },
       { path: '', redirectTo: 'rooms', pathMatch: 'full' },
-      { path: 'calendar', component: CalendarComponent }, // default child
+      { path: 'calendar', component: CalendarComponent },
+      { path: 'reservations' , component:RequestsViewComponent}
     ]
   },
   { path: '**', redirectTo: '/login' }

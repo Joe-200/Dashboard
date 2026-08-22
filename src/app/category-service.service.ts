@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 
 import { environment } from './environment';
 
-
 // ============================================================
 // ROOM CATEGORY
 // ============================================================
@@ -24,7 +23,6 @@ export interface RoomCategory {
   viewType?: string;
 }
 
-
 // ============================================================
 // CREATE CATEGORY
 // ============================================================
@@ -41,7 +39,6 @@ export interface CreateCategoryRequest {
   numTvs: number;
   viewType: string;
 }
-
 
 // ============================================================
 // UPDATE CATEGORY
@@ -60,7 +57,6 @@ export interface UpdateCategoryRequest {
   viewType: string;
 }
 
-
 // ============================================================
 // DAILY RATE
 // ============================================================
@@ -74,6 +70,25 @@ export interface DailyRateResponse {
   customRate: boolean;
 }
 
+// ============================================================
+// BULK SET RATES
+// ============================================================
+
+export interface BulkSetRatesItemRequest {
+  category: string;        // category name
+  startDate: string;       // yyyy-MM-dd
+  endDate: string;
+  price: number;
+}
+
+export interface BulkSetRatesResponse {
+  totalDaysUpdated: number;
+  categoriesUpdated: number;
+  itemsProcessed: number;
+  globalStartDate: string;
+  globalEndDate: string;
+  categoryDaysBreakdown: { [category: string]: number };
+}
 
 // ============================================================
 // SERVICE
@@ -87,214 +102,108 @@ export class CategoryService {
   private baseUrl =
     `${environment.apiUrl}/api/dashboard/front-desk/room-categories`;
 
-
   constructor(
     private http: HttpClient
   ) {}
-
 
   // ==========================================================
   // GET CATEGORIES
   // ==========================================================
 
   getCategories(): Observable<RoomCategory[]> {
-
-    return this.http.get<RoomCategory[]>(
-      this.baseUrl
-    );
-
+    return this.http.get<RoomCategory[]>(this.baseUrl);
   }
-
 
   // ==========================================================
   // CREATE CATEGORY
   // ==========================================================
 
-  createCategory(
-    data: CreateCategoryRequest
-  ): Observable<RoomCategory> {
-
-    return this.http.post<RoomCategory>(
-      this.baseUrl,
-      data
-    );
-
+  createCategory(data: CreateCategoryRequest): Observable<RoomCategory> {
+    return this.http.post<RoomCategory>(this.baseUrl, data);
   }
-
 
   // ==========================================================
   // UPDATE CATEGORY
   // ==========================================================
 
-  updateCategory(
-    id: number,
-    data: UpdateCategoryRequest
-  ): Observable<RoomCategory> {
-
-    return this.http.put<RoomCategory>(
-      `${this.baseUrl}/${id}`,
-      data
-    );
-
+  updateCategory(id: number, data: UpdateCategoryRequest): Observable<RoomCategory> {
+    return this.http.put<RoomCategory>(`${this.baseUrl}/${id}`, data);
   }
-
 
   // ==========================================================
   // DELETE CATEGORY
   // ==========================================================
 
-  deleteCategory(
-    id: number
-  ): Observable<void> {
-
-    return this.http.delete<void>(
-      `${this.baseUrl}/${id}`
-    );
-
+  deleteCategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
-
 
   // ==========================================================
   // UPLOAD CATEGORY IMAGE
   // ==========================================================
 
-  uploadCategoryImage(
-    id: number,
-    file: File
-  ): Observable<RoomCategory> {
-
-    const formData =
-      new FormData();
-
-    formData.append(
-      'file',
-      file
-    );
-
-    return this.http.post<RoomCategory>(
-      `${this.baseUrl}/${id}/image`,
-      formData
-    );
-
+  uploadCategoryImage(id: number, file: File): Observable<RoomCategory> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<RoomCategory>(`${this.baseUrl}/${id}/image`, formData);
   }
-
 
   // ==========================================================
   // GET ALL RATES
-  //
-  // GET:
-  // /room-categories/rates/all
   // ==========================================================
 
-  getAllRates(
-    from: string,
-    to: string
-  ): Observable<{
+  getAllRates(from: string, to: string): Observable<{
     [categoryId: string]: DailyRateResponse[]
   }> {
-
     return this.http.get<{
       [categoryId: string]: DailyRateResponse[]
-    }>(
-      `${this.baseUrl}/rates/all`,
-      {
-        params: {
-          from,
-          to
-        }
-      }
-    );
-
+    }>(`${this.baseUrl}/rates/all`, {
+      params: { from, to }
+    });
   }
-
 
   // ==========================================================
   // GET RATES FOR ONE CATEGORY
-  //
-  // GET:
-  // /room-categories/{categoryId}/rates
-  //
-  // This is used after saving a price so that the
-  // frontend gets the actual persisted value from
-  // the backend.
   // ==========================================================
 
-  getRates(
-    categoryId: number,
-    from: string,
-    to: string
-  ): Observable<DailyRateResponse[]> {
-
+  getRates(categoryId: number, from: string, to: string): Observable<DailyRateResponse[]> {
     return this.http.get<DailyRateResponse[]>(
       `${this.baseUrl}/${categoryId}/rates`,
-      {
-        params: {
-          from,
-          to
-        }
-      }
+      { params: { from, to } }
     );
-
   }
 
-
   // ==========================================================
-  // SET RATES
-  //
-  // POST:
-  // /room-categories/{categoryId}/rates
-  //
-  // Swagger request:
-  //
-  // {
-  //   "startDate": "2026-08-23",
-  //   "endDate": "2026-08-23",
-  //   "price": 123
-  // }
+  // SET RATES (single category, date range)
   // ==========================================================
 
-  setRates(
-    categoryId: number,
-    startDate: string,
-    endDate: string,
-    price: number
-  ): Observable<any> {
-
+  setRates(categoryId: number, startDate: string, endDate: string, price: number): Observable<any> {
     return this.http.post(
       `${this.baseUrl}/${categoryId}/rates`,
-      {
-        startDate,
-        endDate,
-        price
-      }
+      { startDate, endDate, price }
     );
-
   }
-
 
   // ==========================================================
   // CLEAR RATES
-  //
-  // DELETE:
-  // /room-categories/{categoryId}/rates
   // ==========================================================
 
-  clearRates(
-    categoryId: number,
-    from: string,
-    to: string
-  ): Observable<any> {
-
+  clearRates(categoryId: number, from: string, to: string): Observable<any> {
     return this.http.delete(
       `${this.baseUrl}/${categoryId}/rates`,
-      {
-        params: {
-          from,
-          to
-        }
-      }
+      { params: { from, to } }
     );
-
   }
 
+  // ==========================================================
+  // BULK SET RATES (multiple categories / date ranges)
+  // POST /room-categories/rates/all
+  // ==========================================================
+
+  setAllRates(items: BulkSetRatesItemRequest[]): Observable<BulkSetRatesResponse> {
+    return this.http.post<BulkSetRatesResponse>(
+      `${this.baseUrl}/rates/all`,
+      items
+    );
+  }
 }
