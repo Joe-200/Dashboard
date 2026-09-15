@@ -32,12 +32,38 @@
     {{ error }}
   </div>
 
-  <!-- FILTERS -->
+  <!-- FILTERS + SEARCH -->
   <div class="filters-card">
+
+    <div class="filter-group search-group">
+      <label>Search</label>
+      <div class="search-input-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
+             width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Room number, category, ID, floor..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+        />
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          class="search-clear"
+          (click)="clearSearch()"
+          aria-label="Clear search"
+        >×</button>
+      </div>
+    </div>
 
     <div class="filter-group">
       <label>Status</label>
-
       <select
         class="form-control"
         [(ngModel)]="filterStatus"
@@ -53,7 +79,6 @@
 
     <div class="filter-group">
       <label>Floor</label>
-
       <input
         type="number"
         class="form-control"
@@ -64,8 +89,9 @@
     </div>
 
     <div class="room-count">
-      <span>{{ totalElements }}</span>
+      <span>{{ filteredRooms.length }}</span>
       rooms
+      <span *ngIf="searchTerm" class="filter-note">(filtered)</span>
     </div>
 
   </div>
@@ -78,12 +104,18 @@
 
   <!-- EMPTY -->
   <div
-    *ngIf="!loading && rooms.length === 0"
+    *ngIf="!loading && filteredRooms.length === 0"
     class="empty-state"
   >
-    <h3>No rooms found</h3>
+    <h3>
+      {{ searchTerm ? 'No matching rooms' : 'No rooms found' }}
+    </h3>
 
-    <p>
+    <p *ngIf="searchTerm">
+      No rooms match "{{ searchTerm }}". Try a different search.
+    </p>
+
+    <p *ngIf="!searchTerm">
       Try changing your filters or add a new room.
     </p>
 
@@ -96,27 +128,22 @@
     </button>
   </div>
 
-  <!-- ROOMS -->
+  <!-- ROOMS GRID -->
   <div
-    *ngIf="!loading && rooms.length > 0"
+    *ngIf="!loading && filteredRooms.length > 0"
     class="rooms-grid"
   >
-
     <article
       class="room-card"
-      *ngFor="let room of rooms"
+      *ngFor="let room of filteredRooms"
     >
-
-      <!-- IMAGE -->
       <div class="room-image">
-
         <img
           *ngIf="room.imageUrl"
           [src]="room.imageUrl"
           [alt]="'Room ' + room.roomNumber"
           loading="lazy"
         />
-
         <div
           *ngIf="!room.imageUrl"
           class="image-placeholder"
@@ -134,102 +161,58 @@
         <span class="room-number">
           {{ room.roomNumber }}
         </span>
-
       </div>
 
-      <!-- BODY -->
       <div class="room-body">
-
-        <!-- HEADING -->
         <div class="room-heading">
-
           <div>
-            <h3>
-              {{ room.categoryName || 'Room' }}
-            </h3>
-
-            <span class="room-floor">
-              Floor {{ room.floor }}
-            </span>
+            <h3>{{ room.categoryName || 'Room' }}</h3>
+            <span class="room-floor">Floor {{ room.floor }}</span>
           </div>
-
           <div class="room-price">
-            <strong>
-              {{ room.price | number:'1.0-2' }}
-            </strong>
-
-            <span>
-              SAR / night
-            </span>
+            <strong>{{ room.price | number:'1.0-2' }}</strong>
+            <span>SAR / night</span>
           </div>
-
         </div>
 
-        <!-- DESCRIPTION -->
         <p class="room-description">
           {{ room.description || 'No description available.' }}
         </p>
 
-        <!-- ALL DETAILS AS TAGS -->
         <div class="room-tags">
-
           <span class="room-tag">
             {{ room.categoryName || 'Uncategorized' }}
           </span>
-
+          <span class="room-tag">
+            Category #{{ room.categoryId }}
+          </span>
           <span class="room-tag">
             {{ room.numBeds }}
             {{ room.numBeds === 1 ? 'Bed' : 'Beds' }}
           </span>
-
           <span class="room-tag">
             {{ getBedTypeLabel(room.bedType) }}
           </span>
-
           <span class="room-tag">
             {{ room.maxAdults }}
             {{ room.maxAdults === 1 ? 'Adult' : 'Adults' }}
           </span>
-
-          <span
-            class="room-tag"
-            *ngIf="room.maxKids > 0"
-          >
+          <span class="room-tag" *ngIf="room.maxKids > 0">
             {{ room.maxKids }}
             {{ room.maxKids === 1 ? 'Kid' : 'Kids' }}
           </span>
-
-          <span
-            class="room-tag"
-            *ngIf="room.hasWifi"
-          >
-            Wi-Fi
-          </span>
-
-          <span
-            class="room-tag"
-            *ngIf="room.numTvs > 0"
-          >
+          <span class="room-tag" *ngIf="room.hasWifi">Wi-Fi</span>
+          <span class="room-tag" *ngIf="room.numTvs > 0">
             {{ room.numTvs }}
             {{ room.numTvs === 1 ? 'TV' : 'TVs' }}
           </span>
-
-          <span
-            class="room-tag"
-            *ngIf="getViewLabel(room.viewType)"
-          >
+          <span class="room-tag" *ngIf="getViewLabel(room.viewType)">
             {{ getViewLabel(room.viewType) }} View
           </span>
-
-          <span class="room-tag">
-            Room #{{ room.id }}
-          </span>
-
+          <span class="room-tag">Room #{{ room.id }}</span>
         </div>
 
-        <!-- ACTION -->
         <div class="room-actions">
-
           <button
             type="button"
             class="btn btn-edit"
@@ -237,13 +220,9 @@
           >
             Edit Room
           </button>
-
         </div>
-
       </div>
-
     </article>
-
   </div>
 
   <!-- PAGINATION -->
@@ -251,13 +230,11 @@
     *ngIf="!loading && totalPages > 1"
     class="pagination-container"
   >
-
     <span>
       Page {{ currentPage + 1 }} of {{ totalPages }}
     </span>
 
     <div class="pagination">
-
       <button
         [disabled]="currentPage === 0"
         (click)="onPageChange(currentPage - 1)"
@@ -279,9 +256,7 @@
       >
         Next
       </button>
-
     </div>
-
   </div>
 
 </div>
@@ -296,273 +271,211 @@
   class="custom-modal-overlay"
   (click)="closeRoomModal()"
 >
-
   <div
     class="custom-modal"
     (click)="$event.stopPropagation()"
   >
-
     <div class="custom-modal-header">
-
       <div>
-        <span class="modal-eyebrow">
-          ROOM MANAGEMENT
-        </span>
-
-        <h2>
-          {{ isEditRoom ? 'Edit Room' : 'Add Room' }}
-        </h2>
+        <span class="modal-eyebrow">ROOM MANAGEMENT</span>
+        <h2>{{ isEditRoom ? 'Edit Room' : 'Add Room' }}</h2>
       </div>
-
       <button
         type="button"
         class="close-btn"
         (click)="closeRoomModal()"
-      >
-        ×
-      </button>
-
+      >×</button>
     </div>
 
     <div class="custom-modal-body">
+      <form [formGroup]="roomForm" (ngSubmit)="saveRoom()">
 
-      <form
-        [formGroup]="roomForm"
-        (ngSubmit)="saveRoom()"
-      >
-
-        <!-- ROOM NUMBER + CATEGORY -->
         <div class="form-row">
-
           <div class="form-group">
-
-            <label>
-              Room Number
-            </label>
-
+            <label>Room Number</label>
             <input
               type="text"
               class="form-control"
               formControlName="roomNumber"
               placeholder="101"
             />
-
             <div
               class="error"
-              *ngIf="
-                roomForm.get('roomNumber')?.invalid &&
-                roomForm.get('roomNumber')?.touched
-              "
+              *ngIf="roomForm.get('roomNumber')?.invalid && roomForm.get('roomNumber')?.touched"
             >
               Room number is required.
             </div>
-
           </div>
 
           <div class="form-group">
-
-            <label>
-              Category
-            </label>
-
-            <select
-              class="form-control"
-              formControlName="categoryId"
-            >
-
-              <option [ngValue]="null">
-                Select category
-              </option>
-
+            <label>Category</label>
+            <select class="form-control" formControlName="categoryId">
+              <option [ngValue]="null">Select category</option>
               <option
                 *ngFor="let cat of categories"
                 [ngValue]="cat.id"
               >
-                {{ cat.name }}
+                {{ cat.name }} (ID: {{ cat.id }})
               </option>
-
             </select>
-
+            <div
+              class="error"
+              *ngIf="roomForm.get('categoryId')?.invalid && roomForm.get('categoryId')?.touched"
+            >
+              Category is required.
+            </div>
           </div>
-
         </div>
 
-        <!-- FLOOR + VIEW -->
         <div class="form-row">
-
           <div class="form-group">
-
-            <label>
-              Floor
-            </label>
-
+            <label>Floor</label>
             <input
               type="number"
               class="form-control"
               formControlName="floor"
               min="1"
             />
-
           </div>
 
           <div class="form-group">
-
-            <label>
-              View
-            </label>
-
-            <select
-              class="form-control"
-              formControlName="viewType"
-            >
-
-              <option value="">
-                Select view
-              </option>
-
-              <option value="CITY">
-                City
-              </option>
-
-              <option value="PANORAMIC">
-                Panoramic
-              </option>
-
-              <option value="SEA">
-                Sea
-              </option>
-
-              <option value="GARDEN">
-                Garden
-              </option>
-
-              <option value="MOUNTAIN">
-                Mountain
-              </option>
-
-              <option value="POOL">
-                Pool
-              </option>
-
-              <option value="RIVER">
-                River
-              </option>
-
-              <option value="LANDMARK">
-                Landmark
-              </option>
-
+            <label>View</label>
+            <select class="form-control" formControlName="viewType">
+              <option value="">Select view</option>
+              <option value="CITY">City</option>
+              <option value="PANORAMIC">Panoramic</option>
+              <option value="SEA">Sea</option>
+              <option value="GARDEN">Garden</option>
+              <option value="MOUNTAIN">Mountain</option>
+              <option value="POOL">Pool</option>
+              <option value="RIVER">River</option>
+              <option value="LANDMARK">Landmark</option>
             </select>
-
+            <div
+              class="error"
+              *ngIf="roomForm.get('viewType')?.invalid && roomForm.get('viewType')?.touched"
+            >
+              View is required.
+            </div>
           </div>
-
         </div>
 
-        <!-- DESCRIPTION -->
         <div class="form-group">
-
-          <label>
-            Description
-          </label>
-
+          <label>Description</label>
           <textarea
             class="form-control textarea"
             formControlName="description"
             rows="3"
             placeholder="Describe the room..."
           ></textarea>
-
         </div>
 
-        <!-- STATUS -->
-        <div
-          class="form-group"
-          *ngIf="isEditRoom"
-        >
-
-          <label>
-            Status
-          </label>
-
-          <select
-            class="form-control"
-            formControlName="status"
-          >
-
-            <option value="AVAILABLE">
-              Available
-            </option>
-
-            <option value="OCCUPIED">
-              Occupied
-            </option>
-
-            <option value="CLEANING">
-              Cleaning
-            </option>
-
-            <option value="MAINTENANCE">
-              Maintenance
-            </option>
-
+        <div class="form-group" *ngIf="isEditRoom">
+          <label>Status</label>
+          <select class="form-control" formControlName="status">
+            <option value="AVAILABLE">Available</option>
+            <option value="OCCUPIED">Occupied</option>
+            <option value="CLEANING">Cleaning</option>
+            <option value="MAINTENANCE">Maintenance</option>
           </select>
-
         </div>
 
-        <!-- IMAGE UPLOAD -->
         <div class="form-group">
+          <label>Room Images</label>
 
-          <label>
-            Room Image
-          </label>
+          <p class="gallery-hint">
+            Upload multiple images, choose a primary, and reorder them.
+            Images are auto-compressed to WebP.
+          </p>
 
-          <input
-            type="file"
-            class="form-control file-input"
-            accept="image/jpeg,image/png,image/webp,image/jpg"
-            (change)="onFileSelected($event)"
-          />
-
-          <small>
-            The image will automatically be resized, compressed and converted to WebP.
-          </small>
-
-          <div
-            class="image-processing"
-            *ngIf="imageProcessing"
-          >
-            Processing image...
-          </div>
-
-          <div
-            class="image-preview"
-            *ngIf="imagePreview"
-          >
-
-            <img
-              [src]="imagePreview"
-              alt="Room preview"
+          <div class="gallery-input-row">
+            <input
+              type="file"
+              class="form-control file-input"
+              accept="image/jpeg,image/png,image/webp,image/jpg"
+              multiple
+              (change)="onRoomFilesSelected($event)"
             />
 
-            <div class="image-preview-info">
-
-              <strong>
-                {{ imageFile?.name }}
-              </strong>
-
-              <span>
-                {{ getFileSize(imageFile) }}
-              </span>
-
+            <div
+              class="image-processing"
+              *ngIf="imageProcessing"
+            >
+              Processing...
             </div>
-
           </div>
 
+          <div
+            class="image-gallery"
+            *ngIf="roomGallery.length > 0"
+          >
+            <div
+              class="gallery-item"
+              *ngFor="let img of roomGallery; let i = index"
+              [class.primary]="img.isPrimary"
+              [class.deleted]="img.markedForDeletion"
+            >
+              <img [src]="img.previewUrl" [alt]="'Room image ' + (i + 1)" />
+
+              <span class="primary-badge" *ngIf="img.isPrimary && !img.markedForDeletion">
+                PRIMARY
+              </span>
+
+              <span class="deleted-badge" *ngIf="img.markedForDeletion">
+                WILL BE DELETED
+              </span>
+
+              <div class="gallery-overlay" *ngIf="!img.markedForDeletion">
+                <button
+                  type="button"
+                  class="gallery-btn"
+                  title="Move left"
+                  [disabled]="i === 0"
+                  (click)="moveRoomImageLeft(i)"
+                >‹</button>
+
+                <button
+                  type="button"
+                  class="gallery-btn star"
+                  [class.active]="img.isPrimary"
+                  title="Set as primary"
+                  (click)="setPrimaryRoomImage(i)"
+                >★</button>
+
+                <button
+                  type="button"
+                  class="gallery-btn"
+                  title="Move right"
+                  [disabled]="i === roomGallery.length - 1"
+                  (click)="moveRoomImageRight(i)"
+                >›</button>
+
+                <button
+                  type="button"
+                  class="gallery-btn danger"
+                  title="Remove"
+                  (click)="removeRoomImage(i)"
+                >×</button>
+              </div>
+
+              <div class="gallery-overlay" *ngIf="img.markedForDeletion">
+                <button
+                  type="button"
+                  class="gallery-btn undo"
+                  title="Undo"
+                  (click)="undoRemoveRoomImage(i)"
+                >↺</button>
+              </div>
+
+              <div class="gallery-footer">
+                <span>{{ i + 1 }} / {{ roomGallery.length }}</span>
+                <span *ngIf="img.file">{{ getFileSize(img.file) }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- FOOTER -->
         <div class="custom-modal-footer">
-
           <button
             type="button"
             class="btn btn-secondary"
@@ -574,14 +487,8 @@
           <button
             type="submit"
             class="btn btn-primary"
-            [disabled]="
-              roomForm.invalid ||
-              loading ||
-              imageUploading ||
-              imageProcessing
-            "
+            [disabled]="roomForm.invalid || loading || imageProcessing"
           >
-
             {{
               loading
                 ? 'Saving...'
@@ -589,22 +496,17 @@
                   ? 'Save Changes'
                   : 'Create Room'
             }}
-
           </button>
-
         </div>
 
       </form>
-
     </div>
-
   </div>
-
 </div>
 
 
 <!-- =========================================================
-     CATEGORY MANAGEMENT MODAL
+     CATEGORY MANAGEMENT MODAL — wide two-pane layout
 ========================================================= -->
 
 <div
@@ -612,495 +514,480 @@
   class="custom-modal-overlay"
   (click)="closeCategoryModal()"
 >
-
   <div
     class="custom-modal category-modal"
     (click)="$event.stopPropagation()"
   >
-
+    <!-- HEADER -->
     <div class="custom-modal-header">
-
       <div>
-
-        <span class="modal-eyebrow">
-          ROOM MANAGEMENT
-        </span>
-
-        <h2>
-          Manage Categories
-        </h2>
-
+        <span class="modal-eyebrow">ROOM MANAGEMENT</span>
+        <h2>Manage Categories</h2>
       </div>
-
       <button
         type="button"
         class="close-btn"
         (click)="closeCategoryModal()"
-      >
-        ×
-      </button>
-
+      >×</button>
     </div>
 
-    <div class="custom-modal-body">
+    <!-- BODY: two-pane grid -->
+    <div class="custom-modal-body category-body">
 
-      <!-- CATEGORY FORM -->
-      <div class="section-header">
+      <div class="category-layout">
 
-        <h3>
-          {{ isEditCategory ? 'Edit Category' : 'Add Category' }}
-        </h3>
+        <!-- LEFT PANE — LIST -->
+        <aside class="category-sidebar">
 
-      </div>
+          <div class="category-sidebar-header">
+            <h3>
+              Categories
+              <span class="category-count">{{ categories.length }}</span>
+            </h3>
 
-      <form
-        [formGroup]="categoryForm"
-        (ngSubmit)="saveCategory()"
-      >
-
-        <div class="form-row">
-
-          <div class="form-group">
-
-            <label>
-              Name
-            </label>
-
-            <input
-              type="text"
-              class="form-control"
-              formControlName="name"
-              placeholder="Double"
-            />
-
-          </div>
-
-          <div class="form-group">
-
-            <label>
-              View
-            </label>
-
-            <select
-              class="form-control"
-              formControlName="viewType"
+            <button
+              type="button"
+              class="btn-new-category"
+              (click)="startNewCategory()"
+              title="Create new category"
             >
-
-              <option value="">
-                Select view
-              </option>
-
-              <option value="CITY">
-                City
-              </option>
-
-              <option value="PANORAMIC">
-                Panoramic
-              </option>
-
-              <option value="SEA">
-                Sea
-              </option>
-
-              <option value="GARDEN">
-                Garden
-              </option>
-
-              <option value="MOUNTAIN">
-                Mountain
-              </option>
-
-              <option value="POOL">
-                Pool
-              </option>
-
-              <option value="RIVER">
-                River
-              </option>
-
-              <option value="LANDMARK">
-                Landmark
-              </option>
-
-            </select>
-
+              New
+            </button>
           </div>
 
-        </div>
-
-        <div class="form-group">
-
-          <label>
-            Description
-          </label>
-
-          <textarea
-            class="form-control textarea"
-            formControlName="description"
-            rows="3"
-          ></textarea>
-
-        </div>
-
-        <div class="form-row">
-
-          <div class="form-group">
-
-            <label>
-              Price
-            </label>
-
-            <div class="price-input">
-
-              <input
-                type="number"
-                class="form-control"
-                formControlName="price"
-                min="0"
-              />
-
-              <span>SAR</span>
-
-            </div>
-
+          <div *ngIf="categoriesLoading" class="category-sidebar-state">
+            Loading categories...
           </div>
-
-          <div class="form-group">
-
-            <label>
-              Beds
-            </label>
-
-            <input
-              type="number"
-              class="form-control"
-              formControlName="numBeds"
-              min="1"
-            />
-
-          </div>
-
-        </div>
-
-        <div class="form-row">
-
-          <div class="form-group">
-
-            <label>
-              Bed Type
-            </label>
-
-            <select
-              class="form-control"
-              formControlName="bedType"
-            >
-
-              <option value="">
-                Select bed type
-              </option>
-
-              <option value="SINGLE">
-                Single
-              </option>
-
-              <option value="DOUBLE">
-                Double
-              </option>
-
-              <option value="QUEEN">
-                Queen
-              </option>
-
-              <option value="KING">
-                King
-              </option>
-
-              <option value="TWIN">
-                Twin
-              </option>
-
-            </select>
-
-          </div>
-
-          <div class="form-group">
-
-            <label>
-              TVs
-            </label>
-
-            <input
-              type="number"
-              class="form-control"
-              formControlName="numTvs"
-              min="0"
-            />
-
-          </div>
-
-        </div>
-
-        <div class="form-row">
-
-          <div class="form-group">
-
-            <label>
-              Adults
-            </label>
-
-            <input
-              type="number"
-              class="form-control"
-              formControlName="maxAdults"
-              min="1"
-            />
-
-          </div>
-
-          <div class="form-group">
-
-            <label>
-              Kids
-            </label>
-
-            <input
-              type="number"
-              class="form-control"
-              formControlName="maxKids"
-              min="0"
-            />
-
-          </div>
-
-        </div>
-
-        <div class="wifi-row">
-
-          <div>
-            <strong>Wi-Fi</strong>
-            <span>Available in this category</span>
-          </div>
-
-          <input
-            type="checkbox"
-            formControlName="hasWifi"
-          />
-
-        </div>
-
-        <!-- CATEGORY IMAGE -->
-        <div class="form-group">
-
-          <label>
-            Category Image
-          </label>
-
-          <input
-            type="file"
-            class="form-control file-input"
-            accept="image/jpeg,image/png,image/webp,image/jpg"
-            (change)="onCategoryFileSelected($event)"
-          />
 
           <div
-            class="image-preview"
-            *ngIf="categoryImagePreview"
+            *ngIf="!categoriesLoading && categories.length === 0"
+            class="category-sidebar-state"
           >
-
-            <img
-              [src]="categoryImagePreview"
-              alt="Category preview"
-            />
-
-            <div class="image-preview-info">
-
-              <strong>
-                {{ categoryImageFile?.name }}
-              </strong>
-
-              <span>
-                {{ getFileSize(categoryImageFile) }}
-              </span>
-
-            </div>
-
+            No categories yet.<br/>
+            Click <strong>New</strong> to create one.
           </div>
 
-        </div>
-
-        <div class="custom-modal-footer">
-
-          <button
-            type="button"
-            class="btn btn-secondary"
-            (click)="closeCategoryModal()"
+          <div
+            class="category-sidebar-list"
+            *ngIf="!categoriesLoading && categories.length > 0"
           >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="categoryForm.invalid || categoriesLoading"
-          >
-            {{ isEditCategory ? 'Save Changes' : 'Create Category' }}
-          </button>
-
-        </div>
-
-      </form>
-
-
-      <!-- CATEGORY LIST -->
-      <div class="category-divider"></div>
-
-      <div class="section-header">
-
-        <h3>
-          Categories
-        </h3>
-
-        <span class="category-count">
-          {{ categories.length }}
-        </span>
-
-      </div>
-
-      <div
-        *ngIf="categoriesLoading"
-        class="category-loading"
-      >
-        Loading categories...
-      </div>
-
-      <div
-        *ngIf="!categoriesLoading && categories.length === 0"
-        class="empty-categories"
-      >
-        No categories found.
-      </div>
-
-      <div
-        class="category-list"
-        *ngIf="!categoriesLoading && categories.length > 0"
-      >
-
-        <div
-          class="category-item"
-          *ngFor="let category of categories"
-        >
-
-          <!-- CATEGORY IMAGE -->
-          <div class="category-image">
-
-            <img
-              *ngIf="category.imageUrl"
-              [src]="category.imageUrl"
-              [alt]="category.name"
-              loading="lazy"
-            />
-
-            <div
-              *ngIf="!category.imageUrl"
-              class="category-image-placeholder"
-            >
-              No Image
-            </div>
-
-          </div>
-
-          <!-- CATEGORY INFO -->
-          <div class="category-content">
-
-            <div class="category-name">
-              {{ category.name }}
-            </div>
-
-            <div class="category-tags">
-
-              <span class="category-tag">
-                {{ category.price | number:'1.0-2' }} SAR
-              </span>
-
-              <span class="category-tag">
-                {{ category.numBeds }}
-                {{ category.numBeds === 1 ? 'Bed' : 'Beds' }}
-              </span>
-
-              <span class="category-tag">
-                {{ getBedTypeLabel(category.bedType) }}
-              </span>
-
-              <span class="category-tag">
-                {{ category.maxAdults }} Adults
-              </span>
-
-              <span
-                class="category-tag"
-                *ngIf="category.maxKids > 0"
-              >
-                {{ category.maxKids }} Kids
-              </span>
-
-              <span
-                class="category-tag"
-                *ngIf="category.hasWifi"
-              >
-                Wi-Fi
-              </span>
-
-              <span
-                class="category-tag"
-                *ngIf="category.numTvs > 0"
-              >
-                {{ category.numTvs }} TV
-              </span>
-
-              <span
-                class="category-tag"
-                *ngIf="getViewLabel(category.viewType)"
-              >
-                {{ getViewLabel(category.viewType) }} View
-              </span>
-
-            </div>
-
-            <div
-              class="category-description"
-              *ngIf="category.description"
-            >
-              {{ category.description }}
-            </div>
-
-          </div>
-
-          <!-- ACTIONS -->
-          <div class="category-actions">
-
             <button
               type="button"
-              class="icon-button"
+              class="category-list-item"
+              *ngFor="let category of categories"
+              [class.active]="isEditCategory && selectedCategoryId === category.id"
               (click)="openEditCategoryModal(category)"
             >
-              Edit
-            </button>
+              <div class="category-list-thumb">
+                <img
+                  *ngIf="category.imageUrl"
+                  [src]="category.imageUrl"
+                  [alt]="category.name"
+                  loading="lazy"
+                />
+                <div *ngIf="!category.imageUrl" class="thumb-placeholder">
+                  N/A
+                </div>
+              </div>
 
-            <button
-              type="button"
-              class="icon-button danger"
-              (click)="deleteCategory(category.id)"
-            >
-              Delete
-            </button>
+              <div class="category-list-info">
+                <div class="category-list-name">
+                  {{ category.name }}
+                </div>
+                <div class="category-list-meta">
+                  #{{ category.id }}
+                  <span class="separator">·</span>
+                  {{ category.price | number:'1.0-0' }} SAR
+                </div>
+              </div>
 
+              <span
+                class="category-list-delete"
+                title="Delete category"
+                role="button"
+                (click)="$event.stopPropagation(); deleteCategory(category.id)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                </svg>
+              </span>
+            </button>
           </div>
 
-        </div>
+        </aside>
+
+        <!-- RIGHT PANE — FORM -->
+        <section class="category-form-panel">
+
+          <div class="section-header">
+            <h3>
+              {{ isEditCategory ? 'Edit Category' : 'New Category' }}
+            </h3>
+
+            <span *ngIf="isEditCategory" class="category-id-badge">
+              ID: {{ selectedCategoryId }}
+            </span>
+          </div>
+
+          <form
+            [formGroup]="categoryForm"
+            (ngSubmit)="saveCategory()"
+            class="category-form"
+          >
+
+            <!-- IDENTITY -->
+            <div class="form-section">
+              <div class="form-section-title">Identity</div>
+
+              <div class="form-grid form-grid-4">
+                <div class="form-group">
+                  <label>Category ID <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="id"
+                    placeholder="1"
+                    [readonly]="isEditCategory"
+                    [class.readonly]="isEditCategory"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched"
+                  >
+                    Required, must be &gt; 0.
+                  </div>
+                </div>
+
+                <div class="form-group span-2">
+                  <label>Category Name <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    formControlName="name"
+                    placeholder="e.g. Deluxe Double Room"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched"
+                  >
+                    Category name is required.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>View <span class="required">*</span></label>
+                  <select class="form-control" formControlName="viewType">
+                    <option value="">Select view</option>
+                    <option value="CITY">City</option>
+                    <option value="PANORAMIC">Panoramic</option>
+                    <option value="SEA">Sea</option>
+                    <option value="GARDEN">Garden</option>
+                    <option value="MOUNTAIN">Mountain</option>
+                    <option value="POOL">Pool</option>
+                    <option value="RIVER">River</option>
+                    <option value="LANDMARK">Landmark</option>
+                  </select>
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('viewType')?.invalid && categoryForm.get('viewType')?.touched"
+                  >
+                    Required.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROOM CONFIG -->
+            <div class="form-section">
+              <div class="form-section-title">Room Configuration</div>
+
+              <div class="form-grid form-grid-4">
+                <div class="form-group">
+                  <label>Bed Type <span class="required">*</span></label>
+                  <select class="form-control" formControlName="bedType">
+                    <option value="">Select bed type</option>
+                    <option value="SINGLE">Single</option>
+                    <option value="DOUBLE">Double</option>
+                    <option value="QUEEN">Queen</option>
+                    <option value="KING">King</option>
+                    <option value="TWIN">Twin</option>
+                  </select>
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('bedType')?.invalid && categoryForm.get('bedType')?.touched"
+                  >
+                    Required.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Beds <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="numBeds"
+                    min="1"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('numBeds')?.invalid && categoryForm.get('numBeds')?.touched"
+                  >
+                    Min 1.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>TVs <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="numTvs"
+                    min="0"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('numTvs')?.invalid && categoryForm.get('numTvs')?.touched"
+                  >
+                    Min 0.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Wi-Fi</label>
+                  <label class="checkbox-toggle">
+                    <input type="checkbox" formControlName="hasWifi" />
+                    <span class="checkbox-toggle-track">
+                      <span class="checkbox-toggle-thumb"></span>
+                    </span>
+                    <span class="checkbox-toggle-label">
+                      {{ categoryForm.get('hasWifi')?.value ? 'On' : 'Off' }}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- OCCUPANCY & PRICE -->
+            <div class="form-section">
+              <div class="form-section-title">Occupancy & Pricing</div>
+
+              <div class="form-grid form-grid-4">
+                <div class="form-group">
+                  <label>Max Adults <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="maxAdults"
+                    min="1"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('maxAdults')?.invalid && categoryForm.get('maxAdults')?.touched"
+                  >
+                    Min 1.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Max Kids <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="maxKids"
+                    min="0"
+                  />
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('maxKids')?.invalid && categoryForm.get('maxKids')?.touched"
+                  >
+                    Min 0.
+                  </div>
+                </div>
+
+                <div class="form-group span-2">
+                  <label>Price per Night <span class="required">*</span></label>
+                  <div class="price-input">
+                    <input
+                      type="number"
+                      class="form-control"
+                      formControlName="price"
+                      min="0"
+                      step="0.01"
+                    />
+                    <span>SAR</span>
+                  </div>
+                  <div
+                    class="error"
+                    *ngIf="categoryForm.get('price')?.invalid && categoryForm.get('price')?.touched"
+                  >
+                    Price is required and must be 0 or greater.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="form-section">
+              <div class="form-section-title">Description</div>
+
+              <div class="form-group">
+                <textarea
+                  class="form-control textarea"
+                  formControlName="description"
+                  rows="2"
+                  placeholder="Describe the category — amenities, size, what guests can expect..."
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- IMAGES -->
+            <div class="form-section">
+              <div class="form-section-title">Images</div>
+
+              <div class="gallery-input-row">
+                <input
+                  type="file"
+                  class="form-control file-input"
+                  accept="image/jpeg,image/png,image/webp,image/jpg"
+                  multiple
+                  (change)="onCategoryFilesSelected($event)"
+                />
+
+                <div class="image-processing" *ngIf="imageProcessing">
+                  Processing...
+                </div>
+              </div>
+
+              <div
+                class="image-gallery"
+                *ngIf="categoryGallery.length > 0"
+              >
+                <div
+                  class="gallery-item"
+                  *ngFor="let img of categoryGallery; let i = index"
+                  [class.primary]="img.isPrimary"
+                  [class.deleted]="img.markedForDeletion"
+                >
+                  <img [src]="img.previewUrl" [alt]="'Category image ' + (i + 1)" />
+
+                  <span
+                    class="primary-badge"
+                    *ngIf="img.isPrimary && !img.markedForDeletion"
+                  >PRIMARY</span>
+
+                  <span
+                    class="deleted-badge"
+                    *ngIf="img.markedForDeletion"
+                  >WILL BE DELETED</span>
+
+                  <div
+                    class="gallery-overlay"
+                    *ngIf="!img.markedForDeletion"
+                  >
+                    <button
+                      type="button"
+                      class="gallery-btn"
+                      title="Move left"
+                      [disabled]="i === 0"
+                      (click)="moveCategoryImageLeft(i)"
+                    >‹</button>
+
+                    <button
+                      type="button"
+                      class="gallery-btn star"
+                      [class.active]="img.isPrimary"
+                      title="Set as primary"
+                      (click)="setPrimaryCategoryImage(i)"
+                    >★</button>
+
+                    <button
+                      type="button"
+                      class="gallery-btn"
+                      title="Move right"
+                      [disabled]="i === categoryGallery.length - 1"
+                      (click)="moveCategoryImageRight(i)"
+                    >›</button>
+
+                    <button
+                      type="button"
+                      class="gallery-btn danger"
+                      title="Remove"
+                      (click)="removeCategoryImage(i)"
+                    >×</button>
+                  </div>
+
+                  <div
+                    class="gallery-overlay"
+                    *ngIf="img.markedForDeletion"
+                  >
+                    <button
+                      type="button"
+                      class="gallery-btn undo"
+                      title="Undo"
+                      (click)="undoRemoveCategoryImage(i)"
+                    >↺</button>
+                  </div>
+
+                  <div class="gallery-footer">
+                    <span>{{ i + 1 }} / {{ categoryGallery.length }}</span>
+                    <span *ngIf="img.file">{{ getFileSize(img.file) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ERROR -->
+            <div *ngIf="categoriesError" class="alert alert-danger">
+              {{ categoriesError }}
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="custom-modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="closeCategoryModal()"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="startNewCategory()"
+                *ngIf="isEditCategory"
+              >
+                Reset
+              </button>
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="categoryForm.invalid || categoriesLoading || imageProcessing"
+              >
+                {{
+                  categoriesLoading
+                    ? 'Saving...'
+                    : isEditCategory
+                      ? 'Save Changes'
+                      : 'Create Category'
+                }}
+              </button>
+            </div>
+
+          </form>
+
+        </section>
 
       </div>
 
     </div>
-
   </div>
-
 </div>

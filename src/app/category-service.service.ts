@@ -1,8 +1,21 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from './environment';
+
+// ============================================================
+// IMAGE DTO
+// (Swagger: ImageDto — used for room & category galleries)
+// ============================================================
+
+export interface ImageDto {
+  id: number;
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
 
 // ============================================================
 // ROOM CATEGORY
@@ -20,6 +33,7 @@ export interface RoomCategory {
   hasWifi: boolean;
   numTvs: number;
   imageUrl: string;
+  images?: ImageDto[];
   viewType?: string;
 }
 
@@ -28,6 +42,7 @@ export interface RoomCategory {
 // ============================================================
 
 export interface CreateCategoryRequest {
+  id: number;
   name: string;
   description?: string;
   price: number;
@@ -45,6 +60,7 @@ export interface CreateCategoryRequest {
 // ============================================================
 
 export interface UpdateCategoryRequest {
+  id: number;
   name: string;
   description?: string;
   price: number;
@@ -75,8 +91,8 @@ export interface DailyRateResponse {
 // ============================================================
 
 export interface BulkSetRatesItemRequest {
-  category: string;        // category name
-  startDate: string;       // yyyy-MM-dd
+  category: string;
+  startDate: string;
   endDate: string;
   price: number;
 }
@@ -88,6 +104,49 @@ export interface BulkSetRatesResponse {
   globalStartDate: string;
   globalEndDate: string;
   categoryDaysBreakdown: { [category: string]: number };
+}
+
+// ============================================================
+// BULK UPDATE INVENTORY
+// (Swagger: BulkUpdateInventoryItemRequest / Response)
+// POST /api/dashboard/front-desk/room-categories/inventory/all
+// ============================================================
+
+export interface BulkUpdateInventoryItemRequest {
+  category: string;
+  startDate: string;
+  endDate?: string;
+  totalRooms?: number;
+  bookedRooms?: number;
+  availableRooms?: number;
+}
+
+export interface BulkUpdateInventoryResponse {
+  totalDaysUpdated: number;
+  categoriesUpdated: number;
+  itemsProcessed: number;
+  globalStartDate?: string;
+  globalEndDate?: string;
+  categoryDaysBreakdown?: { [category: string]: number };
+}
+
+// ============================================================
+// RESET INVENTORY
+// (Swagger: ResetInventoryRequest)
+// ============================================================
+
+export interface ResetInventoryRequest {
+  startDate?: string;
+  endDate?: string;
+}
+
+// ============================================================
+// REORDER IMAGES
+// (Swagger: ReorderImagesRequest)
+// ============================================================
+
+export interface ReorderImagesRequest {
+  imageIds: number[];
 }
 
 // ============================================================
@@ -139,13 +198,84 @@ export class CategoryService {
   }
 
   // ==========================================================
-  // UPLOAD CATEGORY IMAGE
+  // UPLOAD CATEGORY IMAGE (legacy single-image endpoint)
   // ==========================================================
 
   uploadCategoryImage(id: number, file: File): Observable<RoomCategory> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<RoomCategory>(`${this.baseUrl}/${id}/image`, formData);
+  }
+
+  // ==========================================================
+  // GALLERY — UPLOAD IMAGE
+  // POST /room-categories/{id}/images?isPrimary=...&displayOrder=...
+  // ==========================================================
+
+  uploadRoomCategoryGalleryImage(
+    id: number,
+    file: File,
+    isPrimary: boolean = false,
+    displayOrder?: number
+  ): Observable<RoomCategory> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    let params = new HttpParams().set('isPrimary', String(isPrimary));
+    if (displayOrder !== undefined && displayOrder !== null) {
+      params = params.set('displayOrder', String(displayOrder));
+    }
+
+    return this.http.post<RoomCategory>(
+      `${this.baseUrl}/${id}/images`,
+      formData,
+      { params }
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — SET PRIMARY
+  // PUT /room-categories/{id}/images/{imageId}/primary
+  // ==========================================================
+
+  setRoomCategoryPrimaryImage(
+    id: number,
+    imageId: number
+  ): Observable<RoomCategory> {
+    return this.http.put<RoomCategory>(
+      `${this.baseUrl}/${id}/images/${imageId}/primary`,
+      {}
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — REORDER
+  // PUT /room-categories/{id}/images/reorder
+  // ==========================================================
+
+  reorderRoomCategoryImages(
+    id: number,
+    imageIds: number[]
+  ): Observable<RoomCategory> {
+    const body: ReorderImagesRequest = { imageIds };
+    return this.http.put<RoomCategory>(
+      `${this.baseUrl}/${id}/images/reorder`,
+      body
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — DELETE IMAGE
+  // DELETE /room-categories/{id}/images/{imageId}
+  // ==========================================================
+
+  deleteRoomCategoryImage(
+    id: number,
+    imageId: number
+  ): Observable<RoomCategory> {
+    return this.http.delete<RoomCategory>(
+      `${this.baseUrl}/${id}/images/${imageId}`
+    );
   }
 
   // ==========================================================
@@ -185,7 +315,8 @@ export class CategoryService {
   }
 
   // ==========================================================
-  // CLEAR RATES
+  // CLEAR RATES (single category, date range — required)
+  // DELETE /{id}/rates?from=...&to=...
   // ==========================================================
 
   clearRates(categoryId: number, from: string, to: string): Observable<any> {
@@ -204,6 +335,62 @@ export class CategoryService {
     return this.http.post<BulkSetRatesResponse>(
       `${this.baseUrl}/rates/all`,
       items
+    );
+  }
+
+  // ==========================================================
+  // BULK UPDATE INVENTORY
+  // POST /room-categories/inventory/all
+  // ==========================================================
+
+  updateInventoryBulk(
+    items: BulkUpdateInventoryItemRequest[]
+  ): Observable<BulkUpdateInventoryResponse> {
+    return this.http.post<BulkUpdateInventoryResponse>(
+      `${this.baseUrl}/inventory/all`,
+      items
+    );
+  }
+
+  // ==========================================================
+  // RESET CATEGORY INVENTORY
+  // POST /{id}/inventory/reset
+  // ==========================================================
+
+  resetCategoryInventory(
+    id: number,
+    startDate?: string,
+    endDate?: string
+  ): Observable<any> {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    const body: ResetInventoryRequest = {};
+    if (startDate) body.startDate = startDate;
+    if (endDate) body.endDate = endDate;
+
+    return this.http.post(
+      `${this.baseUrl}/${id}/inventory/reset`,
+      body,
+      { params }
+    );
+  }
+
+  // ==========================================================
+  // RESET ALL INVENTORY
+  // POST /inventory/reset-all
+  // ==========================================================
+
+  resetAllInventory(startDate?: string, endDate?: string): Observable<any> {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    return this.http.post(
+      `${this.baseUrl}/inventory/reset-all`,
+      null,
+      { params }
     );
   }
 }

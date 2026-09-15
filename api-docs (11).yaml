@@ -1,0 +1,3569 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /api/guest/stay/rating:
+    put:
+      tags:
+      - guest-controller
+      operationId: rateStay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RateStayRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/room-service/menu/{id}:
+    put:
+      tags:
+      - room-service-controller
+      operationId: updateMenuItem
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+    patch:
+      tags:
+      - room-service-controller
+      operationId: patchMenuItem
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/restaurant/menu/{id}:
+    put:
+      tags:
+      - restaurant-controller
+      operationId: updateMenuItem_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+    patch:
+      tags:
+      - restaurant-controller
+      operationId: patchMenuItem_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/manager/users/{id}:
+    put:
+      tags:
+      - manager-controller
+      operationId: updateUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+    delete:
+      tags:
+      - manager-controller
+      operationId: deleteUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+  /api/dashboard/manager/employees/{id}/status:
+    put:
+      tags:
+      - manager-controller
+      operationId: updateEmployeeStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEmployeeStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+  /api/dashboard/front-desk/special-offers/{id}:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getSpecialOffer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOfferResponse"
+    put:
+      tags:
+      - front-desk-controller
+      operationId: updateSpecialOffer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSpecialOfferRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOfferResponse"
+    patch:
+      tags:
+      - front-desk-controller
+      operationId: patchSpecialOffer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchSpecialOfferRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOfferResponse"
+  /api/dashboard/front-desk/rooms/{id}:
+    put:
+      tags:
+      - front-desk-controller
+      operationId: updateRoom
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoomRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+    patch:
+      tags:
+      - front-desk-controller
+      operationId: patchRoom
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchRoomRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+  /api/dashboard/front-desk/room-categories/{id}:
+    put:
+      tags:
+      - front-desk-controller
+      operationId: updateRoomCategory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoomCategoryRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomCategoryResponse"
+    delete:
+      tags:
+      - front-desk-controller
+      operationId: deleteRoomCategory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+  /api/dashboard/cafe/menu/{id}:
+    put:
+      tags:
+      - cafe-controller
+      operationId: updateMenuItem_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+    patch:
+      tags:
+      - cafe-controller
+      operationId: patchMenuItem_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/landing/reservation-requests:
+    post:
+      tags:
+      - landing-controller
+      operationId: submitReservationRequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitReservationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReservationRequestResponse"
+  /api/guest/orders:
+    get:
+      tags:
+      - guest-controller
+      operationId: getOrderHistory
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelOrderResponse"
+    post:
+      tags:
+      - guest-controller
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderResponse"
+  /api/guest/orders/{orderId}/cancel:
+    post:
+      tags:
+      - guest-controller
+      operationId: cancelOrder
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /api/guest/login:
+    post:
+      tags:
+      - guest-controller
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestLoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GuestLoginResponse"
+  /api/dashboard/room-service/menu:
+    post:
+      tags:
+      - room-service-controller
+      operationId: createMenuItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/room-service/menu/{id}/image:
+    post:
+      tags:
+      - room-service-controller
+      operationId: uploadMenuImage
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/restaurant/menu:
+    post:
+      tags:
+      - restaurant-controller
+      operationId: createMenuItem_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/restaurant/menu/{id}/image:
+    post:
+      tags:
+      - restaurant-controller
+      operationId: uploadMenuImage_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/manager/vips:
+    get:
+      tags:
+      - manager-controller
+      operationId: getVips
+      parameters:
+      - name: nationality
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelVipResponse"
+    post:
+      tags:
+      - manager-controller
+      operationId: createVip
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVipRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VipResponse"
+  /api/dashboard/manager/users:
+    get:
+      tags:
+      - manager-controller
+      operationId: getUsers
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelUserResponse"
+    post:
+      tags:
+      - manager-controller
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+  /api/dashboard/manager/employees:
+    get:
+      tags:
+      - manager-controller
+      operationId: getEmployees
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+      - name: department
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelEmployeeResponse"
+    post:
+      tags:
+      - manager-controller
+      operationId: createEmployee
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmployeeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+  /api/dashboard/front-desk/stays:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getStays
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - RESERVED
+          - ACTIVE
+          - CLOSED
+          - CANCELLED
+          - NO_SHOW
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelStayDetailsResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: createStay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStayRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/front-desk/stays/{stayId}/special-orders:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getSpecialOrdersForStay
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpecialOrderResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: createSpecialOrder
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSpecialOrderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOrderResponse"
+  /api/dashboard/front-desk/stays/{stayId}/extend:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: extendStay
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtendStayRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/front-desk/stays/{stayId}/checkout:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: checkOut
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/front-desk/stays/{stayId}/checkin:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: checkInStay
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/front-desk/special-orders/{id}/complete:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: completeSpecialOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOrderResponse"
+  /api/dashboard/front-desk/special-orders/{id}/cancel:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: cancelSpecialOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOrderResponse"
+  /api/dashboard/front-desk/special-offers:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getSpecialOffers
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelSpecialOfferResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: createSpecialOffer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSpecialOfferRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOfferResponse"
+  /api/dashboard/front-desk/special-offers/{id}/image:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: uploadSpecialOfferImage
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpecialOfferResponse"
+  /api/dashboard/front-desk/rooms:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getRooms
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - AVAILABLE
+          - OCCUPIED
+          - CLEANING
+          - MAINTENANCE
+      - name: floor
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelRoomResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: createRoom
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoomRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+  /api/dashboard/front-desk/rooms/{id}/image:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: uploadRoomImage
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+  /api/dashboard/front-desk/room-categories:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getRoomCategories
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomCategoryResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: createRoomCategory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoomCategoryRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomCategoryResponse"
+  /api/dashboard/front-desk/room-categories/{id}/rates:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getRates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyRateResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: setRates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetRatesRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+    delete:
+      tags:
+      - front-desk-controller
+      operationId: clearRates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/dashboard/front-desk/room-categories/{id}/image:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: uploadRoomCategoryImage
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomCategoryResponse"
+  /api/dashboard/front-desk/room-categories/rates/all:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getAllRates
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/DailyRateResponse"
+    post:
+      tags:
+      - front-desk-controller
+      operationId: setAllRates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BulkSetRatesItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BulkSetRatesResponse"
+  /api/dashboard/front-desk/reservation-requests/{id}/reject:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: rejectRequest
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectReservationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReservationRequestResponse"
+  /api/dashboard/front-desk/reservation-requests/{id}/approve:
+    post:
+      tags:
+      - front-desk-controller
+      operationId: approveRequest
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveReservationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReservationRequestResponse"
+  /api/dashboard/cafe/menu:
+    post:
+      tags:
+      - cafe-controller
+      operationId: createMenuItem_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/dashboard/cafe/menu/{id}/image:
+    post:
+      tags:
+      - cafe-controller
+      operationId: uploadMenuImage_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+  /api/auth/refresh:
+    post:
+      tags:
+      - auth-controller
+      operationId: refreshToken
+      parameters:
+      - name: refreshToken
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /api/auth/logout:
+    post:
+      tags:
+      - auth-controller
+      operationId: logout
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+  /api/auth/login:
+    post:
+      tags:
+      - auth-controller
+      operationId: login_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/ai/ask:
+    post:
+      tags:
+      - ai-agent-controller
+      operationId: askAgent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+  /api/admin/tenants:
+    get:
+      tags:
+      - tenant-admin-controller
+      operationId: getAllTenants
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelTenantResponse"
+    post:
+      tags:
+      - tenant-admin-controller
+      operationId: createNewHotel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTenantRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantResponse"
+  /api/dashboard/room-service/orders/{orderId}/status:
+    patch:
+      tags:
+      - room-service-controller
+      operationId: updateOrderStatus
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /api/dashboard/restaurant/orders/{orderId}/status:
+    patch:
+      tags:
+      - restaurant-controller
+      operationId: updateOrderStatus_1
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /api/dashboard/front-desk/stays/{stayId}/status:
+    patch:
+      tags:
+      - front-desk-controller
+      operationId: updateStayStatus
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStayStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/dashboard/cafe/orders/{orderId}/status:
+    patch:
+      tags:
+      - cafe-controller
+      operationId: updateOrderStatus_2
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /api/admin/tenants/{id}/deactivate:
+    patch:
+      tags:
+      - tenant-admin-controller
+      operationId: deactivateHotel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantResponse"
+  /api/admin/tenants/{id}/activate:
+    patch:
+      tags:
+      - tenant-admin-controller
+      operationId: activateHotel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantResponse"
+  /api/landing/special-offers:
+    get:
+      tags:
+      - landing-controller
+      operationId: getSpecialOffers_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpecialOfferResponse"
+  /api/landing/room-categories:
+    get:
+      tags:
+      - landing-controller
+      operationId: getRoomCategories_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomCategoryResponse"
+  /api/landing/ratings:
+    get:
+      tags:
+      - landing-controller
+      operationId: getRatings
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelRatingResponse"
+  /api/landing/menu:
+    get:
+      tags:
+      - landing-controller
+      operationId: getMenu
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelMenuItemResponse"
+  /api/landing/available-categories:
+    get:
+      tags:
+      - landing-controller
+      operationId: getAvailableCategories
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: adults
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: kids
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableCategoryResponse"
+  /api/guest/stays/special-orders:
+    get:
+      tags:
+      - guest-controller
+      operationId: getSpecialOrders
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpecialOrderResponse"
+  /api/guest/stay-details:
+    get:
+      tags:
+      - guest-controller
+      operationId: getStayDetails
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StayDetailsResponse"
+  /api/guest/special-offers:
+    get:
+      tags:
+      - guest-controller
+      operationId: getSpecialOffers_2
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelSpecialOfferResponse"
+  /api/guest/orders/{orderId}:
+    get:
+      tags:
+      - guest-controller
+      operationId: getOrderDetails
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /api/guest/menu:
+    get:
+      tags:
+      - guest-controller
+      operationId: getMenu_1
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelMenuItemResponse"
+  /api/events/subscribe:
+    get:
+      tags:
+      - event-controller
+      operationId: subscribe
+      parameters:
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+  /api/dashboard/room-service/stats:
+    get:
+      tags:
+      - room-service-controller
+      operationId: getStats
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DashboardStatsResponse"
+  /api/dashboard/room-service/pending-orders:
+    get:
+      tags:
+      - room-service-controller
+      operationId: getPendingOrders
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingOrdersResponse"
+  /api/dashboard/restaurant/stats:
+    get:
+      tags:
+      - restaurant-controller
+      operationId: getStats_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DashboardStatsResponse"
+  /api/dashboard/restaurant/pending-orders:
+    get:
+      tags:
+      - restaurant-controller
+      operationId: getPendingOrders_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingOrdersResponse"
+  /api/dashboard/manager/stays:
+    get:
+      tags:
+      - manager-controller
+      operationId: getStays_1
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - RESERVED
+          - ACTIVE
+          - CLOSED
+          - CANCELLED
+          - NO_SHOW
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelStayDetailsResponse"
+  /api/dashboard/manager/stays/{stayId}/summary:
+    get:
+      tags:
+      - manager-controller
+      operationId: getStaySummary
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FullStaySummaryResponse"
+  /api/dashboard/manager/stays/rated:
+    get:
+      tags:
+      - manager-controller
+      operationId: getRatedStays
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelStayDetailsResponse"
+  /api/dashboard/manager/special-orders:
+    get:
+      tags:
+      - manager-controller
+      operationId: getSpecialOrders_1
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelSpecialOrderResponse"
+  /api/dashboard/manager/overview:
+    get:
+      tags:
+      - manager-controller
+      operationId: getOverview
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ManagerOverviewResponse"
+  /api/dashboard/manager/occupancy:
+    get:
+      tags:
+      - manager-controller
+      operationId: getOccupancy
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OccupancyResponse"
+  /api/dashboard/front-desk/stays/{stayId}/summary:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getStaySummary_1
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FullStaySummaryResponse"
+  /api/dashboard/front-desk/stays/{stayId}/receipt:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getStayReceipt
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReceiptResponse"
+  /api/dashboard/front-desk/stays/{stayId}/orders:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getOrdersForStay
+      parameters:
+      - name: stayId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingOrdersResponse"
+  /api/dashboard/front-desk/stays/checkout-today:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getStaysCheckOutToday
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelStayDetailsResponse"
+  /api/dashboard/front-desk/stays/checkin-today:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getStaysCheckInToday
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelStayDetailsResponse"
+  /api/dashboard/front-desk/reservation-requests:
+    get:
+      tags:
+      - front-desk-controller
+      operationId: getRequests
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - EXPIRED
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagedModelReservationRequestResponse"
+  /api/dashboard/cafe/stats:
+    get:
+      tags:
+      - cafe-controller
+      operationId: getStats_2
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DashboardStatsResponse"
+  /api/dashboard/cafe/pending-orders:
+    get:
+      tags:
+      - cafe-controller
+      operationId: getPendingOrders_2
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingOrdersResponse"
+  /api/admin/tenants/{id}:
+    get:
+      tags:
+      - tenant-admin-controller
+      operationId: getTenantById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantResponse"
+    delete:
+      tags:
+      - tenant-admin-controller
+      operationId: deleteHotel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /api/dashboard/manager/vips/{id}:
+    delete:
+      tags:
+      - manager-controller
+      operationId: deleteVip
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+  /api/dashboard/manager/employees/{id}:
+    delete:
+      tags:
+      - manager-controller
+      operationId: deleteEmployee
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    RateStayRequest:
+      type: object
+      properties:
+        stars:
+          type: integer
+          format: int32
+          maximum: 5
+          minimum: 1
+        notes:
+          type: string
+      required:
+      - stars
+    StayDetailsResponse:
+      type: object
+      properties:
+        stayId:
+          type: integer
+          format: int64
+        expectedCheckInDate:
+          type: string
+        checkInTime:
+          type: string
+        expectedCheckOutDate:
+          type: string
+        checkOutTime:
+          type: string
+        status:
+          type: string
+        stars:
+          type: integer
+          format: int32
+        notes:
+          type: string
+        roomCharge:
+          type: number
+        totalCharge:
+          type: number
+        guestId:
+          type: integer
+          format: int64
+        guestName:
+          type: string
+        guestPhone:
+          type: string
+        email:
+          type: string
+        nationality:
+          type: string
+        identification:
+          type: string
+        roomId:
+          type: integer
+          format: int64
+        roomNumber:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        floor:
+          type: integer
+          format: int32
+        description:
+          type: string
+        maxAdults:
+          type: integer
+          format: int32
+        maxKids:
+          type: integer
+          format: int32
+        numAdults:
+          type: integer
+          format: int32
+        numKids:
+          type: integer
+          format: int32
+    UpdateMenuItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.0
+        available:
+          type: boolean
+        category:
+          type: string
+          enum:
+          - FOOD
+          - DRINK
+          - SERVICE
+      required:
+      - category
+      - name
+      - price
+    MenuItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        imageUrl:
+          type: string
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+        role:
+          type: string
+          minLength: 1
+          pattern: ^(MANAGER|CHEF|BARISTA|ROOM_SERVICE|STAFF)$
+      required:
+      - role
+      - username
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        role:
+          type: string
+    UpdateEmployeeStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+      required:
+      - status
+    EmployeeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        phone:
+          type: string
+        job:
+          type: string
+        department:
+          type: string
+        status:
+          type: string
+    UpdateSpecialOfferRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+      required:
+      - title
+    SpecialOfferResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+    UpdateRoomRequest:
+      type: object
+      properties:
+        roomNumber:
+          type: string
+          minLength: 1
+        categoryId:
+          type: integer
+          format: int64
+        floor:
+          type: integer
+          format: int32
+          minimum: 1
+        description:
+          type: string
+        status:
+          type: string
+          minLength: 1
+          pattern: ^(AVAILABLE|OCCUPIED|CLEANING|MAINTENANCE)$
+      required:
+      - categoryId
+      - roomNumber
+      - status
+    RoomResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        roomNumber:
+          type: string
+        status:
+          type: string
+        floor:
+          type: integer
+          format: int32
+        description:
+          type: string
+        imageUrl:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        price:
+          type: number
+        maxAdults:
+          type: integer
+          format: int32
+        maxKids:
+          type: integer
+          format: int32
+        numBeds:
+          type: integer
+          format: int32
+        bedType:
+          type: string
+          enum:
+          - TWIN
+          - DOUBLE
+          - QUEEN
+          - KING
+        hasWifi:
+          type: boolean
+        numTvs:
+          type: integer
+          format: int32
+    UpdateRoomCategoryRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.0
+        numBeds:
+          type: integer
+          format: int32
+          minimum: 1
+        bedType:
+          type: string
+          minLength: 1
+          pattern: ^(TWIN|DOUBLE|QUEEN|KING)$
+        maxAdults:
+          type: integer
+          format: int32
+          minimum: 1
+        maxKids:
+          type: integer
+          format: int32
+          minimum: 0
+        hasWifi:
+          type: boolean
+        numTvs:
+          type: integer
+          format: int32
+          minimum: 0
+        viewType:
+          type: string
+          minLength: 1
+          pattern: ^(CITY|PANAROMIC|SEA|GARDEN|MOUNTAIN|POOL|RIVER|LANDMARK)$
+      required:
+      - bedType
+      - hasWifi
+      - name
+      - numTvs
+      - price
+      - viewType
+    RoomCategoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        numBeds:
+          type: integer
+          format: int32
+        bedType:
+          type: string
+        maxAdults:
+          type: integer
+          format: int32
+        maxKids:
+          type: integer
+          format: int32
+        hasWifi:
+          type: boolean
+        numTvs:
+          type: integer
+          format: int32
+        viewType:
+          type: string
+          enum:
+          - CITY
+          - PANORAMIC
+          - SEA
+          - GARDEN
+          - MOUNTAIN
+          - POOL
+          - RIVER
+          - LANDMARK
+        imageUrl:
+          type: string
+    SubmitReservationRequest:
+      type: object
+      properties:
+        guestName:
+          type: string
+          minLength: 1
+        guestEmail:
+          type: string
+          format: email
+          minLength: 1
+        guestPhone:
+          type: string
+          minLength: 1
+        nationality:
+          type: string
+        identification:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        checkInDate:
+          type: string
+          format: date
+        checkOutDate:
+          type: string
+          format: date
+        numAdults:
+          type: integer
+          format: int32
+          minimum: 1
+        numKids:
+          type: integer
+          format: int32
+          minimum: 0
+        notes:
+          type: string
+      required:
+      - categoryId
+      - checkInDate
+      - checkOutDate
+      - guestEmail
+      - guestName
+      - guestPhone
+    ReservationRequestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+        guestPhone:
+          type: string
+        nationality:
+          type: string
+        identification:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        checkInDate:
+          type: string
+          format: date
+        checkOutDate:
+          type: string
+          format: date
+        numAdults:
+          type: integer
+          format: int32
+        numKids:
+          type: integer
+          format: int32
+        quotedTotalCharge:
+          type: number
+        status:
+          type: string
+        notes:
+          type: string
+        rejectionReason:
+          type: string
+        processedByUserId:
+          type: integer
+          format: int64
+        processedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    CreateOrderRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+          - FOOD
+          - DRINK
+          - SERVICE
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+          minItems: 1
+      required:
+      - category
+      - items
+    OrderItemRequest:
+      type: object
+      properties:
+        menuItemId:
+          type: integer
+          format: int64
+        quantity:
+          type: integer
+          format: int32
+        notes:
+          type: string
+      required:
+      - menuItemId
+      - quantity
+    OrderItemDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        menuItemId:
+          type: integer
+          format: int64
+        itemName:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+        unitPrice:
+          type: number
+        notes:
+          type: string
+    OrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+        roomNumber:
+          type: string
+        guestName:
+          type: string
+        category:
+          type: string
+        totalAmount:
+          type: number
+        status:
+          type: string
+        createdAt:
+          type: string
+        completedAt:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemDetailResponse"
+    GuestLoginRequest:
+      type: object
+      properties:
+        roomNumber:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+      required:
+      - phone
+      - roomNumber
+    GuestLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        roomNumber:
+          type: string
+        guestName:
+          type: string
+        stayId:
+          type: integer
+          format: int64
+        guestId:
+          type: integer
+          format: int64
+        expiresAt:
+          type: string
+          format: date-time
+        tokenType:
+          type: string
+    CreateMenuItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.0
+        available:
+          type: boolean
+      required:
+      - name
+      - price
+    CreateVipRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+        nationality:
+          type: string
+        notes:
+          type: string
+      required:
+      - fullName
+    VipResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        phone:
+          type: string
+        nationality:
+          type: string
+        notes:
+          type: string
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+          pattern: ^(MANAGER|CHEF|BARISTA|ROOM_SERVICE|STAFF|GUEST)$
+      required:
+      - password
+      - role
+      - username
+    CreateEmployeeRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        job:
+          type: string
+          minLength: 1
+        department:
+          type: string
+          minLength: 1
+      required:
+      - department
+      - fullName
+      - job
+      - phone
+    CreateStayRequest:
+      type: object
+      properties:
+        guestName:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        nationality:
+          type: string
+        identification:
+          type: string
+        roomNumber:
+          type: string
+          minLength: 1
+        numAdults:
+          type: integer
+          format: int32
+          minimum: 1
+        numKids:
+          type: integer
+          format: int32
+        expectedCheckInDate:
+          type: string
+          format: date
+        expectedCheckOutDate:
+          type: string
+          format: date
+        dateRangeValid:
+          type: boolean
+      required:
+      - expectedCheckInDate
+      - expectedCheckOutDate
+      - guestName
+      - phone
+      - roomNumber
+    CreateSpecialOrderRequest:
+      type: object
+      properties:
+        specialOfferId:
+          type: integer
+          format: int64
+        agreedPrice:
+          type: number
+      required:
+      - agreedPrice
+      - specialOfferId
+    SpecialOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        stayId:
+          type: integer
+          format: int64
+        specialOffer:
+          $ref: "#/components/schemas/SpecialOfferResponse"
+        agreedPrice:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+    ExtendStayRequest:
+      type: object
+      properties:
+        newCheckOutDate:
+          type: string
+          format: date
+      required:
+      - newCheckOutDate
+    CreateSpecialOfferRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+      required:
+      - title
+    CreateRoomRequest:
+      type: object
+      properties:
+        roomNumber:
+          type: string
+          minLength: 1
+        categoryId:
+          type: integer
+          format: int64
+        floor:
+          type: integer
+          format: int32
+          minimum: 1
+        description:
+          type: string
+      required:
+      - categoryId
+      - roomNumber
+    CreateRoomCategoryRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.0
+        numBeds:
+          type: integer
+          format: int32
+          minimum: 1
+        bedType:
+          type: string
+          minLength: 1
+          pattern: ^(TWIN|DOUBLE|QUEEN|KING)$
+        maxAdults:
+          type: integer
+          format: int32
+          minimum: 1
+        maxKids:
+          type: integer
+          format: int32
+          minimum: 0
+        hasWifi:
+          type: boolean
+        numTvs:
+          type: integer
+          format: int32
+          minimum: 0
+        viewType:
+          type: string
+          minLength: 1
+          pattern: ^(CITY|PANAROMIC|SEA|GARDEN|MOUNTAIN|POOL|RIVER|LANDMARK)$
+      required:
+      - bedType
+      - hasWifi
+      - id
+      - name
+      - numTvs
+      - price
+      - viewType
+    SetRatesRequest:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        price:
+          type: number
+          minimum: 0.0
+      required:
+      - endDate
+      - price
+      - startDate
+    BulkSetRatesItemRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          minLength: 1
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        price:
+          type: number
+          minimum: 0.01
+      required:
+      - category
+      - endDate
+      - price
+      - startDate
+    BulkSetRatesResponse:
+      type: object
+      properties:
+        totalDaysUpdated:
+          type: integer
+          format: int32
+        categoriesUpdated:
+          type: integer
+          format: int32
+        itemsProcessed:
+          type: integer
+          format: int32
+        globalStartDate:
+          type: string
+          format: date
+        globalEndDate:
+          type: string
+          format: date
+        categoryDaysBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+    RejectReservationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+      required:
+      - reason
+    ApproveReservationRequest:
+      type: object
+      properties:
+        roomId:
+          type: integer
+          format: int64
+      required:
+      - roomId
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        username:
+          type: string
+        tokenType:
+          type: string
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 50
+          minLength: 3
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+      required:
+      - password
+      - username
+    AgentRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          minLength: 1
+      required:
+      - query
+    AgentResponse:
+      type: object
+      properties:
+        textSummary:
+          type: string
+        showGraph:
+          type: boolean
+        graph:
+          $ref: "#/components/schemas/GraphData"
+    GraphData:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - BAR
+          - PIE
+          - LINE
+        title:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+        datasets:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphDataset"
+    GraphDataset:
+      type: object
+      properties:
+        label:
+          type: string
+        data:
+          type: array
+          items:
+            type: number
+            format: double
+    CreateTenantRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          maxLength: 50
+          minLength: 3
+          pattern: "^[a-z0-9_]+$"
+        name:
+          type: string
+          maxLength: 150
+          minLength: 2
+        schemaName:
+          type: string
+          maxLength: 50
+          minLength: 3
+          pattern: "^[a-z0-9_]+$"
+        timezone:
+          type: string
+          minLength: 1
+        managerUsername:
+          type: string
+          maxLength: 50
+          minLength: 3
+        managerPassword:
+          type: string
+          maxLength: 100
+          minLength: 6
+      required:
+      - id
+      - managerPassword
+      - managerUsername
+      - name
+      - schemaName
+      - timezone
+    TenantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        schemaName:
+          type: string
+        timezone:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    UpdateOrderStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - PENDING
+          - COMPLETED
+          - CANCELLED
+      required:
+      - status
+    PatchMenuItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.0
+        available:
+          type: boolean
+        category:
+          type: string
+          enum:
+          - FOOD
+          - DRINK
+          - SERVICE
+    UpdateStayStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - RESERVED
+          - ACTIVE
+          - CLOSED
+          - CANCELLED
+          - NO_SHOW
+      required:
+      - status
+    PatchSpecialOfferRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+    PatchRoomRequest:
+      type: object
+      properties:
+        roomNumber:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        floor:
+          type: integer
+          format: int32
+          minimum: 1
+        description:
+          type: string
+        status:
+          type: string
+          pattern: ^(AVAILABLE|OCCUPIED|CLEANING|MAINTENANCE)$
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageMetadata:
+      type: object
+      properties:
+        size:
+          type: integer
+          format: int64
+        number:
+          type: integer
+          format: int64
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int64
+    PagedModelRatingResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/RatingResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    RatingResponse:
+      type: object
+      properties:
+        guestName:
+          type: string
+        stars:
+          type: integer
+          format: int32
+        notes:
+          type: string
+        date:
+          type: string
+    PagedModelMenuItemResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/MenuItemResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    AvailableCategoryResponse:
+      type: object
+      properties:
+        category:
+          $ref: "#/components/schemas/RoomCategoryResponse"
+        avgRatePerNight:
+          type: number
+        totalRate:
+          type: number
+    PagedModelSpecialOfferResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpecialOfferResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    PagedModelOrderResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
+    DashboardStatsResponse:
+      type: object
+      properties:
+        totalOrders:
+          type: integer
+          format: int64
+        totalRevenue:
+          type: number
+        averageOrderValue:
+          type: number
+        averagePreparationTimeMinutes:
+          type: number
+          format: double
+        completedOrders:
+          type: integer
+          format: int64
+    PendingOrdersResponse:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+        roomNumber:
+          type: string
+        guestName:
+          type: string
+        category:
+          type: string
+        totalAmount:
+          type: number
+        orderStatus:
+          type: string
+        createdAt:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemDetailResponse"
+    PagedModelVipResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/VipResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    PagedModelUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    PagedModelStayDetailsResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/StayDetailsResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    FinancialSummary:
+      type: object
+      properties:
+        roomCharge:
+          type: number
+        regularOrdersTotal:
+          type: number
+        specialOrdersTotal:
+          type: number
+        grandTotal:
+          type: number
+    FullStaySummaryResponse:
+      type: object
+      properties:
+        stayDetails:
+          $ref: "#/components/schemas/StayDetailsResponse"
+        financialSummary:
+          $ref: "#/components/schemas/FinancialSummary"
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderResponse"
+        specialOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpecialOrderResponse"
+    PagedModelSpecialOrderResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpecialOrderResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    ManagerOverviewResponse:
+      type: object
+      properties:
+        totalPendingOrders:
+          type: integer
+          format: int64
+        totalOrdersCompletedToday:
+          type: integer
+          format: int64
+        totalRevenueToday:
+          type: number
+        totalRevenue:
+          type: number
+        totalClosedStays:
+          type: integer
+          format: int64
+        occupancyRate:
+          type: number
+          format: double
+        occupiedRooms:
+          type: integer
+          format: int64
+        totalRooms:
+          type: integer
+          format: int64
+        adr:
+          type: number
+        revPar:
+          type: number
+        totalRevenueThisMonth:
+          type: number
+        upcomingCheckIns:
+          type: integer
+          format: int64
+        upcomingCheckOuts:
+          type: integer
+          format: int64
+        currentGuests:
+          type: integer
+          format: int64
+        roomsOutOfService:
+          type: integer
+          format: int64
+        averageStayDays:
+          type: number
+          format: double
+        cancellationRate:
+          type: number
+          format: double
+        foodRevenue:
+          type: number
+        drinkRevenue:
+          type: number
+        serviceRevenue:
+          type: number
+        specialOrderRevenue:
+          type: number
+    OccupancyResponse:
+      type: object
+      properties:
+        totalRooms:
+          type: integer
+          format: int64
+        occupiedRooms:
+          type: integer
+          format: int64
+        availableRooms:
+          type: integer
+          format: int64
+        occupancyRate:
+          type: number
+    PagedModelEmployeeResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmployeeResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    ReceiptItem:
+      type: object
+      properties:
+        description:
+          type: string
+        amount:
+          type: number
+        date:
+          type: string
+    ReceiptResponse:
+      type: object
+      properties:
+        stayId:
+          type: integer
+          format: int64
+        guestName:
+          type: string
+        checkInTime:
+          type: string
+        checkOutTime:
+          type: string
+        roomNumber:
+          type: string
+        roomCharge:
+          type: number
+        menuOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceiptItem"
+        specialOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceiptItem"
+        totalCharge:
+          type: number
+    PagedModelRoomResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    DailyRateResponse:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        date:
+          type: string
+          format: date
+        price:
+          type: number
+        totalRooms:
+          type: integer
+          format: int32
+        bookedRooms:
+          type: integer
+          format: int32
+        availableRooms:
+          type: integer
+          format: int32
+        customRate:
+          type: boolean
+    PagedModelReservationRequestResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReservationRequestResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+    PagedModelTenantResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantResponse"
+        page:
+          $ref: "#/components/schemas/PageMetadata"

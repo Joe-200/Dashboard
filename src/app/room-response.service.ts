@@ -2,7 +2,25 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from './environment';
+
 // === DTOs (based on OpenAPI spec) ===
+
+// ============================================================
+// IMAGE DTO
+// (Swagger: ImageDto — used for room & category galleries)
+// ============================================================
+
+export interface ImageDto {
+  id: number;
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+
+// ============================================================
+// ROOM
+// ============================================================
 
 export interface RoomResponse {
   id: number;
@@ -12,6 +30,7 @@ export interface RoomResponse {
   viewType: string; // "CITY" | "PANORAMIC" | "SEA" | ...
   description: string;
   imageUrl: string;
+  images?: ImageDto[];
   categoryId: number;
   categoryName: string;
   price: number;
@@ -65,13 +84,26 @@ export interface Pageable {
   sort?: string[];
 }
 
+// ============================================================
+// GALLERY HELPERS
+// ============================================================
+
+export interface ReorderImagesRequest {
+  imageIds: number[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class RoomService {
-  private baseUrl = `${environment.apiUrl}/api/dashboard/front-desk/rooms`;
+
+  private baseUrl =
+    `${environment.apiUrl}/api/dashboard/front-desk/rooms`;
 
   constructor(private http: HttpClient) {}
 
-  // GET rooms with pagination and filters
+  // ==========================================================
+  // GET ROOMS (paginated + filters)
+  // ==========================================================
+
   getRooms(params: {
     pageable: Pageable;
     status?: string;
@@ -93,28 +125,118 @@ export class RoomService {
       httpParams = httpParams.set('floor', params.floor.toString());
     }
 
-    return this.http.get<PagedModelRoomResponse>(this.baseUrl, { params: httpParams });
+    return this.http.get<PagedModelRoomResponse>(
+      this.baseUrl,
+      { params: httpParams }
+    );
   }
 
-  // Create room
+  // ==========================================================
+  // CREATE ROOM
+  // ==========================================================
+
   createRoom(data: CreateRoomRequest): Observable<RoomResponse> {
     return this.http.post<RoomResponse>(this.baseUrl, data);
   }
 
-  // Update room (full update)
+  // ==========================================================
+  // UPDATE ROOM (full update)
+  // ==========================================================
+
   updateRoom(id: number, data: UpdateRoomRequest): Observable<RoomResponse> {
     return this.http.put<RoomResponse>(`${this.baseUrl}/${id}`, data);
   }
 
-  // Patch room (partial update)
+  // ==========================================================
+  // PATCH ROOM (partial update)
+  // ==========================================================
+
   patchRoom(id: number, data: PatchRoomRequest): Observable<RoomResponse> {
     return this.http.patch<RoomResponse>(`${this.baseUrl}/${id}`, data);
   }
 
-  // Upload image
+  // ==========================================================
+  // UPLOAD SINGLE ROOM IMAGE
+  // (legacy primary image endpoint)
+  // ==========================================================
+
   uploadImage(id: number, file: File): Observable<RoomResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<RoomResponse>(`${this.baseUrl}/${id}/image`, formData);
+    return this.http.post<RoomResponse>(
+      `${this.baseUrl}/${id}/image`,
+      formData
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — UPLOAD IMAGE
+  // POST /rooms/{id}/images?isPrimary=...&displayOrder=...
+  // ==========================================================
+
+  uploadRoomGalleryImage(
+    id: number,
+    file: File,
+    isPrimary: boolean = false,
+    displayOrder?: number
+  ): Observable<RoomResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    let params = new HttpParams().set('isPrimary', String(isPrimary));
+    if (displayOrder !== undefined && displayOrder !== null) {
+      params = params.set('displayOrder', String(displayOrder));
+    }
+
+    return this.http.post<RoomResponse>(
+      `${this.baseUrl}/${id}/images`,
+      formData,
+      { params }
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — SET PRIMARY
+  // PUT /rooms/{id}/images/{imageId}/primary
+  // ==========================================================
+
+  setRoomPrimaryImage(
+    id: number,
+    imageId: number
+  ): Observable<RoomResponse> {
+    return this.http.put<RoomResponse>(
+      `${this.baseUrl}/${id}/images/${imageId}/primary`,
+      {}
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — REORDER
+  // PUT /rooms/{id}/images/reorder
+  // ==========================================================
+
+  reorderRoomImages(
+    id: number,
+    imageIds: number[]
+  ): Observable<RoomResponse> {
+    const body: ReorderImagesRequest = { imageIds };
+    return this.http.put<RoomResponse>(
+      `${this.baseUrl}/${id}/images/reorder`,
+      body
+    );
+  }
+
+  // ==========================================================
+  // GALLERY — DELETE IMAGE
+  // DELETE /rooms/{id}/images/{imageId}
+  // ==========================================================
+
+  deleteRoomImage(
+    id: number,
+    imageId: number
+  ): Observable<RoomResponse> {
+    return this.http.delete<RoomResponse>(
+      `${this.baseUrl}/${id}/images/${imageId}`
+    );
   }
 }

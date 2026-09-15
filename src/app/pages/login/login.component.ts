@@ -15,7 +15,7 @@ export class LoginComponent {
   loginForm: FormGroup;
   isLoading = false;
   errorMessage = '';
-  showPassword = false; // 👈 controls password visibility
+  showPassword = false; 
 
   constructor(
     private fb: FormBuilder,

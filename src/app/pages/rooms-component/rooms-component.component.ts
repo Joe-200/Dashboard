@@ -1,12 +1,5 @@
-import {
-  Component,
-  OnInit
-} from '@angular/core';
-
-import {
-  CommonModule
-} from '@angular/common';
-
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -14,17 +7,15 @@ import {
   FormGroup,
   Validators
 } from '@angular/forms';
-
-import {
-  RouterModule
-} from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 import {
   RoomService,
   CreateRoomRequest,
   UpdateRoomRequest,
   Pageable,
-  RoomResponse
+  RoomResponse,
+  ImageDto
 } from '../../room-response.service';
 
 import {
@@ -34,21 +25,28 @@ import {
   UpdateCategoryRequest
 } from '../../category-service.service';
 
+/* =========================================================
+   GALLERY IMAGE
+========================================================= */
+interface GalleryImage {
+  id?: number;
+  file?: File;
+  previewUrl: string;
+  isPrimary: boolean;
+  isNew: boolean;
+  markedForDeletion?: boolean;
+}
 
 @Component({
   selector: 'app-rooms',
-
   standalone: true,
-
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule
   ],
-
   templateUrl: './rooms-component.component.html',
-
   styleUrl: './rooms-component.component.css'
 })
 export class RoomsComponent implements OnInit {
@@ -58,214 +56,119 @@ export class RoomsComponent implements OnInit {
   ========================================================= */
 
   rooms: RoomResponse[] = [];
-
   totalElements = 0;
-
   currentPage = 0;
-
   pageSize = 10;
-
   totalPages = 0;
-
   filterStatus = '';
-
   filterFloor: number | null = null;
-
+  searchTerm = '';
   loading = false;
-
   error = '';
-
 
   /* =========================================================
      ROOM MODAL
   ========================================================= */
 
   showRoomModal = false;
-
   isEditRoom = false;
-
   selectedRoomId: number | null = null;
-
   roomForm: FormGroup;
-
-  imageFile: File | null = null;
-
-  imagePreview: string | null = null;
-
-  imageUploading = false;
-
+  roomGallery: GalleryImage[] = [];
   imageProcessing = false;
-
 
   /* =========================================================
      CATEGORIES
   ========================================================= */
 
   categories: RoomCategory[] = [];
-
   categoriesLoading = false;
-
   categoriesError = '';
-
 
   /* =========================================================
      CATEGORY MODAL
   ========================================================= */
 
   showCategoryModal = false;
-
   isEditCategory = false;
-
   selectedCategoryId: number | null = null;
-
   categoryForm: FormGroup;
-
-  categoryImageFile: File | null = null;
-
-  categoryImagePreview: string | null = null;
-
+  categoryGallery: GalleryImage[] = [];
 
   constructor(
     private fb: FormBuilder,
-
     private roomService: RoomService,
-
     private categoryService: CategoryService
   ) {
 
     /* ROOM FORM */
 
     this.roomForm = this.fb.group({
-
-      roomNumber: [
-        '',
-        Validators.required
-      ],
-
-      categoryId: [
-        null,
-        [
-          Validators.required,
-          Validators.min(1)
-        ]
-      ],
-
-      floor: [
-        1,
-        [
-          Validators.required,
-          Validators.min(1)
-        ]
-      ],
-
-      viewType: [
-        '',
-        Validators.required
-      ],
-
-      description: [
-        ''
-      ],
-
-      status: [
-        'AVAILABLE'
-      ]
-
+      roomNumber: ['', Validators.required],
+      categoryId: [null, [Validators.required, Validators.min(1)]],
+      floor: [1, [Validators.required, Validators.min(1)]],
+      viewType: ['', Validators.required],
+      description: [''],
+      status: ['AVAILABLE']
     });
-
 
     /* CATEGORY FORM */
 
     this.categoryForm = this.fb.group({
-
-      name: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(100)
-        ]
-      ],
-
-      description: [
-        ''
-      ],
-
-      price: [
-        0,
-        [
-          Validators.required,
-          Validators.min(0)
-        ]
-      ],
-
-      numBeds: [
-        1,
-        [
-          Validators.required,
-          Validators.min(1)
-        ]
-      ],
-
-      bedType: [
-        '',
-        Validators.required
-      ],
-
-      maxAdults: [
-        1,
-        [
-          Validators.required,
-          Validators.min(1)
-        ]
-      ],
-
-      maxKids: [
-        0,
-        [
-          Validators.required,
-          Validators.min(0)
-        ]
-      ],
-
-      hasWifi: [
-        false
-      ],
-
-      numTvs: [
-        0,
-        [
-          Validators.required,
-          Validators.min(0)
-        ]
-      ],
-
-      viewType: [
-        '',
-        Validators.required
-      ]
-
+      id: [null, [Validators.required, Validators.min(1)]],
+      name: ['', [Validators.required, Validators.maxLength(100)]],
+      description: [''],
+      price: [0, [Validators.required, Validators.min(0)]],
+      numBeds: [1, [Validators.required, Validators.min(1)]],
+      bedType: ['', Validators.required],
+      maxAdults: [1, [Validators.required, Validators.min(1)]],
+      maxKids: [0, [Validators.required, Validators.min(0)]],
+      hasWifi: [false],
+      numTvs: [0, [Validators.required, Validators.min(0)]],
+      viewType: ['', Validators.required]
     });
-
   }
-
 
   ngOnInit(): void {
-
     this.loadRooms();
-
     this.loadCategories();
-
   }
 
+  /* =========================================================
+     SEARCH / FILTER
+  ========================================================= */
+
+  get filteredRooms(): RoomResponse[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.rooms;
+
+    return this.rooms.filter(room => {
+      return (
+        (room.roomNumber || '').toLowerCase().includes(term) ||
+        (room.categoryName || '').toLowerCase().includes(term) ||
+        (room.description || '').toLowerCase().includes(term) ||
+        (room.status || '').toLowerCase().includes(term) ||
+        (room.viewType || '').toLowerCase().includes(term) ||
+        String(room.id).includes(term) ||
+        String(room.floor).includes(term)
+      );
+    });
+  }
+
+  onSearchChange(): void {
+    // Client-side filtering; nothing to reload
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+  }
 
   /* =========================================================
-     ROOMS
+     ROOMS LOAD / PAGINATION
   ========================================================= */
 
   loadRooms(): void {
-
     this.loading = true;
-
     this.error = '';
 
     const pageable: Pageable = {
@@ -276,1273 +179,803 @@ export class RoomsComponent implements OnInit {
     this.roomService
       .getRooms({
         pageable,
-
-        status:
-          this.filterStatus ||
-          undefined,
-
-        floor:
-          this.filterFloor ||
-          undefined
+        status: this.filterStatus || undefined,
+        floor: this.filterFloor || undefined
       })
-
       .subscribe({
-
         next: (data) => {
-
-          this.rooms =
-            data.content || [];
-
-          this.totalElements =
-            data.page.totalElements;
-
-          this.totalPages =
-            data.page.totalPages;
-
+          this.rooms = data.content || [];
+          this.totalElements = data.page.totalElements;
+          this.totalPages = data.page.totalPages;
           this.loading = false;
-
         },
-
         error: (err) => {
-
           this.error =
             'Failed to load rooms: ' +
-            (err?.error?.message ||
-             err?.message ||
-             'Unknown error');
-
+            (err?.error?.message || err?.message || 'Unknown error');
           this.loading = false;
-
         }
-
       });
-
   }
-
 
   onFilterChange(): void {
-
     this.currentPage = 0;
-
     this.loadRooms();
-
   }
-
 
   onPageChange(page: number): void {
-
     this.currentPage = page;
-
     this.loadRooms();
-
   }
-
 
   /* =========================================================
      CREATE ROOM
   ========================================================= */
 
   openCreateRoomModal(): void {
-
     this.isEditRoom = false;
-
     this.selectedRoomId = null;
 
     this.roomForm.reset({
-
       roomNumber: '',
-
       categoryId: null,
-
       floor: 1,
-
       viewType: '',
-
       description: '',
-
       status: 'AVAILABLE'
-
     });
 
-    this.clearRoomImage();
-
+    this.clearRoomGallery();
     this.showRoomModal = true;
-
   }
-
 
   /* =========================================================
      EDIT ROOM
   ========================================================= */
 
-  openEditRoomModal(
-    room: RoomResponse
-  ): void {
-
+  openEditRoomModal(room: RoomResponse): void {
     this.isEditRoom = true;
-
     this.selectedRoomId = room.id;
 
     this.roomForm.patchValue({
-
-      roomNumber:
-        room.roomNumber,
-
-      categoryId:
-        room.categoryId,
-
-      floor:
-        room.floor,
-
-      viewType:
-        room.viewType || '',
-
-      description:
-        room.description || '',
-
-      status:
-        room.status
-
+      roomNumber: room.roomNumber,
+      categoryId: room.categoryId,
+      floor: room.floor,
+      viewType: room.viewType || '',
+      description: room.description || '',
+      status: room.status
     });
 
-    this.clearRoomImage();
+    this.clearRoomGallery();
+
+    if (room.images && room.images.length > 0) {
+      const sorted = [...room.images].sort(
+        (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      );
+      this.roomGallery = sorted.map(img => ({
+        id: img.id,
+        previewUrl: img.imageUrl,
+        isPrimary: img.isPrimary,
+        isNew: false
+      }));
+    } else if (room.imageUrl) {
+      this.roomGallery = [{
+        previewUrl: room.imageUrl,
+        isPrimary: true,
+        isNew: false
+      }];
+    }
 
     this.showRoomModal = true;
-
   }
-
 
   closeRoomModal(): void {
-
     this.showRoomModal = false;
-
-    this.clearRoomImage();
-
+    this.clearRoomGallery();
   }
-
 
   /* =========================================================
      SAVE ROOM
   ========================================================= */
 
-  saveRoom(): void {
-
+  async saveRoom(): Promise<void> {
     if (this.roomForm.invalid) {
-
       this.roomForm.markAllAsTouched();
-
       return;
-
     }
 
-    const formValue =
-      this.roomForm.value;
-
-    const selectedImage =
-      this.imageFile;
+    const formValue = this.roomForm.value;
 
     this.loading = true;
-
     this.error = '';
 
-
-    /* EDIT */
-
-    if (
-      this.isEditRoom &&
-      this.selectedRoomId
-    ) {
-
-      const roomId =
-        this.selectedRoomId;
-
-      const updateData:
-        UpdateRoomRequest = {
-
-        roomNumber:
-          formValue.roomNumber,
-
-        categoryId:
-          formValue.categoryId,
-
-        floor:
-          formValue.floor,
-
-        viewType:
-          formValue.viewType,
-
-        description:
-          formValue.description,
-
-        status:
-          formValue.status
-
-      };
-
-
-      this.roomService
-        .updateRoom(
-          roomId,
-          updateData
-        )
-
-        .subscribe({
-
-          next: () => {
-
-            if (!selectedImage) {
-
-              this.loading = false;
-
-              this.closeRoomModal();
-
-              this.loadRooms();
-
-              return;
-
-            }
-
-
-            this.uploadRoomImageAfterSave(
-              roomId,
-              selectedImage
-            );
-
-          },
-
-          error: (err) => {
-
-            this.loading = false;
-
-            this.error =
-              'Update failed: ' +
-              (
-                err?.error?.message ||
-                err?.message ||
-                'Unknown error'
-              );
-
-          }
-
-        });
-
-      return;
-
-    }
-
-
-    /* CREATE */
-
-    const createData:
-      CreateRoomRequest = {
-
-      roomNumber:
-        formValue.roomNumber,
-
-      categoryId:
-        formValue.categoryId,
-
-      floor:
-        formValue.floor,
-
-      viewType:
-        formValue.viewType,
-
-      description:
-        formValue.description
-
-    };
-
-
-    this.roomService
-      .createRoom(createData)
-
-      .subscribe({
-
-        next: (created) => {
-
-          if (!selectedImage) {
-
-            this.loading = false;
-
-            this.closeRoomModal();
-
-            this.loadRooms();
-
-            return;
-
-          }
-
-
-          this.uploadRoomImageAfterSave(
-            created.id,
-            selectedImage
-          );
-
-        },
-
-        error: (err) => {
-
-          this.loading = false;
-
-          this.error =
-            'Create failed: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
-        }
-
-      });
-
-  }
-
-
-  /* =========================================================
-     ROOM IMAGE UPLOAD
-  ========================================================= */
-
-  private uploadRoomImageAfterSave(
-    roomId: number,
-    file: File
-  ): void {
-
-    this.imageUploading = true;
-
-    this.roomService
-      .uploadImage(
-        roomId,
-        file
-      )
-
-      .subscribe({
-
-        next: () => {
-
-          this.imageUploading = false;
-
-          this.loading = false;
-
-          this.closeRoomModal();
-
-          this.loadRooms();
-
-        },
-
-        error: (err) => {
-
-          this.imageUploading = false;
-
-          this.loading = false;
-
-          this.error =
-            'Room saved, but image upload failed: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
-        }
-
-      });
-
-  }
-
-
-  /* =========================================================
-     ROOM FILE SELECTION
-  ========================================================= */
-
-  async onFileSelected(
-    event: Event
-  ): Promise<void> {
-
-    const input =
-      event.target as HTMLInputElement;
-
-    if (
-      !input.files ||
-      input.files.length === 0
-    ) {
-
-      return;
-
-    }
-
-    const originalFile =
-      input.files[0];
-
     try {
+      let roomId: number;
 
-      this.imageProcessing = true;
+      if (this.isEditRoom && this.selectedRoomId) {
+        roomId = this.selectedRoomId;
 
-      this.error = '';
+        const updateData: UpdateRoomRequest = {
+          roomNumber: formValue.roomNumber,
+          categoryId: formValue.categoryId,
+          floor: formValue.floor,
+          viewType: formValue.viewType,
+          description: formValue.description,
+          status: formValue.status
+        };
 
-      const compressedFile =
-        await this.compressToWebP(
-          originalFile,
-          1600,
-          1200,
-          0.82
-        );
+        await this.roomService.updateRoom(roomId, updateData).toPromise();
+      } else {
+        const createData: CreateRoomRequest = {
+          roomNumber: formValue.roomNumber,
+          categoryId: formValue.categoryId,
+          floor: formValue.floor,
+          viewType: formValue.viewType,
+          description: formValue.description
+        };
 
-      this.imageFile =
-        compressedFile;
+        const created = await this.roomService
+          .createRoom(createData)
+          .toPromise();
 
+        if (!created) {
+          throw new Error('Room creation returned no data.');
+        }
 
-      if (this.imagePreview) {
-
-        URL.revokeObjectURL(
-          this.imagePreview
-        );
-
+        roomId = created.id;
       }
 
+      await this.syncRoomGallery(roomId);
 
-      this.imagePreview =
-        URL.createObjectURL(
-          compressedFile
-        );
-
-    }
-
-    catch (err) {
-
-      console.error(
-        'Image processing failed:',
-        err
-      );
-
-      this.imageFile = null;
-
-      this.imagePreview = null;
-
+      this.loading = false;
+      this.closeRoomModal();
+      this.loadRooms();
+    } catch (err: any) {
+      this.loading = false;
       this.error =
-        'Could not process the image.';
-
+        'Save failed: ' +
+        (err?.error?.message || err?.message || 'Unknown error');
     }
-
-    finally {
-
-      this.imageProcessing = false;
-
-      input.value = '';
-
-    }
-
   }
 
+  /* =========================================================
+     SYNC ROOM GALLERY
+  ========================================================= */
+
+  private async syncRoomGallery(roomId: number): Promise<void> {
+    const gallery = this.roomGallery;
+    const finalList = gallery.filter(img => !img.markedForDeletion);
+
+    for (const img of gallery) {
+      if (img.markedForDeletion && img.id) {
+        try {
+          await this.roomService.deleteRoomImage(roomId, img.id).toPromise();
+        } catch (err) {
+          console.warn('Failed to delete image', img.id, err);
+        }
+      }
+    }
+
+    const knownIds = new Set(
+      finalList
+        .filter(i => !i.isNew && i.id)
+        .map(i => i.id as number)
+    );
+
+    for (const img of finalList) {
+      if (img.isNew && img.file) {
+        try {
+          const resp = await this.roomService
+            .uploadRoomGalleryImage(roomId, img.file)
+            .toPromise();
+
+          if (resp?.images) {
+            const newImg = resp.images.find(i => !knownIds.has(i.id));
+            if (newImg) {
+              img.id = newImg.id;
+              knownIds.add(newImg.id);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to upload image', img.file.name, err);
+        }
+      }
+    }
+
+    const orderedIds = finalList
+      .map(i => i.id)
+      .filter((id): id is number => id !== undefined && id !== null);
+
+    if (orderedIds.length > 1) {
+      try {
+        await this.roomService
+          .reorderRoomImages(roomId, orderedIds)
+          .toPromise();
+      } catch (err) {
+        console.warn('Failed to reorder images', err);
+      }
+    }
+
+    const primary = finalList.find(i => i.isPrimary);
+    if (primary?.id) {
+      try {
+        await this.roomService
+          .setRoomPrimaryImage(roomId, primary.id)
+          .toPromise();
+      } catch (err) {
+        console.warn('Failed to set primary image', err);
+      }
+    }
+  }
 
   /* =========================================================
-     WEBP COMPRESSION
+     ROOM GALLERY – FILE PICKER
+  ========================================================= */
+
+  async onRoomFilesSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    this.imageProcessing = true;
+    this.error = '';
+
+    try {
+      for (const file of files) {
+        const compressed = await this.compressToWebP(file, 1600, 1200, 0.82);
+        const previewUrl = URL.createObjectURL(compressed);
+
+        this.roomGallery.push({
+          file: compressed,
+          previewUrl,
+          isPrimary: this.roomGallery.length === 0,
+          isNew: true
+        });
+      }
+    } catch (err) {
+      console.error('Room image processing failed:', err);
+      this.error = 'Could not process one or more images.';
+    } finally {
+      this.imageProcessing = false;
+      input.value = '';
+    }
+  }
+
+  /* =========================================================
+     ROOM GALLERY – ACTIONS
+  ========================================================= */
+
+  setPrimaryRoomImage(index: number): void {
+    this.roomGallery = this.roomGallery.map((img, i) => ({
+      ...img,
+      isPrimary: i === index
+    }));
+  }
+
+  moveRoomImageLeft(index: number): void {
+    if (index <= 0) return;
+    const arr = [...this.roomGallery];
+    [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+    this.roomGallery = arr;
+  }
+
+  moveRoomImageRight(index: number): void {
+    if (index >= this.roomGallery.length - 1) return;
+    const arr = [...this.roomGallery];
+    [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+    this.roomGallery = arr;
+  }
+
+  removeRoomImage(index: number): void {
+    const img = this.roomGallery[index];
+    if (!img) return;
+
+    if (img.isNew && img.previewUrl) {
+      URL.revokeObjectURL(img.previewUrl);
+      const arr = [...this.roomGallery];
+      arr.splice(index, 1);
+      if (img.isPrimary && arr.length > 0) {
+        arr[0].isPrimary = true;
+      }
+      this.roomGallery = arr;
+    } else {
+      const arr = [...this.roomGallery];
+      arr[index] = { ...arr[index], markedForDeletion: true };
+      if (img.isPrimary) {
+        const nextPrimary = arr.find(i => !i.markedForDeletion);
+        if (nextPrimary) nextPrimary.isPrimary = true;
+      }
+      this.roomGallery = arr;
+    }
+  }
+
+  undoRemoveRoomImage(index: number): void {
+    const arr = [...this.roomGallery];
+    if (arr[index]) {
+      arr[index] = { ...arr[index], markedForDeletion: false };
+      this.roomGallery = arr;
+    }
+  }
+
+  clearRoomGallery(): void {
+    for (const img of this.roomGallery) {
+      if (img.isNew && img.previewUrl) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    }
+    this.roomGallery = [];
+  }
+
+  /* =========================================================
+     IMAGE COMPRESSION (WebP)
   ========================================================= */
 
   private async compressToWebP(
     file: File,
-
     maxWidth = 1600,
-
     maxHeight = 1200,
-
     quality = 0.82
-
   ): Promise<File> {
-
-    const image =
-      new Image();
-
-    const objectUrl =
-      URL.createObjectURL(file);
-
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
 
     try {
+      image.src = objectUrl;
 
-      image.src =
-        objectUrl;
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('Could not read image'));
+      });
 
+      let width = image.naturalWidth;
+      let height = image.naturalHeight;
 
-      await new Promise<void>(
-        (resolve, reject) => {
+      if (!width || !height) throw new Error('Invalid image dimensions');
 
-          image.onload = () =>
-            resolve();
+      const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
 
-          image.onerror = () =>
-            reject(
-              new Error(
-                'Could not read image'
-              )
-            );
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
 
-        }
-      );
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not create canvas');
 
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(image, 0, 0, width, height);
 
-      let width =
-        image.naturalWidth;
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/webp', quality);
+      });
 
-      let height =
-        image.naturalHeight;
-
-
-      if (
-        !width ||
-        !height
-      ) {
-
-        throw new Error(
-          'Invalid image dimensions'
-        );
-
-      }
-
-
-      const scale =
-        Math.min(
-          maxWidth / width,
-          maxHeight / height,
-          1
-        );
-
-
-      width =
-        Math.round(
-          width * scale
-        );
-
-      height =
-        Math.round(
-          height * scale
-        );
-
-
-      const canvas =
-        document.createElement(
-          'canvas'
-        );
-
-      canvas.width =
-        width;
-
-      canvas.height =
-        height;
-
-
-      const ctx =
-        canvas.getContext(
-          '2d'
-        );
-
-
-      if (!ctx) {
-
-        throw new Error(
-          'Could not create canvas'
-        );
-
-      }
-
-
-      ctx.imageSmoothingEnabled =
-        true;
-
-      ctx.imageSmoothingQuality =
-        'high';
-
-
-      ctx.drawImage(
-        image,
-        0,
-        0,
-        width,
-        height
-      );
-
-
-      const blob =
-        await new Promise<Blob | null>(
-          (resolve) => {
-
-            canvas.toBlob(
-              resolve,
-              'image/webp',
-              quality
-            );
-
-          }
-        );
-
-
-      if (!blob) {
-
-        throw new Error(
-          'Could not convert image to WebP'
-        );
-
-      }
-
+      if (!blob) throw new Error('Could not convert image to WebP');
 
       const newFileName =
-        file.name.replace(
-          /\.[^/.]+$/,
-          ''
-        ) + '.webp';
+        file.name.replace(/\.[^/.]+$/, '') + '.webp';
 
-
-      return new File(
-        [blob],
-        newFileName,
-        {
-          type: 'image/webp',
-
-          lastModified:
-            Date.now()
-        }
-      );
-
+      return new File([blob], newFileName, {
+        type: 'image/webp',
+        lastModified: Date.now()
+      });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
     }
-
-    finally {
-
-      URL.revokeObjectURL(
-        objectUrl
-      );
-
-    }
-
   }
 
-
-  clearRoomImage(): void {
-
-    if (this.imagePreview) {
-
-      URL.revokeObjectURL(
-        this.imagePreview
-      );
-
-    }
-
-    this.imageFile = null;
-
-    this.imagePreview = null;
-
-    this.imageProcessing = false;
-
-  }
-
-
-  getFileSize(
-    file: File | null
-  ): string {
-
-    if (!file) {
-      return '';
-    }
-
-    const mb =
-      file.size /
-      1024 /
-      1024;
-
+  getFileSize(file: File | null | undefined): string {
+    if (!file) return '';
+    const mb = file.size / 1024 / 1024;
     return `${mb.toFixed(2)} MB`;
-
   }
-
 
   /* =========================================================
      CATEGORIES
   ========================================================= */
 
   loadCategories(): void {
-
     this.categoriesLoading = true;
-
     this.categoriesError = '';
 
-    this.categoryService
-      .getCategories()
-
-      .subscribe({
-
-        next: (data) => {
-
-          this.categories =
-            data || [];
-
-          this.categoriesLoading = false;
-
-        },
-
-        error: (err) => {
-
-          this.categoriesError =
-            'Failed to load categories: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
-          this.categoriesLoading = false;
-
-        }
-
-      });
-
+    this.categoryService.getCategories().subscribe({
+      next: (data) => {
+        this.categories = data || [];
+        this.categoriesLoading = false;
+      },
+      error: (err) => {
+        this.categoriesError =
+          'Failed to load categories: ' +
+          (err?.error?.message || err?.message || 'Unknown error');
+        this.categoriesLoading = false;
+      }
+    });
   }
 
-
   /* =========================================================
-     CREATE CATEGORY
+     CATEGORY MODAL – ENTRY POINTS
+     The modal now hosts a two-pane layout (list + form).
+     `startNewCategory` resets the right pane to "create" mode.
+     `openEditCategoryModal` loads a category into the right pane.
   ========================================================= */
 
+  /** Opens the modal in "new category" mode (right pane). */
   openCreateCategoryModal(): void {
+    this.startNewCategory();
+    this.showCategoryModal = true;
+  }
 
+  /** Resets the right pane to create mode (without toggling the modal). */
+  startNewCategory(): void {
     this.isEditCategory = false;
-
     this.selectedCategoryId = null;
 
     this.categoryForm.reset({
-
+      id: null,
       name: '',
-
       description: '',
-
       price: 0,
-
       numBeds: 1,
-
       bedType: '',
-
       maxAdults: 1,
-
       maxKids: 0,
-
       hasWifi: false,
-
       numTvs: 0,
-
       viewType: ''
-
     });
 
-    this.clearCategoryImage();
-
-    this.showCategoryModal = true;
-
+    this.clearCategoryGallery();
+    this.categoriesError = '';
   }
 
-
-  /* =========================================================
-     EDIT CATEGORY
-  ========================================================= */
-
-  openEditCategoryModal(
-    category: RoomCategory
-  ): void {
-
+  /** Loads the selected category into the right pane for editing. */
+  openEditCategoryModal(category: RoomCategory): void {
     this.isEditCategory = true;
-
-    this.selectedCategoryId =
-      category.id;
+    this.selectedCategoryId = category.id;
 
     this.categoryForm.patchValue({
-
-      name:
-        category.name,
-
-      description:
-        category.description || '',
-
-      price:
-        category.price,
-
-      numBeds:
-        category.numBeds,
-
-      bedType:
-        category.bedType,
-
-      maxAdults:
-        category.maxAdults,
-
-      maxKids:
-        category.maxKids,
-
-      hasWifi:
-        category.hasWifi,
-
-      numTvs:
-        category.numTvs,
-
-      viewType:
-        category.viewType || ''
-
+      id: category.id,
+      name: category.name,
+      description: category.description || '',
+      price: category.price,
+      numBeds: category.numBeds,
+      bedType: category.bedType,
+      maxAdults: category.maxAdults,
+      maxKids: category.maxKids,
+      hasWifi: category.hasWifi,
+      numTvs: category.numTvs,
+      viewType: category.viewType || ''
     });
 
-    this.clearCategoryImage();
+    this.clearCategoryGallery();
 
-    /*
-     * Show the existing category image
-     * while editing.
-     */
-    if (category.imageUrl) {
-
-      this.categoryImagePreview =
-        category.imageUrl;
-
+    if (category.images && category.images.length > 0) {
+      const sorted = [...category.images].sort(
+        (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      );
+      this.categoryGallery = sorted.map(img => ({
+        id: img.id,
+        previewUrl: img.imageUrl,
+        isPrimary: img.isPrimary,
+        isNew: false
+      }));
+    } else if (category.imageUrl) {
+      this.categoryGallery = [{
+        previewUrl: category.imageUrl,
+        isPrimary: true,
+        isNew: false
+      }];
     }
 
     this.showCategoryModal = true;
-
+    this.categoriesError = '';
   }
-
 
   closeCategoryModal(): void {
-
     this.showCategoryModal = false;
-
-    this.clearCategoryImage();
-
+    this.clearCategoryGallery();
   }
-
 
   /* =========================================================
      SAVE CATEGORY
   ========================================================= */
 
-  saveCategory(): void {
-
+  async saveCategory(): Promise<void> {
     if (this.categoryForm.invalid) {
-
       this.categoryForm.markAllAsTouched();
-
       return;
-
     }
 
-    const formValue =
-      this.categoryForm.value;
-
-    const selectedImage =
-      this.categoryImageFile;
+    const formValue = this.categoryForm.value;
 
     this.categoriesLoading = true;
-
     this.categoriesError = '';
 
-
-    /* EDIT */
-
-    if (
-      this.isEditCategory &&
-      this.selectedCategoryId
-    ) {
-
-      const categoryId =
-        this.selectedCategoryId;
-
-      const updateData:
-        UpdateCategoryRequest = {
-
-        ...formValue
-
-      };
-
-
-      this.categoryService
-        .updateCategory(
-          categoryId,
-          updateData
-        )
-
-        .subscribe({
-
-          next: () => {
-
-            if (!selectedImage) {
-
-              this.categoriesLoading = false;
-
-              this.closeCategoryModal();
-
-              this.loadCategories();
-
-              return;
-
-            }
-
-
-            this.uploadCategoryImageAfterSave(
-              categoryId,
-              selectedImage
-            );
-
-          },
-
-          error: (err) => {
-
-            this.categoriesLoading = false;
-
-            this.categoriesError =
-              'Update failed: ' +
-              (
-                err?.error?.message ||
-                err?.message ||
-                'Unknown error'
-              );
-
-          }
-
-        });
-
-      return;
-
-    }
-
-
-    /* CREATE */
-
-    const createData:
-      CreateCategoryRequest = {
-
-      ...formValue
-
-    };
-
-
-    this.categoryService
-      .createCategory(createData)
-
-      .subscribe({
-
-        next: (created) => {
-
-          if (!selectedImage) {
-
-            this.categoriesLoading = false;
-
-            this.loadCategories();
-
-            return;
-
-          }
-
-
-          this.uploadCategoryImageAfterSave(
-            created.id,
-            selectedImage
-          );
-
-        },
-
-        error: (err) => {
-
-          this.categoriesLoading = false;
-
-          this.categoriesError =
-            'Create failed: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
-        }
-
-      });
-
-  }
-
-
-  /* =========================================================
-     CATEGORY IMAGE UPLOAD
-  ========================================================= */
-
-  private uploadCategoryImageAfterSave(
-    categoryId: number,
-    file: File
-  ): void {
-
-    this.categoryService
-      .uploadCategoryImage(
-        categoryId,
-        file
-      )
-
-      .subscribe({
-
-        next: () => {
-
-          this.categoriesLoading = false;
-
-          this.clearCategoryImage();
-
-          this.loadCategories();
-
-          this.showCategoryModal = true;
-
-        },
-
-        error: (err) => {
-
-          this.categoriesLoading = false;
-
-          this.categoriesError =
-            'Category saved, but image upload failed: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
-        }
-
-      });
-
-  }
-
-
-  /* =========================================================
-     CATEGORY FILE SELECTION
-  ========================================================= */
-
-  async onCategoryFileSelected(
-    event: Event
-  ): Promise<void> {
-
-    const input =
-      event.target as HTMLInputElement;
-
-    if (
-      !input.files ||
-      input.files.length === 0
-    ) {
-
-      return;
-
-    }
-
-    const originalFile =
-      input.files[0];
-
     try {
+      let categoryId: number;
 
-      this.imageProcessing = true;
+      if (this.isEditCategory && this.selectedCategoryId) {
+        categoryId = this.selectedCategoryId;
 
-      const compressedFile =
-        await this.compressToWebP(
-          originalFile,
-          1600,
-          1200,
-          0.82
-        );
+        const updateData: UpdateCategoryRequest = {
+          id: formValue.id,
+          name: formValue.name,
+          description: formValue.description,
+          price: formValue.price,
+          numBeds: formValue.numBeds,
+          bedType: formValue.bedType,
+          maxAdults: formValue.maxAdults,
+          maxKids: formValue.maxKids,
+          hasWifi: formValue.hasWifi,
+          numTvs: formValue.numTvs,
+          viewType: formValue.viewType
+        };
 
-      this.categoryImageFile =
-        compressedFile;
+        await this.categoryService
+          .updateCategory(categoryId, updateData)
+          .toPromise();
+      } else {
+        const createData: CreateCategoryRequest = {
+          id: formValue.id,
+          name: formValue.name,
+          description: formValue.description,
+          price: formValue.price,
+          numBeds: formValue.numBeds,
+          bedType: formValue.bedType,
+          maxAdults: formValue.maxAdults,
+          maxKids: formValue.maxKids,
+          hasWifi: formValue.hasWifi,
+          numTvs: formValue.numTvs,
+          viewType: formValue.viewType
+        };
 
+        const created = await this.categoryService
+          .createCategory(createData)
+          .toPromise();
 
-      if (
-        this.categoryImagePreview &&
-        !this.categoryImagePreview.startsWith('http')
-      ) {
+        if (!created) {
+          throw new Error('Category creation returned no data.');
+        }
 
-        URL.revokeObjectURL(
-          this.categoryImagePreview
-        );
-
+        categoryId = created.id;
       }
 
+      await this.syncCategoryGallery(categoryId);
 
-      this.categoryImagePreview =
-        URL.createObjectURL(
-          compressedFile
-        );
-
-    }
-
-    catch (err) {
-
-      console.error(
-        'Category image processing failed:',
-        err
-      );
-
-      this.categoryImageFile = null;
-
-      this.categoryImagePreview = null;
-
+      this.categoriesLoading = false;
+      this.closeCategoryModal();
+      this.loadCategories();
+      this.loadRooms();
+    } catch (err: any) {
+      this.categoriesLoading = false;
       this.categoriesError =
-        'Could not process the category image.';
+        'Save failed: ' +
+        (err?.error?.message || err?.message || 'Unknown error');
+    }
+  }
 
+  /* =========================================================
+     SYNC CATEGORY GALLERY
+  ========================================================= */
+
+  private async syncCategoryGallery(categoryId: number): Promise<void> {
+    const gallery = this.categoryGallery;
+    const finalList = gallery.filter(img => !img.markedForDeletion);
+
+    for (const img of gallery) {
+      if (img.markedForDeletion && img.id) {
+        try {
+          await this.categoryService
+            .deleteRoomCategoryImage(categoryId, img.id)
+            .toPromise();
+        } catch (err) {
+          console.warn('Failed to delete category image', img.id, err);
+        }
+      }
     }
 
-    finally {
+    const knownIds = new Set(
+      finalList
+        .filter(i => !i.isNew && i.id)
+        .map(i => i.id as number)
+    );
 
+    for (const img of finalList) {
+      if (img.isNew && img.file) {
+        try {
+          const resp = await this.categoryService
+            .uploadRoomCategoryGalleryImage(categoryId, img.file)
+            .toPromise();
+
+          if (resp?.images) {
+            const newImg = resp.images.find(i => !knownIds.has(i.id));
+            if (newImg) {
+              img.id = newImg.id;
+              knownIds.add(newImg.id);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to upload category image', img.file.name, err);
+        }
+      }
+    }
+
+    const orderedIds = finalList
+      .map(i => i.id)
+      .filter((id): id is number => id !== undefined && id !== null);
+
+    if (orderedIds.length > 1) {
+      try {
+        await this.categoryService
+          .reorderRoomCategoryImages(categoryId, orderedIds)
+          .toPromise();
+      } catch (err) {
+        console.warn('Failed to reorder category images', err);
+      }
+    }
+
+    const primary = finalList.find(i => i.isPrimary);
+    if (primary?.id) {
+      try {
+        await this.categoryService
+          .setRoomCategoryPrimaryImage(categoryId, primary.id)
+          .toPromise();
+      } catch (err) {
+        console.warn('Failed to set primary category image', err);
+      }
+    }
+  }
+
+  /* =========================================================
+     CATEGORY GALLERY – FILE PICKER & ACTIONS
+  ========================================================= */
+
+  async onCategoryFilesSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    this.imageProcessing = true;
+    this.categoriesError = '';
+
+    try {
+      for (const file of files) {
+        const compressed = await this.compressToWebP(file, 1600, 1200, 0.82);
+        const previewUrl = URL.createObjectURL(compressed);
+
+        this.categoryGallery.push({
+          file: compressed,
+          previewUrl,
+          isPrimary: this.categoryGallery.length === 0,
+          isNew: true
+        });
+      }
+    } catch (err) {
+      console.error('Category image processing failed:', err);
+      this.categoriesError = 'Could not process one or more category images.';
+    } finally {
       this.imageProcessing = false;
-
       input.value = '';
-
     }
-
   }
 
-
-  clearCategoryImage(): void {
-
-    if (
-      this.categoryImagePreview &&
-      !this.categoryImagePreview.startsWith('http')
-    ) {
-
-      URL.revokeObjectURL(
-        this.categoryImagePreview
-      );
-
-    }
-
-    this.categoryImageFile = null;
-
-    this.categoryImagePreview = null;
-
+  setPrimaryCategoryImage(index: number): void {
+    this.categoryGallery = this.categoryGallery.map((img, i) => ({
+      ...img,
+      isPrimary: i === index
+    }));
   }
 
+  moveCategoryImageLeft(index: number): void {
+    if (index <= 0) return;
+    const arr = [...this.categoryGallery];
+    [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+    this.categoryGallery = arr;
+  }
+
+  moveCategoryImageRight(index: number): void {
+    if (index >= this.categoryGallery.length - 1) return;
+    const arr = [...this.categoryGallery];
+    [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+    this.categoryGallery = arr;
+  }
+
+  removeCategoryImage(index: number): void {
+    const img = this.categoryGallery[index];
+    if (!img) return;
+
+    if (img.isNew && img.previewUrl) {
+      URL.revokeObjectURL(img.previewUrl);
+      const arr = [...this.categoryGallery];
+      arr.splice(index, 1);
+      if (img.isPrimary && arr.length > 0) {
+        arr[0].isPrimary = true;
+      }
+      this.categoryGallery = arr;
+    } else {
+      const arr = [...this.categoryGallery];
+      arr[index] = { ...arr[index], markedForDeletion: true };
+      if (img.isPrimary) {
+        const nextPrimary = arr.find(i => !i.markedForDeletion);
+        if (nextPrimary) nextPrimary.isPrimary = true;
+      }
+      this.categoryGallery = arr;
+    }
+  }
+
+  undoRemoveCategoryImage(index: number): void {
+    const arr = [...this.categoryGallery];
+    if (arr[index]) {
+      arr[index] = { ...arr[index], markedForDeletion: false };
+      this.categoryGallery = arr;
+    }
+  }
+
+  clearCategoryGallery(): void {
+    for (const img of this.categoryGallery) {
+      if (img.isNew && img.previewUrl) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    }
+    this.categoryGallery = [];
+  }
 
   /* =========================================================
      DELETE CATEGORY
   ========================================================= */
 
-  deleteCategory(
-    id: number
-  ): void {
+  deleteCategory(id: number): void {
+    if (!confirm('Are you sure you want to delete this category?')) return;
 
-    if (
-      !confirm(
-        'Are you sure you want to delete this category?'
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    this.categoryService
-      .deleteCategory(id)
-
-      .subscribe({
-
-        next: () => {
-
-          this.loadCategories();
-
-          this.loadRooms();
-
-        },
-
-        error: (err) => {
-
-          this.categoriesError =
-            'Delete failed: ' +
-            (
-              err?.error?.message ||
-              err?.message ||
-              'Unknown error'
-            );
-
+    this.categoryService.deleteCategory(id).subscribe({
+      next: () => {
+        // If we were editing this category, switch back to create mode
+        if (this.selectedCategoryId === id) {
+          this.startNewCategory();
         }
-
-      });
-
+        this.loadCategories();
+        this.loadRooms();
+      },
+      error: (err) => {
+        this.categoriesError =
+          'Delete failed: ' +
+          (err?.error?.message || err?.message || 'Unknown error');
+      }
+    });
   }
 
-
   /* =========================================================
-     STATUS
+     LABELS
   ========================================================= */
 
-  getStatusLabel(
-    status: string
-  ): string {
-
-    const map:
-      Record<string, string> = {
-
-      AVAILABLE:
-        'Available',
-
-      OCCUPIED:
-        'Occupied',
-
-      CLEANING:
-        'Cleaning',
-
-      MAINTENANCE:
-        'Maintenance'
-
+  getStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      AVAILABLE: 'Available',
+      OCCUPIED: 'Occupied',
+      CLEANING: 'Cleaning',
+      MAINTENANCE: 'Maintenance'
     };
-
     return map[status] || status;
-
   }
 
-
-  /* =========================================================
-     VIEW
-  ========================================================= */
-
-  getViewLabel(
-    view: string | null | undefined
-  ): string {
-
-    if (!view) {
-      return '';
-    }
-
+  getViewLabel(view: string | null | undefined): string {
+    if (!view) return '';
     return view
       .toString()
       .trim()
       .replace(/_/g, ' ')
       .toLowerCase()
-      .replace(
-        /\b\w/g,
-        char =>
-          char.toUpperCase()
-      );
-
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 
-
-  /* =========================================================
-     BED TYPE
-  ========================================================= */
-
-  getBedTypeLabel(
-    type: string | null | undefined
-  ): string {
-
-    if (!type) {
-      return '';
-    }
-
+  getBedTypeLabel(type: string | null | undefined): string {
+    if (!type) return '';
     return type
       .toString()
       .trim()
       .replace(/_/g, ' ')
       .toLowerCase()
-      .replace(
-        /\b\w/g,
-        char =>
-          char.toUpperCase()
-      );
-
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
-
-
-  
-
 }

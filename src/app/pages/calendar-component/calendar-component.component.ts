@@ -8,14 +8,16 @@ import {
   Validators
 } from '@angular/forms';
 import { HttpClient, HttpBackend, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { concatMap, of } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
 import {
   CategoryService,
   RoomCategory,
   DailyRateResponse,
   BulkSetRatesItemRequest,
-  BulkSetRatesResponse
+  BulkSetRatesResponse,
+  BulkUpdateInventoryItemRequest,
+  BulkUpdateInventoryResponse
 } from '../../category-service.service';
 
 import {
@@ -46,6 +48,16 @@ interface ScrapedData {
   success?: boolean;
   durationMs?: number;
 }
+
+// Field selector for bulk inventory inputs
+type InventoryField = 'totalRooms' | 'bookedRooms' | 'availableRooms';
+
+// Field selector for the bulk range tool
+type RangeField = 'price' | InventoryField;
+
+// Reset modal types
+type ResetTarget = 'all' | 'category';
+type ResetDataType = 'rates' | 'inventory' | 'both';
 
 @Component({
   selector: 'app-calendar',
@@ -110,7 +122,7 @@ export class CalendarComponent implements OnInit {
 
   private readonly SCRAPE_API_URL = 'https://smartly-alabaster-quicksand.ngrok-free.dev/api/v2/scrape';
   private readonly SCRAPE_API_KEY = 'Bearer kLGSgEYGaO3vGteVvPJ1FABcwY2kKPOq9pd5X1pjzmrXDV5VeVBsWk2qwB8AZicg';
-  public readonly DEFAULT_HOTEL_URL = 'https://www.booking.com/Pulse-Kgffmz';
+  public readonly DEFAULT_HOTEL_URL = 'https://www.booking.com/hotel/sa/rohaff-makaah-aparthotel.html?aid=1263239;label=PShare-Pulse-Kgffmz@1786821758&chal_t=1787406661363&force_referer=';
   private readonly DEFAULT_LANG = 'ar';
   private readonly DEFAULT_CURRENCY = 'SAR';
 
@@ -149,14 +161,51 @@ export class CalendarComponent implements OnInit {
   // ============================================================
   bulkEditMode = false;
   bulkSaving = false;
+
   bulkPriceChanges: { [categoryId: number]: { [date: string]: number } } = {};
   private originalBulkPrices: { [categoryId: number]: { [date: string]: number } } = {};
 
-  // Bulk range tool
+  bulkInventoryChanges: {
+    [categoryId: number]: {
+      [date: string]: {
+        totalRooms?: number;
+        bookedRooms?: number;
+        availableRooms?: number;
+      }
+    }
+  } = {};
+
+  private originalBulkInventory: {
+    [categoryId: number]: {
+      [date: string]: {
+        totalRooms: number;
+        bookedRooms: number;
+        availableRooms: number;
+      }
+    }
+  } = {};
+
+  // ============================================================
+  // BULK RANGE TOOL (price OR total/booked/available)
+  // ============================================================
   rangeCategoryId: number | null = null;
+  rangeField: RangeField = 'price';
   rangeStart: string = '';
   rangeEnd: string = '';
-  rangePrice: number = 0;
+  rangeValue: number = 0;
+
+  // ============================================================
+  // RESET DATA MODAL (new)
+  // ============================================================
+  showResetModal = false;
+  resetLoading = false;
+  resetError = '';
+  resetSuccess = '';
+  resetTarget: ResetTarget = 'all';
+  resetCategoryId: number | null = null;
+  resetDataType: ResetDataType = 'both';
+  resetFrom = '';
+  resetTo = '';
 
   // Drag state
   private isDragging = false;
@@ -497,7 +546,6 @@ export class CalendarComponent implements OnInit {
       currency: this.DEFAULT_CURRENCY
     });
 
-    // Pre-select all categories
     this.selectedCategoriesForMatch = new Set(this.categories.map(c => c.id));
 
     this.rateMatchError = '';
@@ -760,6 +808,23 @@ export class CalendarComponent implements OnInit {
     return rate?.customRate === true;
   }
 
+  getTotalRooms(category: RoomCategory, day: Date): number {
+    const rate = this.getRate(category.id, day);
+    return rate?.totalRooms ?? (category as any).numBeds ?? 0;
+  }
+
+  getBookedRooms(category: RoomCategory, day: Date): number {
+    return this.getRate(category.id, day)?.bookedRooms ?? 0;
+  }
+
+  getAvailableRooms(category: RoomCategory, day: Date): number {
+    const rate = this.getRate(category.id, day);
+    if (rate?.availableRooms !== undefined && rate?.availableRooms !== null) {
+      return rate.availableRooms;
+    }
+    return Math.max(0, this.getTotalRooms(category, day) - this.getBookedRooms(category, day));
+  }
+
   // ============================================================
   // EDIT MODAL (single day)
   // ============================================================
@@ -825,30 +890,64 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // BULK EDIT
+  // BULK EDIT — TOGGLE / SNAPSHOT
   // ============================================================
   toggleBulkEdit(): void {
     if (this.bulkEditMode) {
       this.bulkPriceChanges = {};
       this.originalBulkPrices = {};
+      this.bulkInventoryChanges = {};
+      this.originalBulkInventory = {};
       this.bulkEditMode = false;
-    } else {
-      this.bulkPriceChanges = {};
-      this.originalBulkPrices = {};
-      for (const category of this.categories) {
-        this.bulkPriceChanges[category.id] = {};
-        this.originalBulkPrices[category.id] = {};
-        for (const day of this.days) {
-          const dateKey = this.getDateKey(day);
-          const currentPrice = this.getRate(category.id, day)?.price ?? this.getDefaultPrice(category.id);
-          this.bulkPriceChanges[category.id][dateKey] = currentPrice;
-          this.originalBulkPrices[category.id][dateKey] = currentPrice;
-        }
-      }
-      this.bulkEditMode = true;
+      return;
     }
+
+    this.bulkPriceChanges = {};
+    this.originalBulkPrices = {};
+    this.bulkInventoryChanges = {};
+    this.originalBulkInventory = {};
+
+    for (const category of this.categories) {
+      const catId = category.id;
+      this.bulkPriceChanges[catId] = {};
+      this.originalBulkPrices[catId] = {};
+      this.bulkInventoryChanges[catId] = {};
+      this.originalBulkInventory[catId] = {};
+
+      for (const day of this.days) {
+        const dateKey = this.getDateKey(day);
+        const rate = this.getRate(catId, day);
+
+        const currentPrice = rate?.price ?? this.getDefaultPrice(catId);
+        this.bulkPriceChanges[catId][dateKey] = currentPrice;
+        this.originalBulkPrices[catId][dateKey] = currentPrice;
+
+        const totalRooms = rate?.totalRooms ?? this.getTotalRooms(category, day);
+        const bookedRooms = rate?.bookedRooms ?? 0;
+        const availableRooms =
+          rate?.availableRooms !== undefined && rate?.availableRooms !== null
+            ? rate.availableRooms
+            : Math.max(0, totalRooms - bookedRooms);
+
+        this.bulkInventoryChanges[catId][dateKey] = {
+          totalRooms,
+          bookedRooms,
+          availableRooms
+        };
+        this.originalBulkInventory[catId][dateKey] = {
+          totalRooms,
+          bookedRooms,
+          availableRooms
+        };
+      }
+    }
+
+    this.bulkEditMode = true;
   }
 
+  // ============================================================
+  // BULK EDIT — PRICE HANDLER
+  // ============================================================
   onBulkPriceChange(categoryId: number, day: Date, newValue: string): void {
     const dateKey = this.getDateKey(day);
     const num = parseFloat(newValue);
@@ -861,10 +960,59 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // BULK RANGE TOOL
+  // BULK EDIT — INVENTORY HANDLER
+  // ============================================================
+  onBulkInventoryChange(
+    categoryId: number,
+    day: Date,
+    field: InventoryField,
+    newValue: string
+  ): void {
+    const dateKey = this.getDateKey(day);
+    const num = parseInt(newValue, 10);
+    if (isNaN(num) || num < 0) return;
+
+    if (!this.bulkInventoryChanges[categoryId]) {
+      this.bulkInventoryChanges[categoryId] = {};
+    }
+    if (!this.bulkInventoryChanges[categoryId][dateKey]) {
+      this.bulkInventoryChanges[categoryId][dateKey] = {};
+    }
+    this.bulkInventoryChanges[categoryId][dateKey][field] = num;
+  }
+
+  getBulkInventoryValue(
+    category: RoomCategory,
+    day: Date,
+    field: InventoryField
+  ): number {
+    const dateKey = this.getDateKey(day);
+    const override = this.bulkInventoryChanges[category.id]?.[dateKey]?.[field];
+    if (override !== undefined && override !== null) return override;
+
+    const rate = this.getRate(category.id, day);
+    if (field === 'totalRooms') {
+      return rate?.totalRooms ?? this.getTotalRooms(category, day);
+    }
+    if (field === 'bookedRooms') {
+      return rate?.bookedRooms ?? 0;
+    }
+    if (rate?.availableRooms !== undefined && rate?.availableRooms !== null) {
+      return rate.availableRooms;
+    }
+    return Math.max(0, this.getTotalRooms(category, day) - (rate?.bookedRooms ?? 0));
+  }
+
+  // ============================================================
+  // BULK RANGE TOOL (price OR total/booked/available)
   // ============================================================
   applyRangeToBulk(): void {
-    if (this.rangeCategoryId === null || !this.rangeStart || !this.rangeEnd || this.rangePrice < 0) {
+    if (
+      this.rangeCategoryId === null ||
+      !this.rangeStart ||
+      !this.rangeEnd ||
+      this.rangeValue < 0
+    ) {
       return;
     }
 
@@ -876,52 +1024,101 @@ export class CalendarComponent implements OnInit {
     }
 
     const catId = this.rangeCategoryId;
-    if (!this.bulkPriceChanges[catId]) {
-      this.bulkPriceChanges[catId] = {};
+    const field = this.rangeField;
+
+    if (field === 'price') {
+      if (!this.bulkPriceChanges[catId]) {
+        this.bulkPriceChanges[catId] = {};
+      }
+    } else {
+      if (!this.bulkInventoryChanges[catId]) {
+        this.bulkInventoryChanges[catId] = {};
+      }
     }
 
     let current = new Date(start);
     while (current <= end) {
       const dateKey = this.formatDate(current);
-      this.bulkPriceChanges[catId][dateKey] = this.rangePrice;
+
+      if (field === 'price') {
+        this.bulkPriceChanges[catId][dateKey] = this.rangeValue;
+      } else {
+        if (!this.bulkInventoryChanges[catId][dateKey]) {
+          this.bulkInventoryChanges[catId][dateKey] = {};
+        }
+        this.bulkInventoryChanges[catId][dateKey][field] = this.rangeValue;
+      }
+
       current.setDate(current.getDate() + 1);
     }
 
-    // Clear the range inputs
     this.rangeCategoryId = null;
+    this.rangeField = 'price';
     this.rangeStart = '';
     this.rangeEnd = '';
-    this.rangePrice = 0;
+    this.rangeValue = 0;
     this.error = '';
   }
 
   // ============================================================
-  // BULK SAVE – using setAllRates
+  // BULK SAVE — rates + inventory
   // ============================================================
   saveAllBulkChanges(): void {
-    const changedItems: BulkSetRatesItemRequest[] = [];
+    const changedRateItems: BulkSetRatesItemRequest[] = [];
+    const changedInventoryItems: BulkUpdateInventoryItemRequest[] = [];
 
     for (const category of this.categories) {
       const catId = category.id;
-      const changes = this.bulkPriceChanges[catId];
-      const originals = this.originalBulkPrices[catId];
-      if (!changes) continue;
 
-      for (const dateKey of Object.keys(changes)) {
-        const newPrice = changes[dateKey];
-        const originalPrice = originals?.[dateKey];
-        if (newPrice !== originalPrice) {
-          changedItems.push({
-            category: category.name,
-            startDate: dateKey,
-            endDate: dateKey,
-            price: newPrice
-          });
+      const priceChanges = this.bulkPriceChanges[catId];
+      const originalPrices = this.originalBulkPrices[catId];
+      if (priceChanges) {
+        for (const dateKey of Object.keys(priceChanges)) {
+          const newPrice = priceChanges[dateKey];
+          const originalPrice = originalPrices?.[dateKey];
+          if (newPrice !== originalPrice) {
+            changedRateItems.push({
+              category: category.name,
+              startDate: dateKey,
+              endDate: dateKey,
+              price: newPrice
+            });
+          }
+        }
+      }
+
+      const invChanges = this.bulkInventoryChanges[catId];
+      const originalInv = this.originalBulkInventory[catId];
+      if (invChanges && originalInv) {
+        for (const dateKey of Object.keys(invChanges)) {
+          const change = invChanges[dateKey] || {};
+          const original = originalInv[dateKey];
+          if (!original) continue;
+
+          const totalRooms = change.totalRooms ?? original.totalRooms;
+          const bookedRooms = change.bookedRooms ?? original.bookedRooms;
+          const availableRooms = change.availableRooms ?? original.availableRooms;
+
+          const changed =
+            totalRooms !== original.totalRooms ||
+            bookedRooms !== original.bookedRooms ||
+            availableRooms !== original.availableRooms;
+
+          if (changed) {
+            changedInventoryItems.push({
+              category: category.name,
+              startDate: dateKey,
+              endDate: dateKey,
+              totalRooms,
+              bookedRooms,
+              availableRooms
+            });
+          }
         }
       }
     }
 
-    if (changedItems.length === 0) {
+    if (changedRateItems.length === 0 && changedInventoryItems.length === 0) {
       this.error = 'No changes to save.';
       return;
     }
@@ -929,18 +1126,143 @@ export class CalendarComponent implements OnInit {
     this.bulkSaving = true;
     this.error = '';
 
-    this.categoryService.setAllRates(changedItems).subscribe({
-      next: (result) => {
+    const rates$ = changedRateItems.length > 0
+      ? this.categoryService.setAllRates(changedRateItems)
+      : of<BulkSetRatesResponse | null>(null);
+
+    const inventory$ = changedInventoryItems.length > 0
+      ? this.categoryService.updateInventoryBulk(changedInventoryItems)
+      : of<BulkUpdateInventoryResponse | null>(null);
+
+    forkJoin([rates$, inventory$]).subscribe({
+      next: ([rateResult, invResult]) => {
         this.bulkSaving = false;
+        const ratesMsg = rateResult
+          ? `${rateResult.totalDaysUpdated} rate day(s)`
+          : '0 rate day(s)';
+        const invMsg = invResult
+          ? `${invResult.totalDaysUpdated} inventory day(s)`
+          : '0 inventory day(s)';
+        console.log(`Bulk save complete: ${ratesMsg}, ${invMsg}.`);
         this.loadData();
-        this.toggleBulkEdit(); // exit bulk edit
-        console.log(`Bulk save complete: ${result.totalDaysUpdated} days updated.`);
+        this.toggleBulkEdit();
       },
       error: (err: HttpErrorResponse) => {
         this.bulkSaving = false;
         this.error = `Bulk save failed: ${err.error?.message || err.message}`;
       }
     });
+  }
+
+  // ============================================================
+  // RESET DATA — open / close
+  // ============================================================
+  openResetModal(): void {
+    // Default: reset ALL inventory for the currently visible month
+    const from = new Date(this.currentYear, this.currentMonth, 1);
+    const to = new Date(this.currentYear, this.currentMonth + 1, 0);
+
+    this.resetTarget = 'all';
+    this.resetCategoryId = null;
+    this.resetDataType = 'both';
+    this.resetFrom = this.formatDate(from);
+    this.resetTo = this.formatDate(to);
+    this.resetError = '';
+    this.resetSuccess = '';
+    this.resetLoading = false;
+    this.showResetModal = true;
+  }
+
+  closeResetModal(): void {
+    this.showResetModal = false;
+    this.resetLoading = false;
+    this.resetError = '';
+    this.resetSuccess = '';
+  }
+
+  /**
+   * Fires the reset calls according to target + data type.
+   *
+   * Rules:
+   *  - Target 'category' → uses /{id}/inventory/reset and /{id}/rates (DELETE)
+   *  - Target 'all'      → uses /inventory/reset-all and loops /{id}/rates (DELETE)
+   *                        per category, because there is no bulk rate-reset endpoint.
+   *  - Dates are optional for inventory (empty = reset all dates).
+   *  - Dates are required for rates; if left empty we fall back to a very wide
+   *    range (2000-01-01 → 2099-12-31) so "reset everything" still works.
+   */
+  async executeReset(): Promise<void> {
+    // ---------- Validation ----------
+    if (this.resetTarget === 'category' && !this.resetCategoryId) {
+      this.resetError = 'Please select a category to reset.';
+      return;
+    }
+
+    if (
+      this.resetFrom &&
+      this.resetTo &&
+      this.resetFrom > this.resetTo
+    ) {
+      this.resetError = '"From" date must be before "To" date.';
+      return;
+    }
+
+    this.resetLoading = true;
+    this.resetError = '';
+    this.resetSuccess = '';
+
+    const from = this.resetFrom || undefined;
+    const to = this.resetTo || undefined;
+
+    // Wide-range fallbacks for rate clearing when dates are blank
+    const rateFrom = from || '2000-01-01';
+    const rateTo = to || '2099-12-31';
+
+    const tasks: any[] = [];
+
+    try {
+      if (this.resetTarget === 'all') {
+        // -------- ALL CATEGORIES --------
+        if (this.resetDataType === 'inventory' || this.resetDataType === 'both') {
+          tasks.push(this.categoryService.resetAllInventory(from, to));
+        }
+        if (this.resetDataType === 'rates' || this.resetDataType === 'both') {
+          for (const cat of this.categories) {
+            tasks.push(this.categoryService.clearRates(cat.id, rateFrom, rateTo));
+          }
+        }
+      } else {
+        // -------- SPECIFIC CATEGORY --------
+        const catId = this.resetCategoryId!;
+
+        if (this.resetDataType === 'inventory' || this.resetDataType === 'both') {
+          tasks.push(this.categoryService.resetCategoryInventory(catId, from, to));
+        }
+        if (this.resetDataType === 'rates' || this.resetDataType === 'both') {
+          tasks.push(this.categoryService.clearRates(catId, rateFrom, rateTo));
+        }
+      }
+
+      if (tasks.length === 0) {
+        this.resetError = 'Nothing to reset with the current options.';
+        this.resetLoading = false;
+        return;
+      }
+
+      await forkJoin(tasks).toPromise();
+
+      this.resetSuccess = '✅ Reset completed successfully.';
+      this.resetLoading = false;
+      this.loadData();
+
+      setTimeout(() => {
+        if (this.showResetModal) this.closeResetModal();
+      }, 2000);
+    } catch (err: any) {
+      console.error('Reset failed:', err);
+      this.resetLoading = false;
+      this.resetError = `Reset failed: ${err?.error?.message || err?.message || 'Unknown error'}`;
+    }
   }
 
   // ============================================================

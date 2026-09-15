@@ -43,6 +43,15 @@
         Match Rates
       </button>
 
+      <!-- RESET DATA — RATES VIEW ONLY -->
+      <button
+        *ngIf="viewMode === 'rates'"
+        type="button"
+        class="btn-glass danger"
+        (click)="openResetModal()">
+        Reset Data
+      </button>
+
       <!-- PREVIOUS MONTH -->
       <button
         type="button"
@@ -120,6 +129,15 @@
         </select>
       </div>
       <div class="bulk-range-group">
+        <label for="rangeField">Field</label>
+        <select id="rangeField" class="form-control" [(ngModel)]="rangeField">
+          <option value="price">Price</option>
+          <option value="totalRooms">Total Rooms</option>
+          <option value="bookedRooms">Booked Rooms</option>
+          <option value="availableRooms">Available Rooms</option>
+        </select>
+      </div>
+      <div class="bulk-range-group">
         <label for="rangeStart">From</label>
         <input id="rangeStart" type="date" class="form-control" [(ngModel)]="rangeStart" />
       </div>
@@ -128,12 +146,19 @@
         <input id="rangeEnd" type="date" class="form-control" [(ngModel)]="rangeEnd" />
       </div>
       <div class="bulk-range-group">
-        <label for="rangePrice">Price</label>
-        <input id="rangePrice" type="number" class="form-control" [(ngModel)]="rangePrice" step="0.01" min="0" />
+        <label for="rangeValue">{{ rangeField === 'price' ? 'Price' : 'Value' }}</label>
+        <input
+          id="rangeValue"
+          type="number"
+          class="form-control"
+          [(ngModel)]="rangeValue"
+          [step]="rangeField === 'price' ? 0.01 : 1"
+          min="0"
+        />
       </div>
       <div class="bulk-range-group bulk-range-action">
         <button type="button" class="btn-glass primary" (click)="applyRangeToBulk()"
-                [disabled]="!rangeCategoryId || !rangeStart || !rangeEnd || rangePrice < 0">
+                [disabled]="!rangeCategoryId || !rangeStart || !rangeEnd || rangeValue < 0">
           Apply Range
         </button>
       </div>
@@ -194,11 +219,43 @@
             </div>
           </div>
 
+          <!-- TOTAL ROOMS -->
+          <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
+            <div class="row-label">Total</div>
+            <div class="data-cell" *ngFor="let day of days">
+              <span *ngIf="!bulkEditMode" class="total-rooms">
+                {{ getTotalRooms(category, day) }}
+              </span>
+              <ng-container *ngIf="bulkEditMode">
+                <input
+                  type="number"
+                  class="bulk-price-input bulk-inventory-input"
+                  [ngModel]="getBulkInventoryValue(category, day, 'totalRooms')"
+                  (ngModelChange)="onBulkInventoryChange(category.id, day, 'totalRooms', $event)"
+                  step="1"
+                  min="0"
+                />
+              </ng-container>
+            </div>
+          </div>
+
           <!-- BOOKED -->
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Booked</div>
             <div class="data-cell" *ngFor="let day of days">
-              <span class="booked">{{ getRate(category.id, day)?.bookedRooms ?? 0 }}</span>
+              <span *ngIf="!bulkEditMode" class="booked">
+                {{ getBookedRooms(category, day) }}
+              </span>
+              <ng-container *ngIf="bulkEditMode">
+                <input
+                  type="number"
+                  class="bulk-price-input bulk-inventory-input"
+                  [ngModel]="getBulkInventoryValue(category, day, 'bookedRooms')"
+                  (ngModelChange)="onBulkInventoryChange(category.id, day, 'bookedRooms', $event)"
+                  step="1"
+                  min="0"
+                />
+              </ng-container>
             </div>
           </div>
 
@@ -206,14 +263,19 @@
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Available</div>
             <div class="data-cell" *ngFor="let day of days">
-              <span class="available">
-                {{
-                  getRate(category.id, day)?.availableRooms
-                  ??
-                  (category.numBeds -
-                  (getRate(category.id, day)?.bookedRooms ?? 0))
-                }}
+              <span *ngIf="!bulkEditMode" class="available">
+                {{ getAvailableRooms(category, day) }}
               </span>
+              <ng-container *ngIf="bulkEditMode">
+                <input
+                  type="number"
+                  class="bulk-price-input bulk-inventory-input"
+                  [ngModel]="getBulkInventoryValue(category, day, 'availableRooms')"
+                  (ngModelChange)="onBulkInventoryChange(category.id, day, 'availableRooms', $event)"
+                  step="1"
+                  min="0"
+                />
+              </ng-container>
             </div>
           </div>
 
@@ -222,7 +284,6 @@
             <div class="row-label">Price</div>
             <div class="data-cell price-cell" *ngFor="let day of days"
                  (click)="!bulkEditMode && openEditModal(category.id, day)">
-              <!-- NORMAL MODE -->
               <span *ngIf="!bulkEditMode" class="price"
                     [class.custom]="isCustomRate(getRate(category.id, day))">
                 {{
@@ -231,7 +292,6 @@
                   | number:'1.0-2'
                 }}
               </span>
-              <!-- BULK EDIT MODE -->
               <ng-container *ngIf="bulkEditMode">
                 <input
                   type="number"
@@ -318,13 +378,105 @@
   </div>
 
   <!-- ============================================================
+       RESET DATA MODAL (new)
+  ============================================================ -->
+
+  <div *ngIf="showResetModal" class="modal-overlay" (click)="closeResetModal()">
+    <div class="modal-content reset-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Reset Data</h3>
+        <button type="button" class="close-btn" (click)="closeResetModal()">×</button>
+      </div>
+
+      <div *ngIf="resetError" class="error">{{ resetError }}</div>
+      <div *ngIf="resetSuccess" class="match-success">{{ resetSuccess }}</div>
+
+      <div class="info-hint warn">
+        <p> This action is destructive and cannot be undone. Reset clears custom rates and/or inventory values back to defaults.</p>
+      </div>
+
+      <!-- TARGET -->
+      <div class="form-group">
+        <label>Reset Target</label>
+        <div class="radio-group">
+          <label class="radio-card" [class.selected]="resetTarget === 'all'">
+            <input type="radio" name="resetTarget" value="all" [(ngModel)]="resetTarget" />
+            <span style="margin-left: 10px;">All Categories</span>
+          </label>
+          <label class="radio-card" [class.selected]="resetTarget === 'category'">
+            <input type="radio" name="resetTarget" value="category" [(ngModel)]="resetTarget" />
+            <span style="margin-left: 10px;">Specific Category</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- SPECIFIC CATEGORY PICKER -->
+      <div class="form-group" *ngIf="resetTarget === 'category'">
+        <label for="resetCategory">Category</label>
+        <select id="resetCategory" class="form-control" [(ngModel)]="resetCategoryId">
+          <option [value]="null">Choose a category</option>
+          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+
+      <!-- DATA TYPE -->
+      <div class="form-group">
+        <label>Data to Reset</label>
+        <div class="radio-group">
+          <label class="radio-card" [class.selected]="resetDataType === 'rates'">
+            <input type="radio" name="resetDataType" value="rates" [(ngModel)]="resetDataType" />
+            <span style="margin-left: 10px;">Rates</span>
+          </label>
+          <label class="radio-card" [class.selected]="resetDataType === 'inventory'">
+            <input type="radio" name="resetDataType" value="inventory" [(ngModel)]="resetDataType" />
+            <span style="margin-left: 10px;">Inventory</span>
+          </label>
+          <label class="radio-card" [class.selected]="resetDataType === 'both'">
+            <input type="radio" name="resetDataType" value="both" [(ngModel)]="resetDataType" />
+            <span style="margin-left: 10px;">Both</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- DATE RANGE -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="resetFrom">From</label>
+          <input id="resetFrom" type="date" class="form-control" [(ngModel)]="resetFrom" />
+        </div>
+        <div class="form-group">
+          <label for="resetTo">To</label>
+          <input id="resetTo" type="date" class="form-control" [(ngModel)]="resetTo" />
+        </div>
+      </div>
+
+      <div class="reset-hint">
+        <small>
+          Leave the date range empty to reset <strong>all dates</strong>.
+          <br />
+          (Empty dates are ignored for rates — a full range is used instead.)
+        </small>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-glass" (click)="closeResetModal()">Cancel</button>
+        <button type="button" class="btn-glass danger"
+                [disabled]="resetLoading"
+                (click)="executeReset()">
+          {{ resetLoading ? 'Resetting...' : 'Reset' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        RATE MATCH MODAL (with category selection)
   ============================================================ -->
 
   <div *ngIf="showRateMatchModal" class="modal-overlay" (click)="closeRateMatchModal()">
     <div class="modal-content rate-match-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Match Rates from Booking.com</h3>
+        <h3>RateMatch Intelligence</h3>
         <button type="button" class="close-btn" (click)="closeRateMatchModal()">×</button>
       </div>
 
@@ -336,31 +488,30 @@
             <span class="url">{{ DEFAULT_HOTEL_URL }}</span>
           </div>
         </div>
-<!-- Category selection with improved UI -->
-<div class="form-group">
-  <label class="category-select-label">Select Categories to Match</label>
-  <div class="category-select-grid">
-    <label *ngFor="let cat of categories" class="category-card" 
-           [class.selected]="selectedCategoriesForMatch.has(cat.id)">
-      <input type="checkbox" [checked]="selectedCategoriesForMatch.has(cat.id)"
-             (change)="toggleCategoryForMatch(cat.id, $event)" />
-      <span class="category-card-content">
-        <span class="category-card-name">{{ cat.name }}</span>
-        <span class="category-card-price">{{ cat.price | number:'1.0-0' }} SAR</span>
-      </span>
-      <span class="category-card-check">
-        <svg *ngIf="selectedCategoriesForMatch.has(cat.id)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      </span>
-    </label>
-  </div>
-  <div class="category-select-actions">
-    <button type="button" class="btn-glass btn-sm" (click)="selectAllCategories()">Select All</button>
-    <button type="button" class="btn-glass btn-sm" (click)="deselectAllCategories()">Deselect All</button>
-    <span class="selected-count">{{ selectedCategoriesForMatch.size }} of {{ categories.length }} selected</span>
-  </div>
-</div>
+        <div class="form-group">
+          <label class="category-select-label">Select Categories to Match</label>
+          <div class="category-select-grid">
+            <label *ngFor="let cat of categories" class="category-card"
+                   [class.selected]="selectedCategoriesForMatch.has(cat.id)">
+              <input type="checkbox" [checked]="selectedCategoriesForMatch.has(cat.id)"
+                     (change)="toggleCategoryForMatch(cat.id, $event)" />
+              <span class="category-card-content">
+                <span class="category-card-name">{{ cat.name }}</span>
+                <span class="category-card-price">{{ cat.price | number:'1.0-0' }} SAR</span>
+              </span>
+              <span class="category-card-check">
+                <svg *ngIf="selectedCategoriesForMatch.has(cat.id)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+            </label>
+          </div>
+          <div class="category-select-actions">
+            <button type="button" class="btn-glass btn-sm" (click)="selectAllCategories()">Select All</button>
+            <button type="button" class="btn-glass btn-sm" (click)="deselectAllCategories()">Deselect All</button>
+            <span class="selected-count">{{ selectedCategoriesForMatch.size }} of {{ categories.length }} selected</span>
+          </div>
+        </div>
         <form [formGroup]="rateMatchForm" (ngSubmit)="executeRateMatch()">
           <div class="form-row">
             <div class="form-group">
@@ -399,7 +550,7 @@
   </div>
 
   <!-- ============================================================
-       NOTIFICATION MODAL (unchanged)
+       NOTIFICATION MODAL
   ============================================================ -->
 
   <div *ngIf="showNotificationModal" class="modal-overlay" (click)="closeNotificationModal()">
@@ -568,7 +719,6 @@
           Assigning to <strong>Room {{ selectedRoomForStay.roomNumber }}</strong>
         </div>
         <form [formGroup]="createStayForm" (ngSubmit)="confirmCreateStay()">
-          <!-- GUEST / PHONE -->
           <div class="form-row">
             <div class="form-group">
               <label for="guestName">Guest Name</label>
@@ -581,7 +731,6 @@
               <div class="form-error" *ngIf="createStayForm.get('phone')?.invalid && createStayForm.get('phone')?.touched">Phone is required</div>
             </div>
           </div>
-          <!-- EMAIL / NATIONALITY -->
           <div class="form-row">
             <div class="form-group">
               <label for="email">Email</label>
@@ -592,7 +741,6 @@
               <input id="nationality" type="text" class="form-control" formControlName="nationality" />
             </div>
           </div>
-          <!-- ID / ADULTS -->
           <div class="form-row">
             <div class="form-group">
               <label for="identification">ID / Passport</label>
@@ -603,7 +751,6 @@
               <input id="numAdults" type="number" class="form-control" formControlName="numAdults" min="1" />
             </div>
           </div>
-          <!-- KIDS / CHECK-IN -->
           <div class="form-row">
             <div class="form-group">
               <label for="numKids">Kids</label>
@@ -614,7 +761,6 @@
               <input id="checkInDate" type="date" class="form-control" formControlName="checkInDate" />
             </div>
           </div>
-          <!-- CHECK-OUT -->
           <div class="form-row">
             <div class="form-group">
               <label for="checkOutDate">Check-out</label>
@@ -622,7 +768,6 @@
             </div>
             <div class="form-group empty-form-group"></div>
           </div>
-          <!-- ACTIONS -->
           <div class="modal-actions">
             <button type="button" class="btn-glass" (click)="closeCreateStayModal()">Cancel</button>
             <button type="submit" class="btn-glass primary" [disabled]="createStayForm.invalid || creatingStay">
