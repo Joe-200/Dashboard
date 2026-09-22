@@ -636,6 +636,52 @@
             </span>
           </div>
 
+          <!-- =========================================================
+               HPMS CATEGORIES — read-only reference (names + ids)
+          ========================================================= -->
+          <div class="hpms-categories">
+
+            <div class="hpms-categories-header">
+              <span class="hpms-categories-title">HPMS Categories</span>
+              <span class="category-count">{{ hpmsCategories.length }}</span>
+            </div>
+
+            <div
+              *ngIf="hpmsCategoriesLoading"
+              class="hpms-categories-state"
+            >
+              Loading HPMS categories...
+            </div>
+
+            <div
+              *ngIf="!hpmsCategoriesLoading && hpmsCategoriesError"
+              class="hpms-categories-state hpms-categories-error"
+            >
+              {{ hpmsCategoriesError }}
+            </div>
+
+            <div
+              *ngIf="!hpmsCategoriesLoading && !hpmsCategoriesError && hpmsCategories.length === 0"
+              class="hpms-categories-state"
+            >
+              No HPMS categories found.
+            </div>
+
+            <div
+              class="hpms-categories-list"
+              *ngIf="!hpmsCategoriesLoading && hpmsCategories.length > 0"
+            >
+              <span
+                class="hpms-category-chip"
+                *ngFor="let hpms of hpmsCategories"
+              >
+                <span class="hpms-category-name">{{ hpms.name }}</span>
+                <span class="hpms-category-id">{{ hpms.id }}</span>
+              </span>
+            </div>
+
+          </div>
+
           <form
             [formGroup]="categoryForm"
             (ngSubmit)="saveCategory()"

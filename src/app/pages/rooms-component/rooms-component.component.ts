@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -8,6 +9,8 @@ import {
   Validators
 } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { environment } from '../../environment';
+
 
 import {
   RoomService,
@@ -35,6 +38,15 @@ interface GalleryImage {
   isPrimary: boolean;
   isNew: boolean;
   markedForDeletion?: boolean;
+}
+
+/* =========================================================
+   HPMS ROOM / CATEGORY SUMMARY
+   Matches `HpmsRoomSummaryResponse` from the OpenAPI spec.
+========================================================= */
+interface HpmsRoomSummary {
+  id: string;
+  name: string;
 }
 
 @Component({
@@ -95,10 +107,26 @@ export class RoomsComponent implements OnInit {
   categoryForm: FormGroup;
   categoryGallery: GalleryImage[] = [];
 
+  /* =========================================================
+     HPMS CATEGORIES (read-only reference in the modal)
+  ========================================================= */
+
+  hpmsCategories: HpmsRoomSummary[] = [];
+  hpmsCategoriesLoading = false;
+  hpmsCategoriesError = '';
+  hpmsCategoriesLoaded = false;
+
+  /** Endpoint for HPMS room/category summaries.
+   *  Uses the environment base URL so the request goes straight
+   *  to the backend and bypasses the Angular dev server fallback. */
+  private readonly hpmsRoomsUrl =
+    `${environment.apiUrl}/api/dashboard/front-desk/hpms/rooms`;
+
   constructor(
     private fb: FormBuilder,
     private roomService: RoomService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private http: HttpClient
   ) {
 
     /* ROOM FORM */
@@ -594,6 +622,44 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
+     HPMS CATEGORIES (read-only reference)
+  ========================================================= */
+
+  /**
+   * Loads the HPMS room/category summaries (name + id) once
+   * and caches the result for the lifetime of the component.
+   * Safe to call repeatedly — will short-circuit if already
+   * loaded or currently loading.
+   */
+  private loadHpmsCategoriesIfNeeded(): void {
+    if (this.hpmsCategoriesLoaded || this.hpmsCategoriesLoading) {
+      return;
+    }
+    this.loadHpmsCategories();
+  }
+
+  private loadHpmsCategories(): void {
+    this.hpmsCategoriesLoading = true;
+    this.hpmsCategoriesError = '';
+
+    this.http
+      .get<HpmsRoomSummary[]>(this.hpmsRoomsUrl)
+      .subscribe({
+        next: (data) => {
+          this.hpmsCategories = data || [];
+          this.hpmsCategoriesLoading = false;
+          this.hpmsCategoriesLoaded = true;
+        },
+        error: (err) => {
+          this.hpmsCategoriesError =
+            'Failed to load HPMS categories: ' +
+            (err?.error?.message || err?.message || 'Unknown error');
+          this.hpmsCategoriesLoading = false;
+        }
+      });
+  }
+
+  /* =========================================================
      CATEGORY MODAL – ENTRY POINTS
      The modal now hosts a two-pane layout (list + form).
      `startNewCategory` resets the right pane to "create" mode.
@@ -603,6 +669,7 @@ export class RoomsComponent implements OnInit {
   /** Opens the modal in "new category" mode (right pane). */
   openCreateCategoryModal(): void {
     this.startNewCategory();
+    this.loadHpmsCategoriesIfNeeded();
     this.showCategoryModal = true;
   }
 
@@ -668,6 +735,7 @@ export class RoomsComponent implements OnInit {
       }];
     }
 
+    this.loadHpmsCategoriesIfNeeded();
     this.showCategoryModal = true;
     this.categoriesError = '';
   }

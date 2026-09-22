@@ -1551,6 +1551,103 @@
 }
 
 /* =========================================================
+   HPMS CATEGORIES — READ-ONLY REFERENCE BLOCK
+   (names + ids pulled from the HPMS API)
+========================================================= */
+
+.hpms-categories {
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.9rem;
+
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 9px;
+}
+
+.hpms-categories-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  margin-bottom: 0.55rem;
+}
+
+.hpms-categories-title {
+  color: #171717;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hpms-categories-state {
+  color: #737373;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.hpms-categories-error {
+  color: #dc2626;
+}
+
+.hpms-categories-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  max-height: 108px;
+  overflow-y: auto;
+}
+
+.hpms-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 4px 9px;
+
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #171717;
+
+  white-space: nowrap;
+
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.hpms-category-chip:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d4;
+}
+
+.hpms-category-name {
+  color: #171717;
+}
+
+.hpms-category-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+
+  background: #171717;
+  color: #fff;
+
+  border-radius: 999px;
+
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* =========================================================
    RESPONSIVE
 ========================================================= */
 

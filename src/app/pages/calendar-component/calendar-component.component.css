@@ -24,7 +24,7 @@
 }
 
 /* ============================================================
-   RATE MATCH CATEGORY SELECTION - IMPROVED UI
+   RATE MATCH CATEGORY SELECTION
 ============================================================ */
 
 .category-select-label {
@@ -157,15 +157,57 @@
 }
 
 /* ============================================================
-   RATE MATCH MODAL - Updated
+   RATE MATCH MODAL
 ============================================================ */
 
 .rate-match-modal {
-  max-width: 560px;
+  max-width: 620px;
 }
 
 .rate-match-body {
   padding: 0.25rem 0;
+}
+
+/* ---------- TABS ---------- */
+.rate-match-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  background: #f5f5f5;
+  border: 1px solid #d4d4d4;
+  border-radius: 9px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.rate-match-tab {
+  flex: 1;
+  height: 34px;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #737373;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rate-match-tab:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #171717;
+}
+
+.rate-match-tab.active {
+  background: #171717;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.rate-match-tab.active:hover {
+  background: #000;
 }
 
 .info-hint {
@@ -197,6 +239,16 @@
   margin-bottom: 0;
 }
 
+.info-hint code {
+  padding: 1px 5px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #171717;
+}
+
 .url-display {
   display: flex;
   gap: 0.5rem;
@@ -214,6 +266,218 @@
   word-break: break-all;
   font-family: monospace;
   font-size: 0.7rem;
+}
+
+/* ============================================================
+   HPMS PANEL
+============================================================ */
+
+.hpms-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hpms-section {
+  padding: 0.85rem 1rem;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.hpms-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.hpms-section-header h4 {
+  margin: 0;
+  color: #171717;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.hpms-section-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.hpms-hint {
+  margin: 0 0 0.6rem;
+  color: #737373;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.hpms-hint code {
+  padding: 1px 5px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #171717;
+}
+
+.hpms-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.hpms-config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+}
+
+.hpms-config-item .label {
+  color: #737373;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hpms-config-item .value {
+  color: #171717;
+  font-size: 0.78rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.hpms-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hpms-pulse-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.hpms-process-card {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  color: #1e3a8a;
+  font-size: 0.75rem;
+}
+
+.hpms-process-card.warn {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.hpms-process-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hpms-process-row strong {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.hpms-process-row code {
+  padding: 2px 6px;
+  background: #fff;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+/* ---------- HPMS ROOMS TABLE ---------- */
+.hpms-rooms-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.hpms-rooms-header,
+.hpms-room-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 1.1fr;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.hpms-rooms-header {
+  background: #f5f5f5;
+  border-bottom: 1px solid #ececec;
+  color: #737373;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hpms-room-row {
+  border-bottom: 1px solid #f3f3f3;
+  color: #171717;
+}
+
+.hpms-room-row:last-child {
+  border-bottom: none;
+}
+
+.hpms-room-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpms-room-price {
+  font-family: monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #171717;
+}
+
+.hpms-room-match {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #737373;
+  justify-self: start;
+}
+
+.hpms-room-match.matched {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.hpms-room-match.unmatched {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 /* ============================================================
@@ -259,7 +523,6 @@
   letter-spacing: 0.14em;
 }
 
-
 /* ============================================================
    NAVIGATION
 ============================================================ */
@@ -295,7 +558,6 @@
 
   font-size: 1.15rem;
 }
-
 
 /* ============================================================
    VIEW TOGGLE
@@ -370,7 +632,6 @@
   background: #000;
 }
 
-
 /* ============================================================
    BUTTONS
 ============================================================ */
@@ -423,11 +684,6 @@
   transform: none;
 }
 
-
-/* ============================================================
-   PRIMARY BUTTON
-============================================================ */
-
 .btn-glass.primary {
   background: #171717;
 
@@ -441,11 +697,6 @@
 
   border-color: #000;
 }
-
-
-/* ============================================================
-   ACTIVE BUTTON
-============================================================ */
 
 .btn-glass.active {
   background: #171717;
@@ -461,11 +712,6 @@
   border-color: #000;
 }
 
-
-/* ============================================================
-   TODAY
-============================================================ */
-
 .today-btn {
   background: #171717;
 
@@ -479,11 +725,6 @@
 
   border-color: #000;
 }
-
-
-/* ============================================================
-   MATCH RATES
-============================================================ */
 
 .match-btn {
   min-width: 115px;
@@ -502,7 +743,6 @@
 
   border-color: #bdbdbd;
 }
-
 
 /* ============================================================
    MATCH STATUS
@@ -531,7 +771,6 @@
   font-weight: 500;
 }
 
-
 /* ============================================================
    ERROR
 ============================================================ */
@@ -552,7 +791,6 @@
   font-size: 0.8rem;
 }
 
-
 /* ============================================================
    LOADING
 ============================================================ */
@@ -566,7 +804,6 @@
 
   font-size: 0.85rem;
 }
-
 
 /* ============================================================
    EMPTY
@@ -587,7 +824,6 @@
 
   font-size: 0.85rem;
 }
-
 
 /* ============================================================
    CALENDAR SCROLL
@@ -631,7 +867,6 @@
 
   scroll-behavior: auto;
 }
-
 
 /* ============================================================
    CATEGORY TABLE
@@ -695,7 +930,6 @@
   font-size: 0.7rem;
 }
 
-
 /* ============================================================
    CALENDAR TABLE
 ============================================================ */
@@ -704,11 +938,6 @@
   width: max-content;
   min-width: max-content;
 }
-
-
-/* ============================================================
-   TABLE HEADER
-============================================================ */
 
 .table-header {
   display: grid;
@@ -738,11 +967,6 @@
   font-weight: 700;
 }
 
-
-/* ============================================================
-   DAY HEADER
-============================================================ */
-
 .day-header {
   min-width: 90px;
 
@@ -770,7 +994,6 @@
   font-weight: 500;
 }
 
-
 /* ============================================================
    DATA ROW
 ============================================================ */
@@ -789,11 +1012,6 @@
   border-bottom: none;
 }
 
-
-/* ============================================================
-   ROW LABEL
-============================================================ */
-
 .row-label {
   display: flex;
   align-items: center;
@@ -809,11 +1027,6 @@
   font-size: 0.68rem;
   font-weight: 600;
 }
-
-
-/* ============================================================
-   DATA CELL
-============================================================ */
 
 .data-cell {
   min-width: 90px;
@@ -837,22 +1050,12 @@
   background: #f8f8f8;
 }
 
-
-/* ============================================================
-   TOTAL ROOMS
-============================================================ */
-
 .total-rooms {
   color: #171717;
 
   font-size: 0.78rem;
   font-weight: 600;
 }
-
-
-/* ============================================================
-   BOOKED
-============================================================ */
 
 .booked {
   color: #dc2626;
@@ -861,22 +1064,12 @@
   font-weight: 700;
 }
 
-
-/* ============================================================
-   AVAILABLE
-============================================================ */
-
 .available {
   color: #16a34a;
 
   font-size: 0.78rem;
   font-weight: 600;
 }
-
-
-/* ============================================================
-   PRICE
-============================================================ */
 
 .price-row {
   background: #fcfcfc;
@@ -910,11 +1103,6 @@
 
   font-size: 0.72rem;
 }
-
-
-/* ============================================================
-   BULK PRICE INPUT
-============================================================ */
 
 .bulk-price-input {
   width: 70px;
@@ -954,11 +1142,6 @@
   background: #eff6ff;
 }
 
-
-/* ============================================================
-   BULK INVENTORY INPUT (Total / Booked / Available)
-============================================================ */
-
 .bulk-inventory-input {
   width: 58px;
 
@@ -966,7 +1149,6 @@
 
   font-size: 0.72rem;
 }
-
 
 /* ============================================================
    ROOM TABLE
@@ -1046,11 +1228,6 @@
   font-size: 0.75rem;
 }
 
-
-/* ============================================================
-   STAY BLOCK
-============================================================ */
-
 .stay-block {
   width: 100%;
 
@@ -1107,7 +1284,6 @@
 
   font-size: 0.7rem;
 }
-
 
 /* ============================================================
    MODALS
@@ -1179,7 +1355,6 @@
   font-size: 0.8rem;
 }
 
-/* Reset modal */
 .reset-modal {
   max-width: 520px;
 }
@@ -1194,7 +1369,6 @@
 .reset-hint strong {
   color: #171717;
 }
-
 
 /* ============================================================
    MODAL HEADER
@@ -1245,7 +1419,6 @@
 
   color: #171717;
 }
-
 
 /* ============================================================
    FORM
@@ -1318,7 +1491,6 @@ textarea.form-control {
   font-size: 0.72rem;
 }
 
-
 /* ============================================================
    FORM ROW
 ============================================================ */
@@ -1337,9 +1509,8 @@ textarea.form-control {
   visibility: hidden;
 }
 
-
 /* ============================================================
-   RADIO GROUP (Reset modal target & data type)
+   RADIO GROUP
 ============================================================ */
 
 .radio-group {
@@ -1383,7 +1554,6 @@ textarea.form-control {
   accent-color: #171717;
 }
 
-
 /* ============================================================
    MODAL ACTIONS
 ============================================================ */
@@ -1402,7 +1572,6 @@ textarea.form-control {
   border-top: 1px solid #eeeeee;
 }
 
-
 /* ============================================================
    NOTIFICATION MODAL
 ============================================================ */
@@ -1416,7 +1585,6 @@ textarea.form-control {
 
   overflow-y: auto;
 }
-
 
 /* ============================================================
    REQUEST CARD
@@ -1476,11 +1644,6 @@ textarea.form-control {
   font-size: 0.7rem;
 }
 
-
-/* ============================================================
-   REQUEST DETAILS
-============================================================ */
-
 .request-details {
   color: #525252;
 
@@ -1519,11 +1682,6 @@ textarea.form-control {
   font-style: italic;
 }
 
-
-/* ============================================================
-   REQUEST ACTIONS
-============================================================ */
-
 .request-actions {
   display: flex;
   justify-content: flex-end;
@@ -1536,11 +1694,6 @@ textarea.form-control {
 
   border-top: 1px solid #e5e5e5;
 }
-
-
-/* ============================================================
-   ACCEPT / REJECT
-============================================================ */
 
 .btn-glass.accept {
   background: #171717;
@@ -1572,7 +1725,7 @@ textarea.form-control {
 
 .btn-glass.danger {
   background: #dc2626;
-border: none;
+  border: none;
 
   color: #fff;
 }
@@ -1581,11 +1734,6 @@ border: none;
   background: #b91c1c;
   border: none;
 }
-
-
-/* ============================================================
-   EMPTY REQUEST / ROOM
-============================================================ */
 
 .no-requests,
 .no-rooms {
@@ -1597,7 +1745,6 @@ border: none;
 
   text-align: center;
 }
-
 
 /* ============================================================
    STAY MODAL
@@ -1672,7 +1819,6 @@ border: none;
   font-weight: 700;
 }
 
-
 /* ============================================================
    CREATE STAY MODAL
 ============================================================ */
@@ -1704,7 +1850,6 @@ border: none;
 .room-badge strong {
   color: #171717;
 }
-
 
 /* ============================================================
    BULK RANGE TOOL
@@ -1751,6 +1896,129 @@ border: none;
   align-items: flex-end;
 }
 
+/* ============================================================
+   BELOW BASE PRICE — HIGHLIGHTING & WARNING MODAL
+============================================================ */
+
+/* Read-only price cell whose value sits below the category base rate */
+.price.below-base {
+  color: #dc2626;
+}
+
+.price.custom.below-base {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* Bulk edit price input below the base rate */
+.bulk-price-input.below-base {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.bulk-price-input.below-base:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+/* Inline hint inside the single-day edit modal */
+.form-warning {
+  margin-top: 0.45rem;
+  padding: 0.5rem 0.7rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.form-warning strong {
+  color: #78350f;
+}
+
+/* Warning overlay sits above any other modal (e.g. the edit-price modal) */
+.modal-overlay.below-base-overlay {
+  z-index: 11000;
+}
+
+.below-base-modal {
+  max-width: 560px;
+}
+
+.below-base-list {
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  scrollbar-width: thin;
+}
+
+.below-base-header,
+.below-base-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.7fr 0.7fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.below-base-header {
+  position: sticky;
+  top: 0;
+  background: #f5f5f5;
+  border-bottom: 1px solid #e5e5e5;
+  color: #737373;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.below-base-row {
+  border-bottom: 1px solid #f3f3f3;
+  color: #171717;
+}
+
+.below-base-row:last-child {
+  border-bottom: none;
+}
+
+.bba-category {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bba-date {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #525252;
+}
+
+.bba-base {
+  font-family: monospace;
+  color: #737373;
+  text-align: right;
+}
+
+.bba-new {
+  font-family: monospace;
+  font-weight: 700;
+  color: #dc2626;
+  text-align: right;
+}
+
+.below-base-note {
+  margin-top: 0.85rem !important;
+  color: #171717 !important;
+  font-weight: 600;
+}
 
 /* ============================================================
    RESPONSIVE
@@ -1762,12 +2030,8 @@ border: none;
     padding: 1rem 0.75rem;
   }
 
-
-  /* HEADER */
-
   .glass-header {
     flex-direction: column;
-
     align-items: stretch;
   }
 
@@ -1777,110 +2041,34 @@ border: none;
 
   .nav-controls {
     width: 100%;
-
     justify-content: flex-start;
   }
 
-
-  /* VIEW TOGGLE */
-
   .view-toggle {
     width: 100%;
-
     margin-right: 0;
   }
 
   .toggle-btn {
     flex: 1;
-
     justify-content: center;
   }
 
-
-  /* HEADER CONTROLS */
-
-  .match-btn {
-    flex: 1;
-  }
-
+  .match-btn,
   .today-btn {
     flex: 1;
   }
 
   .month-label {
     flex: 1;
-
     min-width: 100px;
-  }
-
-
-  /* REQUEST TOOLBAR */
-
-  .request-toolbar {
-    align-items: flex-start;
-
-    flex-direction: column;
-  }
-
-
-  /* REQUEST HEADER */
-
-  .request-list-header {
-    display: none;
-  }
-
-
-  /* REQUESTS MOBILE VIEW */
-
-  .request-item {
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 0.75rem;
-
-    padding: 1rem;
-  }
-
-  .request-item-main,
-  .request-item-dates,
-  .request-item-meta,
-  .request-total-wrapper,
-  .request-item-actions {
-    width: 100%;
-  }
-
-  .request-total-wrapper {
-    align-items: flex-start;
-
-    padding-top: 0.5rem;
-
-    border-top: 1px solid #f0f0f0;
-
-    text-align: left;
-  }
-
-  .request-total {
-    text-align: left;
-  }
-
-  .request-item-actions {
-    justify-content: flex-end;
-
-    padding-top: 0.5rem;
-
-    border-top: 1px solid #f0f0f0;
   }
 
   .form-row {
     flex-direction: column;
-
     gap: 0;
   }
 
-  /* Category Select Grid - Mobile */
   .category-select-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.4rem;
@@ -1911,8 +2099,17 @@ border: none;
     min-width: 0;
     flex: 1 1 100%;
   }
-}
 
+  .hpms-rooms-header,
+  .hpms-room-row {
+    grid-template-columns: 1fr 0.7fr;
+  }
+
+  .hpms-rooms-header span:nth-child(3),
+  .hpms-room-row .hpms-room-match {
+    display: none;
+  }
+}
 
 @media (max-width: 576px) {
 
@@ -1938,5 +2135,19 @@ border: none;
 
   .category-select-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .hpms-config-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .below-base-header,
+  .below-base-row {
+    grid-template-columns: 1.3fr 1fr 0.7fr;
+  }
+
+  .below-base-header span:nth-child(3),
+  .below-base-row .bba-base {
+    display: none;
   }
 }
