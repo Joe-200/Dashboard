@@ -1,4 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  OnDestroy
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormsModule,
@@ -7,8 +14,9 @@ import {
   FormGroup,
   Validators
 } from '@angular/forms';
-import { HttpClient, HttpBackend, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { forkJoin, from, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { forkJoin, of, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import {
   CategoryService,
@@ -24,48 +32,17 @@ import {
   StayDetailsResponse,
   CreateStayRequest
 } from '../../reservation-request-service.service';
-
 import { RoomService, RoomResponse } from '../../room-response.service';
-
-import { HpmsApiService,  
-  HpmsConfig,
-  HpmsRoom,
-  HpmsApiError } from '../../hpms-api-service.service';
+import { environment } from '../../environment';
 
 // ============================================================
-// SCRAPE TYPES
+// TYPES
 // ============================================================
-interface ScrapedRoom {
-  id: string;
-  name: string;
-  price: string;
-}
-
-interface ScrapedData {
-  status: boolean;
-  data: {
-    hotel_name: string;
-    rooms: ScrapedRoom[];
-    rooms_count: number;
-  };
-  success?: boolean;
-  durationMs?: number;
-}
-
-// Field selector for bulk inventory inputs
 type InventoryField = 'totalRooms' | 'bookedRooms' | 'availableRooms';
-
-// Field selector for the bulk range tool
 type RangeField = 'price' | InventoryField;
-
-// Reset modal types
 type ResetTarget = 'all' | 'category';
 type ResetDataType = 'rates' | 'inventory' | 'both';
 
-// Rate match tabs
-type RateMatchTab = 'scrape' | 'hpms';
-
-// Below-base-price warning entry
 interface BelowBasePriceWarningItem {
   categoryName: string;
   date: string;
@@ -73,18 +50,92 @@ interface BelowBasePriceWarningItem {
   newPrice: number;
 }
 
+// -------- HPMS (Swagger dashboard API) --------
+interface HpmsConfigResponse {
+  enabled: boolean;
+  webhook: string;
+  interval: number;
+  currency: string;
+  reduction: number;
+  reductionType: string;
+  days: number;
+  startDay: number;
+  intervalRequests: boolean;
+  pulseRequests: boolean;
+}
+
+interface HpmsUpdateConfigRequest {
+  enabled?: boolean;
+  interval?: number;
+  reduction?: number;
+  reductionType?: string;
+  currency?: string;
+  days?: number;
+  startDay?: number;
+  webhook?: string;
+}
+
+interface HpmsPulseResponse {
+  status: string;
+  code: number;
+  message: string;
+  process_uuid: string;
+}
+
+interface MatchedCategoryRateDto {
+  categoryId: string;
+  categoryName: string;
+  previousPrice: number;
+  newPrice: number;
+  hpmsProcessedPrice: number;
+  hpmsRawPrice: number;
+}
+
+interface MatchRatesResponse {
+  date: string;
+  updatedCount: number;
+  unmatchedCount: number;
+  matchedRates: MatchedCategoryRateDto[];
+  unmatchedHpmsRooms: string[];
+}
+
+interface HpmsRoomSummary {
+  id: string;
+  name: string;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule
-  ],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './calendar-component.component.html',
   styleUrl: './calendar-component.component.css'
 })
-export class CalendarComponent implements OnInit {
+export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
+
+  @ViewChild('calendarScroll') calendarScroll?: ElementRef<HTMLElement>;
+
+  private readonly destroy$ = new Subject<void>();
+
+  private readonly DAY_CELL_WIDTH = 90;
+  private readonly STICKY_COL_WIDTH = 180;
+
+  private readonly API_BASE = environment.apiUrl;
+
+  private readonly HPMS_BASE =
+    `${this.API_BASE}/api/dashboard/front-desk/hpms`;
+
+  private readonly MATCH_RATES_URL =
+    `${this.API_BASE}/api/dashboard/front-desk/room-categories/rates/match`;
+
+  private readonly TEXT_HEADERS = new HttpHeaders({
+    'Accept': 'application/json, text/plain, */*',
+    'Content-Type': 'application/json'
+  });
+
   // ============================================================
   // VIEW MODE
   // ============================================================
@@ -123,70 +174,40 @@ export class CalendarComponent implements OnInit {
   creatingStay = false;
 
   // ============================================================
-  // RATE MATCH MODAL (inside Rate View)
+  // RATE MATCH MODAL (HPMS)
   // ============================================================
   showRateMatchModal = false;
-  rateMatchForm: FormGroup;
-  rateMatchLoading = false;
   rateMatchError = '';
   rateMatchSuccess = '';
 
-  // Tab: 'scrape' (existing) | 'hpms' (new)
-  rateMatchTab: RateMatchTab = 'scrape';
-
-  // Category selection for rate match
-  selectedCategoriesForMatch: Set<number> = new Set();
-
-  private readonly SCRAPE_API_URL = 'https://smartly-alabaster-quicksand.ngrok-free.dev/api/v2/scrape';
-  private readonly SCRAPE_API_KEY = 'Bearer kLGSgEYGaO3vGteVvPJ1FABcwY2kKPOq9pd5X1pjzmrXDV5VeVBsWk2qwB8AZicg';
-  public  readonly DEFAULT_HOTEL_URL = 'https://www.booking.com/hotel/sa/rohaff-makaah-aparthotel.html?aid=1263239;label=PShare-Pulse-Kgffmz@1786821758&chal_t=1787406661363&force_referer=';
-  private readonly DEFAULT_LANG = 'ar';
-  private readonly DEFAULT_CURRENCY = 'SAR';
-
-  hotelUrl = this.DEFAULT_HOTEL_URL;
-  checkin = '';
-  checkout = '';
-  lang = this.DEFAULT_LANG;
-  currency = this.DEFAULT_CURRENCY;
-  isSending = false;
-
-  // ============================================================
-  // HPMS API STATE (new — driven by api_docs.html)
-  // ============================================================
-  hpmsAccountUuid = '';
-  hpmsAuthToken = '';
-  hpmsCredentialsReady = false;
-
-  hpmsConfig: HpmsConfig | null = null;
+  hpmsConfig: HpmsConfigResponse | null = null;
   hpmsConfigLoading = false;
   hpmsConfigEditing = false;
   hpmsConfigSaving = false;
   hpmsConfigError = '';
   hpmsConfigSuccess = '';
-  hpmsConfigDraft: Partial<HpmsConfig> = {};
+  hpmsConfigDraft: Partial<HpmsUpdateConfigRequest> = {};
 
   hpmsPulseLoading = false;
   hpmsPulseError = '';
   hpmsPulseSuccess = '';
   hpmsProcessUuid = '';
-  hpmsConflictProcessUuid = '';
-  hpmsPulseCheckIn = '';
-  hpmsPulseCheckOut = '';
 
-  hpmsRooms: HpmsRoom[] = [];
+  hpmsMatchLoading = false;
+  hpmsMatchError = '';
+  hpmsMatchSuccess = '';
+  hpmsMatchResult: MatchRatesResponse | null = null;
+
+  hpmsRooms: HpmsRoomSummary[] = [];
   hpmsRoomsLoading = false;
+  hpmsRoomsLoaded = false;
   hpmsRoomsError = '';
-  hpmsRoomsInfoDate = '';
 
   // ============================================================
   // CALENDAR DATA
   // ============================================================
   categories: RoomCategory[] = [];
-  ratesMap: {
-    [categoryId: number]: {
-      [date: string]: DailyRateResponse
-    }
-  } = {};
+  ratesMap: { [categoryId: number]: { [date: string]: DailyRateResponse } } = {};
   days: Date[] = [];
   currentMonth = new Date().getMonth();
   currentYear = new Date().getFullYear();
@@ -194,61 +215,45 @@ export class CalendarComponent implements OnInit {
   loading = false;
   error = '';
 
-  // Edit price modal (single day)
   showEditModal = false;
   selectedCategoryId: number | null = null;
   selectedDate: string | null = null;
   editForm: FormGroup;
   saving = false;
 
-  // ============================================================
-  // BELOW-BASE-PRICE WARNING
-  // ============================================================
   showBelowBaseWarning = false;
   belowBaseWarningItems: BelowBasePriceWarningItem[] = [];
   private belowBaseProceedAction: (() => void) | null = null;
 
-  // ============================================================
-  // BULK EDIT
-  // ============================================================
   bulkEditMode = false;
   bulkSaving = false;
-
   bulkPriceChanges: { [categoryId: number]: { [date: string]: number } } = {};
   private originalBulkPrices: { [categoryId: number]: { [date: string]: number } } = {};
-
   bulkInventoryChanges: {
     [categoryId: number]: {
       [date: string]: {
         totalRooms?: number;
         bookedRooms?: number;
         availableRooms?: number;
-      }
-    }
+      };
+    };
   } = {};
-
   private originalBulkInventory: {
     [categoryId: number]: {
       [date: string]: {
         totalRooms: number;
         bookedRooms: number;
         availableRooms: number;
-      }
-    }
+      };
+    };
   } = {};
 
-  // ============================================================
-  // BULK RANGE TOOL
-  // ============================================================
   rangeCategoryId: number | null = null;
   rangeField: RangeField = 'price';
-  rangeStart: string = '';
-  rangeEnd: string = '';
-  rangeValue: number = 0;
+  rangeStart = '';
+  rangeEnd = '';
+  rangeValue = 0;
 
-  // ============================================================
-  // RESET DATA MODAL
-  // ============================================================
   showResetModal = false;
   resetLoading = false;
   resetError = '';
@@ -259,13 +264,9 @@ export class CalendarComponent implements OnInit {
   resetFrom = '';
   resetTo = '';
 
-  // Drag state
   private isDragging = false;
   private startX = 0;
   private scrollLeft = 0;
-
-  // HTTP client that bypasses interceptors
-  private noInterceptorHttp: HttpClient;
 
   // ============================================================
   // CONSTRUCTOR
@@ -275,9 +276,7 @@ export class CalendarComponent implements OnInit {
     private fb: FormBuilder,
     private reservationService: ReservationRequestService,
     private roomService: RoomService,
-    private http: HttpClient,
-    private httpBackend: HttpBackend,
-    private hpmsApi: HpmsApiService
+    private http: HttpClient
   ) {
     this.editForm = this.fb.group({
       price: [null, [Validators.required, Validators.min(0)]]
@@ -294,43 +293,31 @@ export class CalendarComponent implements OnInit {
       checkInDate: ['', Validators.required],
       checkOutDate: ['', Validators.required]
     });
-
-    this.rateMatchForm = this.fb.group({
-      checkin: ['', Validators.required],
-      checkout: ['', Validators.required],
-      url: [this.DEFAULT_HOTEL_URL],
-      lang: [this.DEFAULT_LANG],
-      currency: [this.DEFAULT_CURRENCY]
-    });
-
-    this.noInterceptorHttp = new HttpClient(httpBackend);
   }
 
   // ============================================================
   // LIFECYCLE
   // ============================================================
   ngOnInit(): void {
-    this.hotelUrl = this.DEFAULT_HOTEL_URL;
-    this.lang = this.DEFAULT_LANG;
-    this.currency = this.DEFAULT_CURRENCY;
     this.loadData();
   }
 
-  // ============================================================
-  // SELECT / DESELECT ALL CATEGORIES
-  // ============================================================
-  selectAllCategories(): void {
-    this.categories.forEach(cat => this.selectedCategoriesForMatch.add(cat.id));
+  ngAfterViewInit(): void {
+    this.scrollToToday();
   }
 
-  deselectAllCategories(): void {
-    this.selectedCategoriesForMatch.clear();
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ============================================================
   // DRAG SCROLL
   // ============================================================
   startDrag(event: MouseEvent, element: HTMLElement): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('input, select, button, textarea, a, label')) return;
+
     this.isDragging = true;
     this.startX = event.pageX - element.offsetLeft;
     this.scrollLeft = element.scrollLeft;
@@ -351,13 +338,14 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // SWITCH VIEW MODE
+  // SWITCH VIEW
   // ============================================================
   switchView(mode: 'rates' | 'rooms'): void {
     this.viewMode = mode;
     if (mode === 'rooms' && this.rooms.length === 0) {
       this.loadRoomsAndStays();
     }
+    setTimeout(() => this.scrollToToday(), 0);
   }
 
   // ============================================================
@@ -444,7 +432,7 @@ export class CalendarComponent implements OnInit {
   // ============================================================
   // ACCEPT / REJECT
   // ============================================================
-  openAcceptModal(requestId: number, categoryId: number): void {
+  openAcceptModal(requestId: number, categoryId: number | string): void {
     this.acceptingRequestId = requestId;
     this.selectedRoomId = null;
     this.availableRooms = [];
@@ -456,7 +444,9 @@ export class CalendarComponent implements OnInit {
       status: 'AVAILABLE',
     }).subscribe({
       next: (data) => {
-        this.availableRooms = data.content.filter(r => r.categoryId === categoryId);
+        this.availableRooms = data.content.filter(
+          r => String(r.categoryId) === String(categoryId)
+        );
         this.acceptLoading = false;
       },
       error: (err) => {
@@ -553,19 +543,19 @@ export class CalendarComponent implements OnInit {
     }
 
     this.creatingStay = true;
-    const formVal = this.createStayForm.value;
+    const v = this.createStayForm.value;
 
     const payload: CreateStayRequest = {
-      guestName: formVal.guestName,
-      phone: formVal.phone,
-      email: formVal.email || undefined,
-      nationality: formVal.nationality || undefined,
-      identification: formVal.identification || undefined,
+      guestName: v.guestName,
+      phone: v.phone,
+      email: v.email || undefined,
+      nationality: v.nationality || undefined,
+      identification: v.identification || undefined,
       roomNumber: this.selectedRoomForStay.roomNumber,
-      numAdults: formVal.numAdults,
-      numKids: formVal.numKids,
-      expectedCheckInDate: formVal.checkInDate,
-      expectedCheckOutDate: formVal.checkOutDate
+      numAdults: v.numAdults,
+      numKids: v.numKids,
+      expectedCheckInDate: v.checkInDate,
+      expectedCheckOutDate: v.checkOutDate
     };
 
     this.reservationService.createStay(payload).subscribe({
@@ -584,257 +574,75 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // RATE MATCH: Open modal
+  // RATE MATCH MODAL (HPMS ONLY)
   // ============================================================
   openRateMatchModal(): void {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    this.rateMatchForm.patchValue({
-      checkin: this.formatDate(today),
-      checkout: this.formatDate(tomorrow),
-      url: this.DEFAULT_HOTEL_URL,
-      lang: this.DEFAULT_LANG,
-      currency: this.DEFAULT_CURRENCY
-    });
-
-    this.selectedCategoriesForMatch = new Set(this.categories.map(c => c.id));
-
-    // Default HPMS pulse dates match the scrape dates
-    this.hpmsPulseCheckIn = this.formatDate(today);
-    this.hpmsPulseCheckOut = this.formatDate(tomorrow);
-
-    this.rateMatchTab = 'scrape';
     this.rateMatchError = '';
     this.rateMatchSuccess = '';
-
     this.hpmsPulseError = '';
     this.hpmsPulseSuccess = '';
     this.hpmsProcessUuid = '';
-    this.hpmsConflictProcessUuid = '';
-    this.hpmsRooms = [];
+    this.hpmsMatchError = '';
+    this.hpmsMatchSuccess = '';
+    this.hpmsMatchResult = null;
     this.hpmsRoomsError = '';
+    this.hpmsConfigError = '';
+    this.hpmsConfigSuccess = '';
+    this.hpmsConfigEditing = false;
 
     this.showRateMatchModal = true;
+    this.loadHpmsConfig();
   }
 
   closeRateMatchModal(): void {
     this.showRateMatchModal = false;
-    this.rateMatchLoading = false;
-    this.rateMatchError = '';
-    this.rateMatchSuccess = '';
     this.hpmsConfigEditing = false;
-  }
-
-  toggleCategoryForMatch(categoryId: number, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    if (checked) {
-      this.selectedCategoriesForMatch.add(categoryId);
-    } else {
-      this.selectedCategoriesForMatch.delete(categoryId);
-    }
+    this.hpmsPulseLoading = false;
+    this.hpmsMatchLoading = false;
   }
 
   // ============================================================
-  // RATE MATCH — SCRAPE TAB (existing behavior)
-  // ============================================================
-  async executeRateMatch(): Promise<void> {
-    if (this.rateMatchForm.invalid) {
-      this.rateMatchForm.markAllAsTouched();
-      return;
-    }
-
-    if (this.selectedCategoriesForMatch.size === 0) {
-      this.rateMatchError = 'Please select at least one category to match.';
-      return;
-    }
-
-    const formVal = this.rateMatchForm.value;
-    this.checkin = formVal.checkin;
-    this.checkout = formVal.checkout;
-    this.hotelUrl = formVal.url || this.DEFAULT_HOTEL_URL;
-    this.lang = formVal.lang || this.DEFAULT_LANG;
-    this.currency = formVal.currency || this.DEFAULT_CURRENCY;
-
-    this.rateMatchLoading = true;
-    this.rateMatchError = '';
-    this.rateMatchSuccess = '';
-    this.isSending = true;
-
-    try {
-      await this.sendRequestInternal();
-    } catch (err: any) {
-      this.rateMatchError = err?.message || 'Rate match failed.';
-    } finally {
-      this.rateMatchLoading = false;
-      this.isSending = false;
-    }
-  }
-
-  private async sendRequestInternal(): Promise<void> {
-    const hotelUrl = this.hotelUrl?.trim();
-    const checkin = this.checkin;
-    const checkout = this.checkout;
-    const lang = this.lang || 'ar';
-    const currency = this.currency || 'SAR';
-
-    if (!hotelUrl) {
-      this.rateMatchError = 'Please provide a Booking.com URL.';
-      return;
-    }
-    if (!checkin || !checkout) {
-      this.rateMatchError = 'Please select both check‑in and check‑out dates.';
-      return;
-    }
-
-    const requestPayload: any = { checkin, checkout, lang, currency, url: hotelUrl };
-
-    const headers = new HttpHeaders({
-      'Authorization': this.SCRAPE_API_KEY,
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
-    });
-
-    try {
-      const response: any = await this.noInterceptorHttp
-        .post<ScrapedData>(this.SCRAPE_API_URL, requestPayload, { headers, observe: 'response' })
-        .toPromise();
-
-      const body = response.body;
-
-      if (response.ok && (body?.status === true || body?.success === true)) {
-        this.rateMatchSuccess = `Scrape successful! Found ${body?.data?.rooms?.length || 0} rooms. Applying prices...`;
-        if (body?.data?.rooms?.length) {
-          await this.applyRateMatchPricesBulk(body);
-        } else {
-          this.rateMatchError = 'No rooms found in the response.';
-        }
-      } else {
-        const errMsg = body?.error || body?.message || 'Unknown error';
-        this.rateMatchError = `Scrape failed: ${errMsg}`;
-      }
-    } catch (error: any) {
-      if (error instanceof HttpErrorResponse) {
-        if (error.status === 429) {
-          this.rateMatchError = 'Rate limit exceeded (max 8 requests/min).';
-        } else {
-          this.rateMatchError = `Request failed. HTTP ${error.status}`;
-        }
-      } else {
-        this.rateMatchError = error?.message || 'Network error';
-      }
-    }
-  }
-
-  private parsePrice(priceStr: string): number {
-    const numeric = priceStr.replace(/[^0-9.]/g, '');
-    return parseFloat(numeric) || 0;
-  }
-
-  private async applyRateMatchPricesBulk(scrapeResult: ScrapedData): Promise<void> {
-    const today = new Date();
-    const todayStr = this.formatDate(today);
-
-    const categoryMap = new Map<number, RoomCategory>();
-    this.categories.forEach(cat => categoryMap.set(cat.id, cat));
-
-    const bulkItems: BulkSetRatesItemRequest[] = [];
-    const unmatched: string[] = [];
-
-    for (const room of scrapeResult.data.rooms) {
-      const roomIdStr = room.id.trim();
-      const price = this.parsePrice(room.price);
-      if (price <= 0) {
-        console.warn(`Skipping room "${roomIdStr}" – invalid price: ${room.price}`);
-        continue;
-      }
-
-      const categoryId = Number(roomIdStr);
-      if (!isNaN(categoryId) && categoryMap.has(categoryId) && this.selectedCategoriesForMatch.has(categoryId)) {
-        const category = categoryMap.get(categoryId)!;
-        bulkItems.push({
-          category: category.name,
-          startDate: todayStr,
-          endDate: todayStr,
-          price: price
-        });
-      } else {
-        unmatched.push(roomIdStr);
-      }
-    }
-
-    if (unmatched.length > 0) {
-      console.warn('Unmatched or unselected room IDs:', unmatched);
-    }
-
-    if (bulkItems.length === 0) {
-      this.rateMatchError = 'No matching categories selected or found.';
-      this.rateMatchSuccess = '';
-      return;
-    }
-
-    this.rateMatchLoading = true;
-    try {
-      const result = await this.categoryService.setAllRates(bulkItems).toPromise();
-      this.rateMatchSuccess = `✅ Successfully updated ${result?.totalDaysUpdated || 0} days across ${result?.categoriesUpdated || 0} categories.`;
-      this.loadData();
-      setTimeout(() => {
-        if (this.showRateMatchModal) this.closeRateMatchModal();
-      }, 2000);
-    } catch (err: any) {
-      this.rateMatchError = `Bulk update failed: ${err.error?.message || err.message}`;
-    } finally {
-      this.rateMatchLoading = false;
-    }
-  }
-
-  // ============================================================
-  // HPMS TAB — switch / credentials
-  // ============================================================
-  switchToHpmsTab(): void {
-    this.rateMatchTab = 'hpms';
-    this.applyHpmsCredentials();
-    if (this.hpmsCredentialsReady && !this.hpmsConfig) {
-      this.loadHpmsConfig();
-    }
-  }
-
-  applyHpmsCredentials(): void {
-    this.hpmsApi.setCredentials(this.hpmsAccountUuid, this.hpmsAuthToken);
-    this.hpmsCredentialsReady =
-      !!this.hpmsAccountUuid.trim() && !!this.hpmsAuthToken.trim();
-  }
-
-  // ============================================================
-  // HPMS TAB — CONFIG
+  // HPMS CONFIG
   // ============================================================
   loadHpmsConfig(): void {
-    this.applyHpmsCredentials();
-    if (!this.hpmsCredentialsReady) {
-      this.hpmsConfigError = 'Please provide an Account UUID and Bearer Token.';
-      return;
-    }
-
     this.hpmsConfigLoading = true;
     this.hpmsConfigError = '';
     this.hpmsConfigSuccess = '';
 
-    this.hpmsApi.getConfig().subscribe({
-      next: (res) => {
-        this.hpmsConfig = res.config;
-        this.hpmsConfigLoading = false;
-      },
-      error: (err: HpmsApiError) => {
-        this.hpmsConfigLoading = false;
-        this.hpmsConfigError = this.formatHpmsError(err);
-      }
-    });
+    this.http.get(`${this.HPMS_BASE}/config`, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (raw) => {
+          this.hpmsConfigLoading = false;
+          const parsed = this.safeParse<HpmsConfigResponse>(raw);
+          if (!parsed) {
+            this.hpmsConfigError = 'Server returned an empty or non-JSON response.';
+            return;
+          }
+          this.hpmsConfig = parsed;
+        },
+        error: (err: HttpErrorResponse) => {
+          this.hpmsConfigLoading = false;
+          this.hpmsConfigError = this.fmtError(err);
+        }
+      });
   }
 
   startEditHpmsConfig(): void {
     if (!this.hpmsConfig) return;
-    this.hpmsConfigDraft = { ...this.hpmsConfig };
+    this.hpmsConfigDraft = {
+      enabled: this.hpmsConfig.enabled,
+      webhook: this.hpmsConfig.webhook,
+      currency: this.hpmsConfig.currency,
+      reduction: this.hpmsConfig.reduction,
+      reductionType: this.hpmsConfig.reductionType,
+      days: this.hpmsConfig.days,
+      startDay: this.hpmsConfig.startDay,
+      interval: this.hpmsConfig.interval
+    };
     this.hpmsConfigEditing = true;
     this.hpmsConfigError = '';
     this.hpmsConfigSuccess = '';
@@ -847,238 +655,196 @@ export class CalendarComponent implements OnInit {
   }
 
   saveHpmsConfig(): void {
-    if (!this.hpmsCredentialsReady) {
-      this.hpmsConfigError = 'Please provide an Account UUID and Bearer Token.';
-      return;
-    }
-
-    const patch: Partial<HpmsConfig> = {};
     const d = this.hpmsConfigDraft;
+    const patch: HpmsUpdateConfigRequest = {};
 
     if (d.webhook !== undefined) patch.webhook = d.webhook;
     if (d.currency !== undefined) patch.currency = d.currency;
-    if (d.reduction !== undefined) patch.reduction = d.reduction;
-    if (d.reduction_type !== undefined) patch.reduction_type = d.reduction_type;
-    if (d.days !== undefined) patch.days = d.days;
-    if (d.start_day !== undefined) patch.start_day = d.start_day;
+    if (d.reduction !== undefined) patch.reduction = Number(d.reduction);
+    if (d.reductionType !== undefined) patch.reductionType = d.reductionType;
+    if (d.days !== undefined) patch.days = Number(d.days);
+    if (d.startDay !== undefined) patch.startDay = Number(d.startDay);
+    if (d.interval !== undefined) patch.interval = Number(d.interval);
+    if (d.enabled !== undefined) patch.enabled = d.enabled;
 
     this.hpmsConfigSaving = true;
     this.hpmsConfigError = '';
     this.hpmsConfigSuccess = '';
 
-    this.hpmsApi.updateConfig(patch).subscribe({
-      next: (res) => {
-        this.hpmsConfig = { ...(this.hpmsConfig as HpmsConfig), ...res.config };
-        this.hpmsConfigSaving = false;
-        this.hpmsConfigEditing = false;
-        this.hpmsConfigDraft = {};
-        this.hpmsConfigSuccess = '✅ Configuration updated.';
-      },
-      error: (err: HpmsApiError) => {
-        this.hpmsConfigSaving = false;
-        this.hpmsConfigError = this.formatHpmsError(err);
-      }
-    });
+    this.http.patch(`${this.HPMS_BASE}/config`, patch, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (raw) => {
+          this.hpmsConfigSaving = false;
+          const parsed = this.safeParse<HpmsConfigResponse>(raw);
+          if (parsed) this.hpmsConfig = parsed;
+          this.hpmsConfigEditing = false;
+          this.hpmsConfigDraft = {};
+          this.hpmsConfigSuccess = '✅ Configuration updated.';
+        },
+        error: (err: HttpErrorResponse) => {
+          this.hpmsConfigSaving = false;
+          this.hpmsConfigError = this.fmtError(err);
+        }
+      });
   }
 
   // ============================================================
-  // HPMS TAB — PULSE
+  // HPMS PULSE
   // ============================================================
   triggerHpmsPulse(): void {
-    this.applyHpmsCredentials();
-    if (!this.hpmsCredentialsReady) {
-      this.hpmsPulseError = 'Please provide an Account UUID and Bearer Token.';
-      return;
-    }
-    if (!this.hpmsPulseCheckIn || !this.hpmsPulseCheckOut) {
-      this.hpmsPulseError = 'Please select both check-in and check-out dates.';
-      return;
-    }
-
     this.hpmsPulseLoading = true;
     this.hpmsPulseError = '';
     this.hpmsPulseSuccess = '';
     this.hpmsProcessUuid = '';
-    this.hpmsConflictProcessUuid = '';
 
-    const payload = {
-      check_in: this.toHpmsDate(this.hpmsPulseCheckIn),
-      check_out: this.toHpmsDate(this.hpmsPulseCheckOut)
-    };
-
-    this.hpmsApi.pulse(payload).subscribe({
-      next: (res) => {
-        this.hpmsPulseLoading = false;
-        this.hpmsProcessUuid = res.process_uuid;
-        this.hpmsPulseSuccess = `✅ Pulse accepted. Process ${res.process_uuid} is running.`;
-      },
-      error: (err: HpmsApiError) => {
-        this.hpmsPulseLoading = false;
-
-        // 409 → another process running; docs return its uuid
-        if (err.code === 409 && (err as any).process_uuid) {
-          this.hpmsConflictProcessUuid = (err as any).process_uuid;
-          this.hpmsPulseError = err.message || 'Another process is already running.';
-        } else {
-          this.hpmsPulseError = this.formatHpmsError(err);
+    this.http.post(`${this.HPMS_BASE}/pulse`, {}, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (raw) => {
+          this.hpmsPulseLoading = false;
+          const res = this.safeParse<HpmsPulseResponse>(raw);
+          this.hpmsProcessUuid = res?.process_uuid || '';
+          this.hpmsPulseSuccess = res?.message
+            ? `✅ ${res.message}`
+            : '✅ Pulse accepted.';
+        },
+        error: (err: HttpErrorResponse) => {
+          this.hpmsPulseLoading = false;
+          this.hpmsPulseError = this.fmtError(err);
         }
-      }
-    });
+      });
   }
 
   // ============================================================
-  // HPMS TAB — ROOMS DATA (GET /rooms/data)
+  // HPMS MATCH RATES
   // ============================================================
-  loadHpmsRoomsData(): void {
-    this.applyHpmsCredentials();
-    if (!this.hpmsCredentialsReady) {
-      this.hpmsRoomsError = 'Please provide an Account UUID and Bearer Token.';
-      return;
-    }
-    if (!this.hpmsPulseCheckIn || !this.hpmsPulseCheckOut) {
-      this.hpmsRoomsError = 'Please select both check-in and check-out dates.';
-      return;
-    }
+  matchRates(): void {
+    this.hpmsMatchLoading = true;
+    this.hpmsMatchError = '';
+    this.hpmsMatchSuccess = '';
+    this.hpmsMatchResult = null;
 
+    this.http.post(this.MATCH_RATES_URL, {}, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (raw) => {
+          this.hpmsMatchLoading = false;
+          const res = this.safeParse<MatchRatesResponse>(raw);
+          if (!res) {
+            this.hpmsMatchError = 'Server returned an empty or non-JSON response.';
+            return;
+          }
+          this.hpmsMatchResult = res;
+          const updated = res.updatedCount ?? 0;
+          const unmatched = res.unmatchedCount ?? 0;
+          this.hpmsMatchSuccess = `✅ Matched ${updated} categor${updated === 1 ? 'y' : 'ies'}` +
+            (unmatched ? ` · ${unmatched} unmatched` : '');
+          this.loadData();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.hpmsMatchLoading = false;
+          this.hpmsMatchError = this.fmtError(err);
+        }
+      });
+  }
+
+  // ============================================================
+  // HPMS ROOMS
+  // ============================================================
+  loadHpmsRooms(): void {
     this.hpmsRoomsLoading = true;
     this.hpmsRoomsError = '';
     this.hpmsRooms = [];
 
-    this.hpmsApi
-      .getRoomsData(
-        this.toHpmsDate(this.hpmsPulseCheckIn),
-        this.toHpmsDate(this.hpmsPulseCheckOut)
-      )
+    this.http.get(`${this.HPMS_BASE}/rooms`, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => {
+        next: (raw) => {
           this.hpmsRoomsLoading = false;
-          this.hpmsRooms = res.data.rooms || [];
-          this.hpmsRoomsInfoDate = `${res.data.check_in} → ${res.data.check_out}`;
+          this.hpmsRoomsLoaded = true;
+          const parsed = this.safeParse<HpmsRoomSummary[]>(raw);
+          this.hpmsRooms = parsed || [];
         },
-        error: (err: HpmsApiError) => {
+        error: (err: HttpErrorResponse) => {
           this.hpmsRoomsLoading = false;
-          this.hpmsRoomsError = this.formatHpmsError(err);
+          this.hpmsRoomsLoaded = true;
+          this.hpmsRoomsError = this.fmtError(err);
         }
       });
   }
 
   // ============================================================
-  // HPMS TAB — MATCH & APPLY (match by name, fallback to number)
+  // HELPERS
   // ============================================================
-  getCategoryForHpmsRoom(room: HpmsRoom): RoomCategory | null {
-    if (!room?.name) return null;
-
-    const normalized = room.name.trim().toLowerCase();
-
-    // 1) exact name match (case-insensitive)
-    let match = this.categories.find(
-      c => c.name.trim().toLowerCase() === normalized
-    );
-    if (match) return match;
-
-    // 2) numeric suffix match: "Room 3" → 3, then compare to category.id
-    const m = normalized.match(/(\d+)\s*$/);
-    if (m) {
-      const num = Number(m[1]);
-      match = this.categories.find(c => c.id === num);
-      if (match) return match;
+  private safeParse<T>(raw: string | null | undefined): T | null {
+    if (raw === null || raw === undefined) return null;
+    const trimmed = String(raw).trim();
+    if (!trimmed) return null;
+    if (trimmed === 'null') return null;
+    if (trimmed.startsWith('<')) return null;
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch {
+      return null;
     }
-
-    return null;
   }
 
-  hpmsRoomMatches(room: HpmsRoom): boolean {
-    return this.getCategoryForHpmsRoom(room) !== null;
-  }
-
-  applyHpmsPrices(): void {
-    if (this.hpmsRooms.length === 0) {
-      this.hpmsRoomsError = 'Fetch rooms first.';
-      return;
-    }
-
-    const todayStr = this.formatDate(new Date());
-    const items: BulkSetRatesItemRequest[] = [];
-    const unmatched: string[] = [];
-
-    for (const room of this.hpmsRooms) {
-      const cat = this.getCategoryForHpmsRoom(room);
-      const price = Number(room.processed_price);
-      if (!cat || !isFinite(price) || price <= 0) {
-        unmatched.push(room.name || room.uuid);
-        continue;
-      }
-      items.push({
-        category: cat.name,
-        startDate: todayStr,
-        endDate: todayStr,
-        price
-      });
-    }
-
-    if (items.length === 0) {
-      this.hpmsRoomsError = 'No HPMS rooms could be matched to categories.';
-      return;
-    }
-
-    this.hpmsRoomsLoading = true;
-    this.hpmsRoomsError = '';
-
-    this.categoryService.setAllRates(items).subscribe({
-      next: (res) => {
-        this.hpmsRoomsLoading = false;
-        this.hpmsPulseSuccess = `✅ Applied HPMS prices to ${res.categoriesUpdated} categories (${res.totalDaysUpdated} days).`;
-        if (unmatched.length) {
-          console.warn('HPMS rooms with no category match:', unmatched);
-        }
-        this.loadData();
-      },
-      error: (err: any) => {
-        this.hpmsRoomsLoading = false;
-        this.hpmsRoomsError = `Apply failed: ${err?.error?.message || err?.message || 'Unknown error'}`;
-      }
-    });
-  }
-
-  // ============================================================
-  // HPMS HELPERS
-  // ============================================================
-  /** "2026-01-01" → "01-01-2026" (what HPMS expects). */
-  private toHpmsDate(isoDate: string): string {
-    if (!isoDate) return '';
-    const [y, m, d] = isoDate.split('-');
-    if (!y || !m || !d) return isoDate;
-    return `${d}-${m}-${y}`;
-  }
-
-  private formatHpmsError(err: HpmsApiError): string {
+  private fmtError(err: HttpErrorResponse): string {
     if (!err) return 'Unknown error';
-    const detail = err.errors
-      ? Object.entries(err.errors)
-          .map(([k, v]) => `${k}: ${v.join(', ')}`)
-          .join(' | ')
-      : '';
-    return `HTTP ${err.code}: ${err.message}${detail ? ' — ' + detail : ''}`;
+
+    const body = err.error;
+    let message = err.message || 'Request failed';
+
+    if (typeof body === 'string' && body.trim()) {
+      const parsed = this.safeParse<any>(body);
+      if (parsed?.message) {
+        message = parsed.message;
+      } else if (!body.trim().startsWith('<')) {
+        message = body.trim().slice(0, 300);
+      } else {
+        message = 'Server returned an HTML page (check auth / route).';
+      }
+    } else if (body && typeof body === 'object' && (body as any).message) {
+      message = (body as any).message;
+    }
+
+    return `HTTP ${err.status}: ${message}`;
+  }
+
+  isToday(date: Date): boolean {
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear()
+      && date.getMonth() === now.getMonth()
+      && date.getDate() === now.getDate();
   }
 
   // ============================================================
   // CALENDAR HELPERS
   // ============================================================
   get calendarGridColumns(): string {
-    return `150px repeat(${this.days.length}, 90px)`;
+    return `${this.STICKY_COL_WIDTH}px repeat(${this.days.length}, ${this.DAY_CELL_WIDTH}px)`;
   }
 
   private buildRatesMap(rates: any): void {
-    console.log('🔨 Building rates map from:', rates);
     this.ratesMap = {};
 
-    if (typeof rates === 'object' && !Array.isArray(rates)) {
+    if (rates && typeof rates === 'object' && !Array.isArray(rates)) {
       for (const catName in rates) {
         const category = this.categories.find(c => c.name === catName);
-        if (!category) {
-          console.warn(`⚠️ Category not found for name: "${catName}"`);
-          continue;
-        }
+        if (!category) continue;
         const catId = category.id;
         this.ratesMap[catId] = {};
         const categoryRates = rates[catName];
@@ -1089,20 +855,13 @@ export class CalendarComponent implements OnInit {
           });
         }
       }
-      console.log('✅ Rates map (by category name):', this.ratesMap);
-    } else if (Array.isArray(rates)) {
-      console.warn('⚠️ Rates is an array. Attempting to map to categories.');
-      if (this.categories.length > 0) {
-        const firstCatId = this.categories[0].id;
-        this.ratesMap[firstCatId] = {};
-        rates.forEach((rate: any) => {
-          const dateKey = String(rate.date).substring(0, 10);
-          this.ratesMap[firstCatId][dateKey] = { ...rate, date: dateKey };
-        });
-        console.warn(`⚠️ Mapped array rates to first category (ID: ${firstCatId}).`);
-      }
-    } else {
-      console.error('❌ Unknown rates format:', rates);
+    } else if (Array.isArray(rates) && this.categories.length > 0) {
+      const firstCatId = this.categories[0].id;
+      this.ratesMap[firstCatId] = {};
+      rates.forEach((rate: any) => {
+        const dateKey = String(rate.date).substring(0, 10);
+        this.ratesMap[firstCatId][dateKey] = { ...rate, date: dateKey };
+      });
     }
   }
 
@@ -1133,8 +892,7 @@ export class CalendarComponent implements OnInit {
   }
 
   getDefaultPrice(categoryId: number): number {
-    const category = this.categories.find(c => c.id === categoryId);
-    return category?.price ?? 0;
+    return this.categories.find(c => c.id === categoryId)?.price ?? 0;
   }
 
   getBasePriceForCategory(id: number | null): number {
@@ -1144,8 +902,7 @@ export class CalendarComponent implements OnInit {
 
   getCategoryName(id: number | null): string {
     if (id === null) return '';
-    const category = this.categories.find(c => c.id === id);
-    return category?.name ?? '';
+    return this.categories.find(c => c.id === id)?.name ?? '';
   }
 
   isCustomRate(rate: DailyRateResponse | null): boolean {
@@ -1170,16 +927,14 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // BELOW BASE PRICE — CHECKS / WARNING
+  // BELOW-BASE PRICE
   // ============================================================
-  /** True when the given price is strictly below the category base rate. */
   isBelowBasePrice(categoryId: number, price: number | null | undefined): boolean {
     if (price === null || price === undefined) return false;
     const base = this.getDefaultPrice(categoryId);
     return base > 0 && Number(price) < base;
   }
 
-  /** Live check used inside the single-day edit modal. */
   get editPriceBelowBase(): boolean {
     if (this.selectedCategoryId === null) return false;
     const price = Number(this.editForm?.value?.price);
@@ -1187,7 +942,6 @@ export class CalendarComponent implements OnInit {
     return this.isBelowBasePrice(this.selectedCategoryId, price);
   }
 
-  /** Read-only calendar price cell below base? */
   isCellPriceBelowBase(category: RoomCategory, day: Date): boolean {
     const base = this.getDefaultPrice(category.id);
     if (base <= 0) return false;
@@ -1196,7 +950,6 @@ export class CalendarComponent implements OnInit {
     return price < base;
   }
 
-  /** Effective (draft) bulk price for a cell. */
   getBulkPriceValue(category: RoomCategory, day: Date): number {
     const dateKey = this.getDateKey(day);
     const draft = this.bulkPriceChanges[category.id]?.[dateKey];
@@ -1205,7 +958,6 @@ export class CalendarComponent implements OnInit {
     return rate?.price ?? this.getDefaultPrice(category.id);
   }
 
-  /** Draft bulk price below base? (used for red highlighting) */
   isBulkPriceBelowBase(category: RoomCategory, day: Date): boolean {
     const base = this.getDefaultPrice(category.id);
     if (base <= 0) return false;
@@ -1265,7 +1017,6 @@ export class CalendarComponent implements OnInit {
     const date = this.selectedDate;
     const price = Number(this.editForm.value.price);
 
-    // Warn when the new price drops below the category base rate
     if (this.isBelowBasePrice(categoryId, price)) {
       this.requestBelowBaseConfirmation(
         [{
@@ -1287,11 +1038,8 @@ export class CalendarComponent implements OnInit {
     this.error = '';
 
     this.categoryService.setRates(categoryId, date, date, price).subscribe({
-      next: (response) => {
-        console.log('Price updated successfully:', response);
-        if (!this.ratesMap[categoryId]) {
-          this.ratesMap[categoryId] = {};
-        }
+      next: () => {
+        if (!this.ratesMap[categoryId]) this.ratesMap[categoryId] = {};
         const existingRate = this.ratesMap[categoryId][date];
         const totalRooms = existingRate?.totalRooms ?? 0;
         const bookedRooms = existingRate?.bookedRooms ?? 0;
@@ -1300,8 +1048,8 @@ export class CalendarComponent implements OnInit {
           ...existingRate,
           date: date,
           price: price,
-          totalRooms: totalRooms,
-          bookedRooms: bookedRooms,
+          totalRooms,
+          bookedRooms,
           availableRooms: existingRate?.availableRooms ?? (totalRooms - bookedRooms),
           customRate: true
         };
@@ -1310,7 +1058,6 @@ export class CalendarComponent implements OnInit {
         this.closeModal();
       },
       error: (err) => {
-        console.error('Failed to save price:', err);
         this.saving = false;
         this.error = 'Failed to set price: ' + (err?.error?.message || err?.message || 'Unknown error');
       }
@@ -1318,7 +1065,7 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // BULK EDIT — TOGGLE / SNAPSHOT
+  // BULK EDIT
   // ============================================================
   toggleBulkEdit(): void {
     if (this.bulkEditMode) {
@@ -1357,39 +1104,23 @@ export class CalendarComponent implements OnInit {
             ? rate.availableRooms
             : Math.max(0, totalRooms - bookedRooms);
 
-        this.bulkInventoryChanges[catId][dateKey] = {
-          totalRooms,
-          bookedRooms,
-          availableRooms
-        };
-        this.originalBulkInventory[catId][dateKey] = {
-          totalRooms,
-          bookedRooms,
-          availableRooms
-        };
+        this.bulkInventoryChanges[catId][dateKey] = { totalRooms, bookedRooms, availableRooms };
+        this.originalBulkInventory[catId][dateKey] = { totalRooms, bookedRooms, availableRooms };
       }
     }
 
     this.bulkEditMode = true;
   }
 
-  // ============================================================
-  // BULK EDIT — PRICE HANDLER
-  // ============================================================
   onBulkPriceChange(categoryId: number, day: Date, newValue: string): void {
     const dateKey = this.getDateKey(day);
     const num = parseFloat(newValue);
     if (!isNaN(num) && num >= 0) {
-      if (!this.bulkPriceChanges[categoryId]) {
-        this.bulkPriceChanges[categoryId] = {};
-      }
+      if (!this.bulkPriceChanges[categoryId]) this.bulkPriceChanges[categoryId] = {};
       this.bulkPriceChanges[categoryId][dateKey] = num;
     }
   }
 
-  // ============================================================
-  // BULK EDIT — INVENTORY HANDLER
-  // ============================================================
   onBulkInventoryChange(
     categoryId: number,
     day: Date,
@@ -1400,31 +1131,21 @@ export class CalendarComponent implements OnInit {
     const num = parseInt(newValue, 10);
     if (isNaN(num) || num < 0) return;
 
-    if (!this.bulkInventoryChanges[categoryId]) {
-      this.bulkInventoryChanges[categoryId] = {};
-    }
+    if (!this.bulkInventoryChanges[categoryId]) this.bulkInventoryChanges[categoryId] = {};
     if (!this.bulkInventoryChanges[categoryId][dateKey]) {
       this.bulkInventoryChanges[categoryId][dateKey] = {};
     }
     this.bulkInventoryChanges[categoryId][dateKey][field] = num;
   }
 
-  getBulkInventoryValue(
-    category: RoomCategory,
-    day: Date,
-    field: InventoryField
-  ): number {
+  getBulkInventoryValue(category: RoomCategory, day: Date, field: InventoryField): number {
     const dateKey = this.getDateKey(day);
     const override = this.bulkInventoryChanges[category.id]?.[dateKey]?.[field];
     if (override !== undefined && override !== null) return override;
 
     const rate = this.getRate(category.id, day);
-    if (field === 'totalRooms') {
-      return rate?.totalRooms ?? this.getTotalRooms(category, day);
-    }
-    if (field === 'bookedRooms') {
-      return rate?.bookedRooms ?? 0;
-    }
+    if (field === 'totalRooms') return rate?.totalRooms ?? this.getTotalRooms(category, day);
+    if (field === 'bookedRooms') return rate?.bookedRooms ?? 0;
     if (rate?.availableRooms !== undefined && rate?.availableRooms !== null) {
       return rate.availableRooms;
     }
@@ -1435,12 +1156,7 @@ export class CalendarComponent implements OnInit {
   // BULK RANGE TOOL
   // ============================================================
   applyRangeToBulk(): void {
-    if (
-      this.rangeCategoryId === null ||
-      !this.rangeStart ||
-      !this.rangeEnd ||
-      this.rangeValue < 0
-    ) {
+    if (this.rangeCategoryId === null || !this.rangeStart || !this.rangeEnd || this.rangeValue < 0) {
       return;
     }
 
@@ -1455,19 +1171,14 @@ export class CalendarComponent implements OnInit {
     const field = this.rangeField;
 
     if (field === 'price') {
-      if (!this.bulkPriceChanges[catId]) {
-        this.bulkPriceChanges[catId] = {};
-      }
+      if (!this.bulkPriceChanges[catId]) this.bulkPriceChanges[catId] = {};
     } else {
-      if (!this.bulkInventoryChanges[catId]) {
-        this.bulkInventoryChanges[catId] = {};
-      }
+      if (!this.bulkInventoryChanges[catId]) this.bulkInventoryChanges[catId] = {};
     }
 
-    let current = new Date(start);
+    const current = new Date(start);
     while (current <= end) {
       const dateKey = this.formatDate(current);
-
       if (field === 'price') {
         this.bulkPriceChanges[catId][dateKey] = this.rangeValue;
       } else {
@@ -1476,7 +1187,6 @@ export class CalendarComponent implements OnInit {
         }
         this.bulkInventoryChanges[catId][dateKey][field] = this.rangeValue;
       }
-
       current.setDate(current.getDate() + 1);
     }
 
@@ -1489,7 +1199,7 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // BULK SAVE — rates + inventory
+  // BULK SAVE
   // ============================================================
   saveAllBulkChanges(bypassBelowBaseCheck: boolean = false): void {
     const changedRateItems: BulkSetRatesItemRequest[] = [];
@@ -1512,8 +1222,6 @@ export class CalendarComponent implements OnInit {
               endDate: dateKey,
               price: newPrice
             });
-
-            // Collect below-base violations for the warning
             if (this.isBelowBasePrice(catId, newPrice)) {
               belowBaseViolations.push({
                 categoryName: category.name,
@@ -1562,7 +1270,6 @@ export class CalendarComponent implements OnInit {
       return;
     }
 
-    // Warn once, listing every affected date, before persisting anything
     if (!bypassBelowBaseCheck && belowBaseViolations.length > 0) {
       this.requestBelowBaseConfirmation(
         belowBaseViolations,
@@ -1585,12 +1292,8 @@ export class CalendarComponent implements OnInit {
     forkJoin([rates$, inventory$]).subscribe({
       next: ([rateResult, invResult]) => {
         this.bulkSaving = false;
-        const ratesMsg = rateResult
-          ? `${rateResult.totalDaysUpdated} rate day(s)`
-          : '0 rate day(s)';
-        const invMsg = invResult
-          ? `${invResult.totalDaysUpdated} inventory day(s)`
-          : '0 inventory day(s)';
+        const ratesMsg = rateResult ? `${rateResult.totalDaysUpdated} rate day(s)` : '0 rate day(s)';
+        const invMsg = invResult ? `${invResult.totalDaysUpdated} inventory day(s)` : '0 inventory day(s)';
         console.log(`Bulk save complete: ${ratesMsg}, ${invMsg}.`);
         this.loadData();
         this.toggleBulkEdit();
@@ -1603,7 +1306,7 @@ export class CalendarComponent implements OnInit {
   }
 
   // ============================================================
-  // RESET DATA — open / close
+  // RESET DATA
   // ============================================================
   openResetModal(): void {
     const from = new Date(this.currentYear, this.currentMonth, 1);
@@ -1632,7 +1335,6 @@ export class CalendarComponent implements OnInit {
       this.resetError = 'Please select a category to reset.';
       return;
     }
-
     if (this.resetFrom && this.resetTo && this.resetFrom > this.resetTo) {
       this.resetError = '"From" date must be before "To" date.';
       return;
@@ -1644,12 +1346,10 @@ export class CalendarComponent implements OnInit {
 
     const from = this.resetFrom || undefined;
     const to = this.resetTo || undefined;
-
     const rateFrom = from || '2000-01-01';
     const rateTo = to || '2099-12-31';
 
     const tasks: any[] = [];
-
     try {
       if (this.resetTarget === 'all') {
         if (this.resetDataType === 'inventory' || this.resetDataType === 'both') {
@@ -1662,7 +1362,6 @@ export class CalendarComponent implements OnInit {
         }
       } else {
         const catId = this.resetCategoryId!;
-
         if (this.resetDataType === 'inventory' || this.resetDataType === 'both') {
           tasks.push(this.categoryService.resetCategoryInventory(catId, from, to));
         }
@@ -1678,7 +1377,6 @@ export class CalendarComponent implements OnInit {
       }
 
       await forkJoin(tasks).toPromise();
-
       this.resetSuccess = '✅ Reset completed successfully.';
       this.resetLoading = false;
       this.loadData();
@@ -1687,7 +1385,6 @@ export class CalendarComponent implements OnInit {
         if (this.showResetModal) this.closeResetModal();
       }, 2000);
     } catch (err: any) {
-      console.error('Reset failed:', err);
       this.resetLoading = false;
       this.resetError = `Reset failed: ${err?.error?.message || err?.message || 'Unknown error'}`;
     }
@@ -1723,6 +1420,9 @@ export class CalendarComponent implements OnInit {
     this.loadData();
   }
 
+  // ============================================================
+  // LOAD DATA
+  // ============================================================
   loadData(): void {
     this.loading = true;
     this.error = '';
@@ -1737,23 +1437,40 @@ export class CalendarComponent implements OnInit {
         this.categories = categories;
         this.categoryService.getAllRates(fromStr, toStr).subscribe({
           next: (rates) => {
-            console.log('📥 Raw rates response:', rates);
             this.buildRatesMap(rates);
             this.generateDays(from, to);
             this.loading = false;
+            this.scrollToToday();
           },
           error: (err) => {
-            console.error('Failed to load rates:', err);
             this.error = 'Failed to load rates: ' + (err?.error?.message || err?.message || 'Unknown error');
             this.loading = false;
           }
         });
       },
       error: (err) => {
-        console.error('Failed to load categories:', err);
         this.error = 'Failed to load categories: ' + (err?.error?.message || err?.message || 'Unknown error');
         this.loading = false;
       }
     });
+  }
+
+  // ============================================================
+  // AUTO-SCROLL TO TODAY
+  // ============================================================
+  private scrollToToday(): void {
+    setTimeout(() => {
+      const el = this.calendarScroll?.nativeElement;
+      if (!el) return;
+
+      const todayIndex = this.days.findIndex(d => this.isToday(d));
+      if (todayIndex < 0) {
+        el.scrollLeft = 0;
+        return;
+      }
+
+      const target = todayIndex * this.DAY_CELL_WIDTH;
+      el.scrollTo({ left: target, behavior: 'auto' });
+    }, 0);
   }
 }

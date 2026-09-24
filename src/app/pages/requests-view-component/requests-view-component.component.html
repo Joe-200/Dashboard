@@ -8,7 +8,6 @@
   ========================================================== -->
   <div class="toolbar">
 
-    <!-- Search -->
     <div class="search-group">
       <div class="search-wrapper">
         <input
@@ -29,7 +28,6 @@
       </div>
     </div>
 
-    <!-- Status filter -->
     <div class="filter-group">
       <label for="statusFilter">Status</label>
       <select
@@ -43,10 +41,11 @@
         <option value="APPROVED">Approved</option>
         <option value="REJECTED">Rejected</option>
         <option value="EXPIRED">Expired</option>
+        <option value="DATE_CHANGE_PENDING">Date Change Pending</option>
+        <option value="CANCELLED">Cancelled</option>
       </select>
     </div>
 
-    <!-- Date range -->
     <div class="filter-group date-group date-from-gap">
       <label for="dateFrom">Check‑in from</label>
       <input
@@ -68,7 +67,6 @@
       />
     </div>
 
-    <!-- Refresh -->
     <button
       type="button"
       class="btn-glass refresh-btn"
@@ -78,7 +76,6 @@
       {{ loading ? 'Refreshing...' : 'Refresh' }}
     </button>
 
-    <!-- Clear all filters -->
     <button
       type="button"
       class="btn-glass clear-filters"
@@ -102,7 +99,6 @@
   ========================================================== -->
   <div class="request-compact-list" *ngIf="!loading && filteredRequests.length > 0">
 
-    <!-- Table‑style header -->
     <div class="request-list-header">
       <div>Guest</div>
       <div>Stay Dates</div>
@@ -112,7 +108,6 @@
       <div class="header-actions">Actions</div>
     </div>
 
-    <!-- Request items -->
     <div
       class="request-item"
       *ngFor="let req of filteredRequests"
@@ -127,10 +122,21 @@
 
         <!-- Dates -->
         <div class="request-item-dates">
-          <span class="date-label">From</span>
-          <span class="date-value">{{ req.checkInDate }}</span>
-          <span class="date-arrow">→</span>
-          <span class="date-value">{{ req.checkOutDate }}</span>
+          <div class="date-row">
+            <span class="date-label">From</span>
+            <span class="date-value">{{ req.checkInDate }}</span>
+            <span class="date-arrow">→</span>
+            <span class="date-value">{{ req.checkOutDate }}</span>
+          </div>
+          <div
+            class="date-row proposed"
+            *ngIf="req.proposedCheckInDate || req.proposedCheckOutDate"
+          >
+            <span class="date-label">Proposed</span>
+            <span class="date-value">{{ req.proposedCheckInDate }}</span>
+            <span class="date-arrow">→</span>
+            <span class="date-value">{{ req.proposedCheckOutDate }}</span>
+          </div>
         </div>
 
         <!-- Guest count -->
@@ -155,18 +161,49 @@
         <!-- Actions -->
         <div
           class="request-item-actions"
-          *ngIf="req.status === 'PENDING'"
           (click)="$event.stopPropagation()"
         >
-          <button type="button" class="btn-glass accept" (click)="openAccept(req.id, req.categoryId)">
-            Accept
+          <ng-container *ngIf="req.status === 'PENDING'">
+            <button
+              type="button"
+              class="btn-glass accept"
+              (click)="openAccept(req.id, $any(req.categoryId))"
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              class="btn-glass reject"
+              (click)="openReject(req.id)"
+            >
+              Reject
+            </button>
+          </ng-container>
+
+          <button
+            *ngIf="canProposeDateChange(req)"
+            type="button"
+            class="btn-glass warn"
+            (click)="openDateChange(req)"
+          >
+            Dates
           </button>
-          <button type="button" class="btn-glass reject" (click)="openReject(req.id)">
-            Reject
+
+          <button
+            *ngIf="canCancel(req)"
+            type="button"
+            class="btn-glass danger-outline"
+            (click)="openCancel(req)"
+          >
+            Cancel
           </button>
-        </div>
-        <div class="request-item-actions" *ngIf="req.status !== 'PENDING'">
-          <span class="no-action">—</span>
+
+          <span
+            class="no-action"
+            *ngIf="req.status !== 'PENDING' && !canProposeDateChange(req) && !canCancel(req)"
+          >
+            —
+          </span>
         </div>
       </div>
     </div>
@@ -197,7 +234,7 @@
 </div>
 
 <!-- ============================================================
-     REQUEST DETAILS MODAL (ENHANCED)
+     REQUEST DETAILS MODAL
 ============================================================ -->
 <div
   *ngIf="showDetailsModal && selectedRequest"
@@ -220,6 +257,16 @@
         <div><strong>Category</strong><span>{{ selectedRequest.categoryName }}</span></div>
         <div><strong>Check‑in</strong><span>{{ selectedRequest.checkInDate }}</span></div>
         <div><strong>Check‑out</strong><span>{{ selectedRequest.checkOutDate }}</span></div>
+
+        <div *ngIf="selectedRequest.proposedCheckInDate">
+          <strong>Proposed check‑in</strong>
+          <span>{{ selectedRequest.proposedCheckInDate }}</span>
+        </div>
+        <div *ngIf="selectedRequest.proposedCheckOutDate">
+          <strong>Proposed check‑out</strong>
+          <span>{{ selectedRequest.proposedCheckOutDate }}</span>
+        </div>
+
         <div><strong>Adults</strong><span>{{ selectedRequest.numAdults }}</span></div>
         <div><strong>Kids</strong><span>{{ selectedRequest.numKids }}</span></div>
         <div><strong>Quoted total</strong><span>{{ selectedRequest.quotedTotalCharge | number:'1.0-2' }}</span></div>
@@ -227,6 +274,16 @@
           <strong>Status</strong>
           <span><span class="status-badge" [class]="selectedRequest.status.toLowerCase()">{{ selectedRequest.status }}</span></span>
         </div>
+
+        <div *ngIf="selectedRequest.cancellationDeadline">
+          <strong>Cancellation deadline</strong>
+          <span>{{ selectedRequest.cancellationDeadline | date:'short' }}</span>
+        </div>
+        <div>
+          <strong>Can cancel</strong>
+          <span>{{ selectedRequest.canCancel ? 'Yes' : 'No' }}</span>
+        </div>
+
         <div *ngIf="selectedRequest.notes" class="full-width"><strong>Notes</strong><span>{{ selectedRequest.notes }}</span></div>
         <div *ngIf="selectedRequest.rejectionReason" class="full-width"><strong>Rejection reason</strong><span>{{ selectedRequest.rejectionReason }}</span></div>
         <div *ngIf="selectedRequest.processedByUserId" class="full-width">
@@ -236,12 +293,40 @@
         <div class="full-width"><strong>Created</strong><span>{{ selectedRequest.createdAt | date:'short' }}</span></div>
       </div>
 
-      <div class="modal-actions" *ngIf="selectedRequest.status === 'PENDING'">
-        <button type="button" class="btn-glass accept" (click)="openAccept(selectedRequest.id, selectedRequest.categoryId); closeDetails()">
-          Accept
+      <div class="modal-actions">
+        <ng-container *ngIf="selectedRequest.status === 'PENDING'">
+          <button
+            type="button"
+            class="btn-glass accept"
+            (click)="openAccept(selectedRequest.id, $any(selectedRequest.categoryId)); closeDetails()"
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            class="btn-glass reject"
+            (click)="openReject(selectedRequest.id); closeDetails()"
+          >
+            Reject
+          </button>
+        </ng-container>
+
+        <button
+          *ngIf="canProposeDateChange(selectedRequest)"
+          type="button"
+          class="btn-glass warn"
+          (click)="openDateChange(selectedRequest); closeDetails()"
+        >
+          Propose Date Change
         </button>
-        <button type="button" class="btn-glass reject" (click)="openReject(selectedRequest.id); closeDetails()">
-          Reject
+
+        <button
+          *ngIf="canCancel(selectedRequest)"
+          type="button"
+          class="btn-glass danger-outline"
+          (click)="openCancel(selectedRequest); closeDetails()"
+        >
+          Cancel Reservation
         </button>
       </div>
     </div>
@@ -330,6 +415,101 @@
         (click)="confirmReject()"
       >
         {{ rejectLoading ? 'Rejecting...' : 'Reject' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PROPOSE DATE CHANGE MODAL
+============================================================ -->
+<div
+  *ngIf="showDateChangeModal"
+  class="modal-overlay"
+  (click)="closeDateChange()"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Propose Date Change</h3>
+      <button type="button" class="close-btn" (click)="closeDateChange()">✕</button>
+    </div>
+
+    <p class="modal-subtitle">
+      Propose new stay dates for
+      <strong>{{ dateChangeGuestName }}</strong>.
+      The guest will be asked to accept or decline.
+    </p>
+
+    <div class="date-change-grid">
+      <div class="form-group">
+        <label for="proposedCheckIn">New check‑in</label>
+        <input
+          type="date"
+          id="proposedCheckIn"
+          class="form-control"
+          [(ngModel)]="proposedCheckIn"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="proposedCheckOut">New check‑out</label>
+        <input
+          type="date"
+          id="proposedCheckOut"
+          class="form-control"
+          [(ngModel)]="proposedCheckOut"
+        />
+      </div>
+    </div>
+
+    <div *ngIf="dateChangeError" class="error-inline">{{ dateChangeError }}</div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-glass" (click)="closeDateChange()">Cancel</button>
+      <button
+        type="button"
+        class="btn-glass primary"
+        [disabled]="dateChangeLoading"
+        (click)="confirmDateChange()"
+      >
+        {{ dateChangeLoading ? 'Sending...' : 'Send Proposal' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CANCEL RESERVATION MODAL
+============================================================ -->
+<div
+  *ngIf="showCancelModal"
+  class="modal-overlay"
+  (click)="closeCancel()"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Cancel Reservation</h3>
+      <button type="button" class="close-btn" (click)="closeCancel()">✕</button>
+    </div>
+
+    <p class="modal-subtitle">
+      Are you sure you want to cancel the reservation request for
+      <strong>{{ cancelGuestName }}</strong>?
+    </p>
+
+    <div class="modal-warning">
+      This action cannot be undone. The guest will be notified.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-glass" (click)="closeCancel()">Keep it</button>
+      <button
+        type="button"
+        class="btn-glass danger"
+        [disabled]="cancelLoading"
+        (click)="confirmCancel()"
+      >
+        {{ cancelLoading ? 'Cancelling...' : 'Yes, cancel' }}
       </button>
     </div>
   </div>

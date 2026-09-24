@@ -12,16 +12,27 @@ import {
 
 import { RoomService, RoomResponse } from '../../room-response.service';
 
+/**
+ * Local extension so template can access date-change + cancel fields
+ * even if the imported interface hasn't been updated yet.
+ */
+export type ReservationRequestExt = ReservationRequest & {
+  proposedCheckInDate?: string;
+  proposedCheckOutDate?: string;
+  canCancel?: boolean;
+  cancellationDeadline?: string;
+};
+
 @Component({
   selector: 'app-requests-view',
   standalone: true,
   imports: [CommonModule, FormsModule, DatePipe],
- templateUrl: './requests-view-component.component.html',
+  templateUrl: './requests-view-component.component.html',
   styleUrl: './requests-view-component.component.css'
 })
 export class RequestsViewComponent implements OnInit {
   // ============================================================
-  // OUTPUT – notify parent when data changes
+  // OUTPUT
   // ============================================================
   @Output() dataChanged = new EventEmitter<void>();
 
@@ -33,13 +44,12 @@ export class RequestsViewComponent implements OnInit {
   dateFrom = '';
   dateTo = '';
 
-  // Debounced search
   private searchSubject = new Subject<string>();
 
   // ============================================================
-  // DATA & PAGINATION (server-side based on status only)
+  // DATA & PAGINATION
   // ============================================================
-  requests: ReservationRequest[] = [];
+  requests: ReservationRequestExt[] = [];
   loading = false;
   error = '';
 
@@ -48,13 +58,14 @@ export class RequestsViewComponent implements OnInit {
   totalRequests = 0;
   totalPages = 0;
 
+  todayIso = new Date().toISOString().substring(0, 10);
+
   // ============================================================
-  // CLIENT-SIDE FILTERED REQUESTS
+  // FILTERED REQUESTS
   // ============================================================
-  get filteredRequests(): ReservationRequest[] {
+  get filteredRequests(): ReservationRequestExt[] {
     let result = this.requests;
 
-    // Filter by search term (guest name, email, phone)
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.trim().toLowerCase();
       result = result.filter(req =>
@@ -64,7 +75,6 @@ export class RequestsViewComponent implements OnInit {
       );
     }
 
-    // Filter by date range (check-in date)
     if (this.dateFrom) {
       result = result.filter(req => req.checkInDate >= this.dateFrom);
     }
@@ -78,22 +88,32 @@ export class RequestsViewComponent implements OnInit {
   // ============================================================
   // MODALS
   // ============================================================
-  // Details
   showDetailsModal = false;
-  selectedRequest: ReservationRequest | null = null;
+  selectedRequest: ReservationRequestExt | null = null;
 
-  // Accept
   showAcceptModal = false;
   acceptingRequestId: number | null = null;
   availableRooms: RoomResponse[] = [];
   selectedRoomId: number | null = null;
   acceptLoading = false;
 
-  // Reject
   showRejectModal = false;
   rejectingRequestId: number | null = null;
   rejectReason = '';
   rejectLoading = false;
+
+  showDateChangeModal = false;
+  dateChangeRequestId: number | null = null;
+  dateChangeGuestName = '';
+  proposedCheckIn = '';
+  proposedCheckOut = '';
+  dateChangeLoading = false;
+  dateChangeError = '';
+
+  showCancelModal = false;
+  cancelingRequestId: number | null = null;
+  cancelGuestName = '';
+  cancelLoading = false;
 
   // ============================================================
   // CONSTRUCTOR
@@ -115,7 +135,7 @@ export class RequestsViewComponent implements OnInit {
   }
 
   // ============================================================
-  // LOAD REQUESTS (server-side – only status, page, size)
+  // LOAD
   // ============================================================
   loadRequests(): void {
     this.loading = true;
@@ -127,20 +147,22 @@ export class RequestsViewComponent implements OnInit {
       .getRequests(status, this.currentPage, this.pageSize)
       .subscribe({
         next: (data: PagedModelReservationRequestResponse) => {
-          this.requests = data.content;
+          this.requests = data.content as ReservationRequestExt[];
           this.totalRequests = data.page.totalElements;
           this.totalPages = data.page.totalPages;
           this.loading = false;
         },
         error: (err: HttpErrorResponse) => {
-          this.error = 'Failed to load requests: ' + (err.error?.message || err.message);
+          this.error =
+            'Failed to load requests: ' +
+            (err.error?.message || err.message);
           this.loading = false;
         }
       });
   }
 
   // ============================================================
-  // FILTER / SEARCH HANDLERS
+  // FILTER / SEARCH
   // ============================================================
   onSearchChange(): void {
     this.searchSubject.next(this.searchTerm);
@@ -176,9 +198,24 @@ export class RequestsViewComponent implements OnInit {
   }
 
   // ============================================================
+  // ACTION AVAILABILITY
+  // ============================================================
+  canProposeDateChange(req: ReservationRequestExt): boolean {
+    return req.status === 'PENDING' || req.status === 'APPROVED';
+  }
+
+  canCancel(req: ReservationRequestExt): boolean {
+    return (
+      req.status === 'PENDING' ||
+      req.status === 'APPROVED' ||
+      req.status === 'DATE_CHANGE_PENDING'
+    );
+  }
+
+  // ============================================================
   // DETAILS MODAL
   // ============================================================
-  openDetails(request: ReservationRequest): void {
+  openDetails(request: ReservationRequestExt): void {
     this.selectedRequest = request;
     this.showDetailsModal = true;
   }
@@ -191,7 +228,7 @@ export class RequestsViewComponent implements OnInit {
   // ============================================================
   // ACCEPT MODAL
   // ============================================================
-  openAccept(requestId: number, categoryId: number): void {
+  openAccept(requestId: number, categoryId: number | string): void {
     this.acceptingRequestId = requestId;
     this.selectedRoomId = null;
     this.availableRooms = [];
@@ -205,11 +242,15 @@ export class RequestsViewComponent implements OnInit {
       })
       .subscribe({
         next: (data) => {
-          this.availableRooms = data.content.filter(r => r.categoryId === categoryId);
+          this.availableRooms = data.content.filter(
+            r => String(r.categoryId) === String(categoryId)
+          );
           this.acceptLoading = false;
         },
         error: (err) => {
-          this.error = 'Failed to load rooms: ' + (err.error?.message || err.message);
+          this.error =
+            'Failed to load rooms: ' +
+            (err.error?.message || err.message);
           this.acceptLoading = false;
         }
       });
@@ -223,7 +264,9 @@ export class RequestsViewComponent implements OnInit {
   }
 
   confirmAccept(): void {
-    if (this.acceptingRequestId === null || this.selectedRoomId === null) return;
+    if (this.acceptingRequestId === null || this.selectedRoomId === null) {
+      return;
+    }
     this.acceptLoading = true;
     this.reservationService
       .approveRequest(this.acceptingRequestId, this.selectedRoomId)
@@ -231,14 +274,14 @@ export class RequestsViewComponent implements OnInit {
         next: () => {
           this.acceptLoading = false;
           this.closeAccept();
-          this.requests = this.requests.filter(r => r.id !== this.acceptingRequestId);
-          this.totalRequests--;
           this.dataChanged.emit();
-          this.loadRequests(); // reload to sync pagination
+          this.loadRequests();
         },
         error: (err) => {
           this.acceptLoading = false;
-          this.error = 'Failed to accept: ' + (err.error?.message || err.message);
+          this.error =
+            'Failed to accept: ' +
+            (err.error?.message || err.message);
         }
       });
   }
@@ -260,7 +303,9 @@ export class RequestsViewComponent implements OnInit {
   }
 
   confirmReject(): void {
-    if (this.rejectingRequestId === null || !this.rejectReason.trim()) return;
+    if (this.rejectingRequestId === null || !this.rejectReason.trim()) {
+      return;
+    }
     this.rejectLoading = true;
     this.reservationService
       .rejectRequest(this.rejectingRequestId, this.rejectReason.trim())
@@ -268,15 +313,112 @@ export class RequestsViewComponent implements OnInit {
         next: () => {
           this.rejectLoading = false;
           this.closeReject();
-          this.requests = this.requests.filter(r => r.id !== this.rejectingRequestId);
-          this.totalRequests--;
           this.dataChanged.emit();
           this.loadRequests();
         },
         error: (err) => {
           this.rejectLoading = false;
-          this.error = 'Failed to reject: ' + (err.error?.message || err.message);
+          this.error =
+            'Failed to reject: ' +
+            (err.error?.message || err.message);
         }
       });
+  }
+
+  // ============================================================
+  // PROPOSE DATE CHANGE
+  // ============================================================
+  openDateChange(request: ReservationRequestExt): void {
+    this.dateChangeRequestId = request.id;
+    this.dateChangeGuestName = request.guestName;
+    this.proposedCheckIn = request.checkInDate || '';
+    this.proposedCheckOut = request.checkOutDate || '';
+    this.dateChangeError = '';
+    this.dateChangeLoading = false;
+    this.showDateChangeModal = true;
+  }
+
+  closeDateChange(): void {
+    this.showDateChangeModal = false;
+    this.dateChangeRequestId = null;
+    this.dateChangeGuestName = '';
+    this.proposedCheckIn = '';
+    this.proposedCheckOut = '';
+    this.dateChangeError = '';
+    this.dateChangeLoading = false;
+  }
+
+  confirmDateChange(): void {
+    if (this.dateChangeRequestId === null) return;
+
+    if (!this.proposedCheckIn || !this.proposedCheckOut) {
+      this.dateChangeError = 'Both check-in and check-out dates are required.';
+      return;
+    }
+    if (this.proposedCheckOut <= this.proposedCheckIn) {
+      this.dateChangeError = 'Check-out date must be after the check-in date.';
+      return;
+    }
+
+    this.dateChangeError = '';
+    this.dateChangeLoading = true;
+
+    this.reservationService
+      .proposeDateChange(
+        this.dateChangeRequestId,
+        this.proposedCheckIn,
+        this.proposedCheckOut
+      )
+      .subscribe({
+        next: () => {
+          this.dateChangeLoading = false;
+          this.closeDateChange();
+          this.dataChanged.emit();
+          this.loadRequests();
+        },
+        error: (err) => {
+          this.dateChangeLoading = false;
+          this.dateChangeError =
+            'Failed to propose new dates: ' +
+            (err.error?.message || err.message);
+        }
+      });
+  }
+
+  // ============================================================
+  // CANCEL RESERVATION
+  // ============================================================
+  openCancel(request: ReservationRequestExt): void {
+    this.cancelingRequestId = request.id;
+    this.cancelGuestName = request.guestName;
+    this.cancelLoading = false;
+    this.showCancelModal = true;
+  }
+
+  closeCancel(): void {
+    this.showCancelModal = false;
+    this.cancelingRequestId = null;
+    this.cancelGuestName = '';
+    this.cancelLoading = false;
+  }
+
+  confirmCancel(): void {
+    if (this.cancelingRequestId === null) return;
+    this.cancelLoading = true;
+
+    this.reservationService.cancelRequest(this.cancelingRequestId).subscribe({
+      next: () => {
+        this.cancelLoading = false;
+        this.closeCancel();
+        this.dataChanged.emit();
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.cancelLoading = false;
+        this.error =
+          'Failed to cancel reservation: ' +
+          (err.error?.message || err.message);
+      }
+    });
   }
 }

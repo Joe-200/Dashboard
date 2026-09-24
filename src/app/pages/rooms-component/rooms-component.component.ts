@@ -42,7 +42,6 @@ interface GalleryImage {
 
 /* =========================================================
    HPMS ROOM / CATEGORY SUMMARY
-   Matches `HpmsRoomSummaryResponse` from the OpenAPI spec.
 ========================================================= */
 interface HpmsRoomSummary {
   id: string;
@@ -103,12 +102,12 @@ export class RoomsComponent implements OnInit {
 
   showCategoryModal = false;
   isEditCategory = false;
-  selectedCategoryId: number | null = null;
+  selectedCategoryId: string | null = null; // now string
   categoryForm: FormGroup;
   categoryGallery: GalleryImage[] = [];
 
   /* =========================================================
-     HPMS CATEGORIES (read-only reference in the modal)
+     HPMS CATEGORIES (read-only reference)
   ========================================================= */
 
   hpmsCategories: HpmsRoomSummary[] = [];
@@ -116,9 +115,6 @@ export class RoomsComponent implements OnInit {
   hpmsCategoriesError = '';
   hpmsCategoriesLoaded = false;
 
-  /** Endpoint for HPMS room/category summaries.
-   *  Uses the environment base URL so the request goes straight
-   *  to the backend and bypasses the Angular dev server fallback. */
   private readonly hpmsRoomsUrl =
     `${environment.apiUrl}/api/dashboard/front-desk/hpms/rooms`;
 
@@ -130,7 +126,6 @@ export class RoomsComponent implements OnInit {
   ) {
 
     /* ROOM FORM */
-
     this.roomForm = this.fb.group({
       roomNumber: ['', Validators.required],
       categoryId: [null, [Validators.required, Validators.min(1)]],
@@ -140,10 +135,9 @@ export class RoomsComponent implements OnInit {
       status: ['AVAILABLE']
     });
 
-    /* CATEGORY FORM */
-
+    /* CATEGORY FORM — ID is now string */
     this.categoryForm = this.fb.group({
-      id: [null, [Validators.required, Validators.min(1)]],
+      id: ['', Validators.required],
       name: ['', [Validators.required, Validators.maxLength(100)]],
       description: [''],
       price: [0, [Validators.required, Validators.min(0)]],
@@ -625,12 +619,6 @@ export class RoomsComponent implements OnInit {
      HPMS CATEGORIES (read-only reference)
   ========================================================= */
 
-  /**
-   * Loads the HPMS room/category summaries (name + id) once
-   * and caches the result for the lifetime of the component.
-   * Safe to call repeatedly — will short-circuit if already
-   * loaded or currently loading.
-   */
   private loadHpmsCategoriesIfNeeded(): void {
     if (this.hpmsCategoriesLoaded || this.hpmsCategoriesLoading) {
       return;
@@ -661,25 +649,20 @@ export class RoomsComponent implements OnInit {
 
   /* =========================================================
      CATEGORY MODAL – ENTRY POINTS
-     The modal now hosts a two-pane layout (list + form).
-     `startNewCategory` resets the right pane to "create" mode.
-     `openEditCategoryModal` loads a category into the right pane.
   ========================================================= */
 
-  /** Opens the modal in "new category" mode (right pane). */
   openCreateCategoryModal(): void {
     this.startNewCategory();
     this.loadHpmsCategoriesIfNeeded();
     this.showCategoryModal = true;
   }
 
-  /** Resets the right pane to create mode (without toggling the modal). */
   startNewCategory(): void {
     this.isEditCategory = false;
     this.selectedCategoryId = null;
 
     this.categoryForm.reset({
-      id: null,
+      id: '',
       name: '',
       description: '',
       price: 0,
@@ -696,13 +679,13 @@ export class RoomsComponent implements OnInit {
     this.categoriesError = '';
   }
 
-  /** Loads the selected category into the right pane for editing. */
   openEditCategoryModal(category: RoomCategory): void {
     this.isEditCategory = true;
-    this.selectedCategoryId = category.id;
+    // convert id to string
+    this.selectedCategoryId = String(category.id);
 
     this.categoryForm.patchValue({
-      id: category.id,
+      id: String(category.id),
       name: category.name,
       description: category.description || '',
       price: category.price,
@@ -746,6 +729,25 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
+     APPLY HPMS CATEGORY (click to fill ID + Name)
+  ========================================================= */
+
+  applyHpmsCategory(hpms: HpmsRoomSummary): void {
+    this.categoryForm.patchValue({
+      id: hpms.id,
+      name: hpms.name
+    });
+    // Optionally mark as touched so validation updates
+    this.categoryForm.get('id')?.markAsTouched();
+    this.categoryForm.get('name')?.markAsTouched();
+  }
+
+  isHpmsCategorySelected(hpms: HpmsRoomSummary): boolean {
+    const currentId = this.categoryForm.get('id')?.value;
+    return currentId === hpms.id;
+  }
+
+  /* =========================================================
      SAVE CATEGORY
   ========================================================= */
 
@@ -761,13 +763,13 @@ export class RoomsComponent implements OnInit {
     this.categoriesError = '';
 
     try {
-      let categoryId: number;
+      let categoryId: string;
 
       if (this.isEditCategory && this.selectedCategoryId) {
         categoryId = this.selectedCategoryId;
 
         const updateData: UpdateCategoryRequest = {
-          id: formValue.id,
+          id: formValue.id, // string
           name: formValue.name,
           description: formValue.description,
           price: formValue.price,
@@ -778,14 +780,14 @@ export class RoomsComponent implements OnInit {
           hasWifi: formValue.hasWifi,
           numTvs: formValue.numTvs,
           viewType: formValue.viewType
-        };
+        } as any; // cast because service expects number
 
         await this.categoryService
-          .updateCategory(categoryId, updateData)
+          .updateCategory(categoryId as any, updateData)
           .toPromise();
       } else {
         const createData: CreateCategoryRequest = {
-          id: formValue.id,
+          id: formValue.id, // string
           name: formValue.name,
           description: formValue.description,
           price: formValue.price,
@@ -796,7 +798,7 @@ export class RoomsComponent implements OnInit {
           hasWifi: formValue.hasWifi,
           numTvs: formValue.numTvs,
           viewType: formValue.viewType
-        };
+        } as any;
 
         const created = await this.categoryService
           .createCategory(createData)
@@ -806,10 +808,10 @@ export class RoomsComponent implements OnInit {
           throw new Error('Category creation returned no data.');
         }
 
-        categoryId = created.id;
+        categoryId = String(created.id);
       }
 
-      await this.syncCategoryGallery(categoryId);
+      await this.syncCategoryGallery(categoryId as any);
 
       this.categoriesLoading = false;
       this.closeCategoryModal();
@@ -993,13 +995,15 @@ export class RoomsComponent implements OnInit {
      DELETE CATEGORY
   ========================================================= */
 
-  deleteCategory(id: number): void {
+  deleteCategory(id: number | string): void {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
-    this.categoryService.deleteCategory(id).subscribe({
+    // Convert to number if the service expects it
+    const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+
+    this.categoryService.deleteCategory(numericId).subscribe({
       next: () => {
-        // If we were editing this category, switch back to create mode
-        if (this.selectedCategoryId === id) {
+        if (this.selectedCategoryId === String(id)) {
           this.startNewCategory();
         }
         this.loadCategories();

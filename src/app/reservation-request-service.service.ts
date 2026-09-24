@@ -3,14 +3,18 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from './environment';
 
+// ============================================================
+// MODELS
+// ============================================================
 export interface ReservationRequest {
   id: number;
+  guestId?: number;
   guestName: string;
   guestEmail: string;
   guestPhone: string;
   nationality: string;
   identification: string;
-  categoryId: number;
+  categoryId: number | string;
   categoryName: string;
   checkInDate: string;
   checkOutDate: string;
@@ -23,6 +27,12 @@ export interface ReservationRequest {
   processedByUserId: number;
   processedAt: string;
   createdAt: string;
+
+  // ===== Added: date-change proposal + cancellation fields =====
+  proposedCheckInDate?: string;
+  proposedCheckOutDate?: string;
+  canCancel?: boolean;
+  cancellationDeadline?: string;
 }
 
 export interface StayDetailsResponse {
@@ -54,7 +64,11 @@ export interface CreateStayRequest {
   dateRangeValid?: boolean;
 }
 
-// Paged response for requests
+export interface ProposeDateChangeRequest {
+  proposedCheckIn: string;   // yyyy-MM-dd
+  proposedCheckOut: string;  // yyyy-MM-dd
+}
+
 export interface PagedModelReservationRequestResponse {
   content: ReservationRequest[];
   page: {
@@ -65,23 +79,39 @@ export interface PagedModelReservationRequestResponse {
   };
 }
 
+// ============================================================
+// SERVICE
+// ============================================================
 @Injectable({ providedIn: 'root' })
 export class ReservationRequestService {
+  /** Front-desk base – list, approve, reject, propose date change */
   private baseUrl = `${environment.apiUrl}/api/dashboard/front-desk/reservation-requests`;
+
+  /** Guest base – used for cancel endpoint */
+  private guestRequestsUrl = `${environment.apiUrl}/api/guest/reservation-requests`;
+
   private staysUrl = `${environment.apiUrl}/api/dashboard/front-desk/stays`;
 
   constructor(private http: HttpClient) {}
 
-  // Existing: get pending requests
-  getPendingRequests(page: number = 0, size: number = 20): Observable<PagedModelReservationRequestResponse> {
+  // ------------------------------------------------------------
+  // LIST / GET
+  // ------------------------------------------------------------
+  getPendingRequests(
+    page: number = 0,
+    size: number = 20
+  ): Observable<PagedModelReservationRequestResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
     return this.http.get<PagedModelReservationRequestResponse>(this.baseUrl, { params });
   }
 
-  // NEW: get requests with optional status filter and pagination
-  getRequests(status?: string, page: number = 0, size: number = 20): Observable<PagedModelReservationRequestResponse> {
+  getRequests(
+    status?: string,
+    page: number = 0,
+    size: number = 20
+  ): Observable<PagedModelReservationRequestResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -91,20 +121,68 @@ export class ReservationRequestService {
     return this.http.get<PagedModelReservationRequestResponse>(this.baseUrl, { params });
   }
 
+  // ------------------------------------------------------------
+  // APPROVE / REJECT
+  // ------------------------------------------------------------
   approveRequest(id: number, roomId: number): Observable<ReservationRequest> {
-    return this.http.post<ReservationRequest>(`${this.baseUrl}/${id}/approve`, { roomId });
+    return this.http.post<ReservationRequest>(
+      `${this.baseUrl}/${id}/approve`,
+      { roomId }
+    );
   }
 
   rejectRequest(id: number, reason: string): Observable<ReservationRequest> {
-    return this.http.post<ReservationRequest>(`${this.baseUrl}/${id}/reject`, { reason });
+    return this.http.post<ReservationRequest>(
+      `${this.baseUrl}/${id}/reject`,
+      { reason }
+    );
   }
 
-  getStays(statuses: string[], page: number, size: number): Observable<{ content: StayDetailsResponse[] }> {
+  // ------------------------------------------------------------
+  // PROPOSE DATE CHANGE
+  // POST /api/dashboard/front-desk/reservation-requests/{id}/propose-date-change
+  // ------------------------------------------------------------
+  proposeDateChange(
+    id: number,
+    proposedCheckIn: string,
+    proposedCheckOut: string
+  ): Observable<ReservationRequest> {
+    const payload: ProposeDateChangeRequest = {
+      proposedCheckIn,
+      proposedCheckOut
+    };
+    return this.http.post<ReservationRequest>(
+      `${this.baseUrl}/${id}/propose-date-change`,
+      payload
+    );
+  }
+
+  // ------------------------------------------------------------
+  // CANCEL RESERVATION REQUEST
+  // POST /api/guest/reservation-requests/{id}/cancel
+  // ------------------------------------------------------------
+  cancelRequest(id: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.guestRequestsUrl}/${id}/cancel`,
+      {}
+    );
+  }
+
+  // ------------------------------------------------------------
+  // STAYS
+  // ------------------------------------------------------------
+  getStays(
+    statuses: string[],
+    page: number,
+    size: number
+  ): Observable<{ content: StayDetailsResponse[] }> {
     let params = `page=${page}&size=${size}`;
     if (statuses && statuses.length > 0) {
       params += `&${statuses.map(s => `status=${s}`).join('&')}`;
     }
-    return this.http.get<{ content: StayDetailsResponse[] }>(`${this.staysUrl}?${params}`);
+    return this.http.get<{ content: StayDetailsResponse[] }>(
+      `${this.staysUrl}?${params}`
+    );
   }
 
   createStay(data: CreateStayRequest): Observable<StayDetailsResponse> {

@@ -506,7 +506,10 @@
 
 
 <!-- =========================================================
-     CATEGORY MANAGEMENT MODAL — wide two-pane layout
+     CATEGORY MANAGEMENT MODAL — three-pane layout
+     LEFT   → category list
+     MIDDLE → category form
+     RIGHT  → HPMS categories (clickable, auto‑fill)
 ========================================================= -->
 
 <div
@@ -531,12 +534,14 @@
       >×</button>
     </div>
 
-    <!-- BODY: two-pane grid -->
+    <!-- BODY: three-pane grid -->
     <div class="custom-modal-body category-body">
 
       <div class="category-layout">
 
-        <!-- LEFT PANE — LIST -->
+        <!-- =========================================================
+             LEFT PANE — CATEGORY LIST
+        ========================================================= -->
         <aside class="category-sidebar">
 
           <div class="category-sidebar-header">
@@ -575,8 +580,7 @@
               type="button"
               class="category-list-item"
               *ngFor="let category of categories"
-              [class.active]="isEditCategory && selectedCategoryId === category.id"
-              (click)="openEditCategoryModal(category)"
+[class.active]="isEditCategory && selectedCategoryId === category.id.toString()"              (click)="openEditCategoryModal(category)"
             >
               <div class="category-list-thumb">
                 <img
@@ -623,7 +627,9 @@
 
         </aside>
 
-        <!-- RIGHT PANE — FORM -->
+        <!-- =========================================================
+             MIDDLE PANE — CATEGORY FORM
+        ========================================================= -->
         <section class="category-form-panel">
 
           <div class="section-header">
@@ -634,52 +640,6 @@
             <span *ngIf="isEditCategory" class="category-id-badge">
               ID: {{ selectedCategoryId }}
             </span>
-          </div>
-
-          <!-- =========================================================
-               HPMS CATEGORIES — read-only reference (names + ids)
-          ========================================================= -->
-          <div class="hpms-categories">
-
-            <div class="hpms-categories-header">
-              <span class="hpms-categories-title">HPMS Categories</span>
-              <span class="category-count">{{ hpmsCategories.length }}</span>
-            </div>
-
-            <div
-              *ngIf="hpmsCategoriesLoading"
-              class="hpms-categories-state"
-            >
-              Loading HPMS categories...
-            </div>
-
-            <div
-              *ngIf="!hpmsCategoriesLoading && hpmsCategoriesError"
-              class="hpms-categories-state hpms-categories-error"
-            >
-              {{ hpmsCategoriesError }}
-            </div>
-
-            <div
-              *ngIf="!hpmsCategoriesLoading && !hpmsCategoriesError && hpmsCategories.length === 0"
-              class="hpms-categories-state"
-            >
-              No HPMS categories found.
-            </div>
-
-            <div
-              class="hpms-categories-list"
-              *ngIf="!hpmsCategoriesLoading && hpmsCategories.length > 0"
-            >
-              <span
-                class="hpms-category-chip"
-                *ngFor="let hpms of hpmsCategories"
-              >
-                <span class="hpms-category-name">{{ hpms.name }}</span>
-                <span class="hpms-category-id">{{ hpms.id }}</span>
-              </span>
-            </div>
-
           </div>
 
           <form
@@ -696,10 +656,10 @@
                 <div class="form-group">
                   <label>Category ID <span class="required">*</span></label>
                   <input
-                    type="number"
+                    type="text"
                     class="form-control"
                     formControlName="id"
-                    placeholder="1"
+                    placeholder="e.g. 1 or DLX"
                     [readonly]="isEditCategory"
                     [class.readonly]="isEditCategory"
                   />
@@ -707,7 +667,7 @@
                     class="error"
                     *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched"
                   >
-                    Required, must be &gt; 0.
+                    Category ID is required.
                   </div>
                 </div>
 
@@ -822,7 +782,7 @@
 
             <!-- OCCUPANCY & PRICE -->
             <div class="form-section">
-              <div class="form-section-title">Occupancy & Pricing</div>
+              <div class="form-section-title">Occupancy &amp; Pricing</div>
 
               <div class="form-grid form-grid-4">
                 <div class="form-group">
@@ -1031,6 +991,62 @@
           </form>
 
         </section>
+
+        <!-- =========================================================
+             RIGHT PANE — HPMS CATEGORIES (read-only reference)
+             Click a category to auto-fill the Name + ID fields.
+        ========================================================= -->
+        <aside class="hpms-panel">
+
+          <div class="hpms-panel-header">
+            <span class="hpms-categories-title">HPMS Categories</span>
+            <span class="category-count">{{ hpmsCategories.length }}</span>
+          </div>
+
+          <p class="hpms-note">
+            These are the categories of your booking account.
+            Click one to fill the Name &amp; ID fields, then use that ID
+            to match its rates. You can still edit the fields afterwards.
+          </p>
+
+          <div class="hpms-panel-body">
+
+            <div
+              *ngIf="hpmsCategoriesLoading"
+              class="hpms-categories-state"
+            >
+              Loading HPMS categories...
+            </div>
+
+            <div
+              *ngIf="!hpmsCategoriesLoading && hpmsCategoriesError"
+              class="hpms-categories-state hpms-categories-error"
+            >
+              {{ hpmsCategoriesError }}
+            </div>
+
+            <div
+              *ngIf="!hpmsCategoriesLoading && !hpmsCategoriesError && hpmsCategories.length === 0"
+              class="hpms-categories-state"
+            >
+              No HPMS categories found.
+            </div>
+
+            <button
+              type="button"
+              class="hpms-category-item"
+              *ngFor="let hpms of hpmsCategories"
+              [class.active]="isHpmsCategorySelected(hpms)"
+              (click)="applyHpmsCategory(hpms)"
+              [title]="'Use ' + hpms.name + ' (ID: ' + hpms.id + ')'"
+            >
+              <span class="hpms-category-name">{{ hpms.name }}</span>
+              <span class="hpms-category-id">{{ hpms.id }}</span>
+            </button>
+
+          </div>
+
+        </aside>
 
       </div>
 

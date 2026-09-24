@@ -32,13 +32,6 @@
     align-items: center;
 }
 
-.search-icon {
-    position: absolute;
-    left: 10px;
-    color: #a3a3a3;
-    font-size: 0.85rem;
-}
-
 .search-input {
     padding-left: 32px;
     padding-right: 36px;
@@ -110,7 +103,6 @@
     min-width: 140px;
 }
 
-/* ===== GAP BETWEEN CHECK‑IN FROM / TO ===== */
 .date-from-gap {
     margin-right: 1.6rem;
 }
@@ -121,13 +113,13 @@
     white-space: nowrap;
 }
 
-
 .refresh-btn {
     margin-left: 27px;
     height: 42px;
     padding: 0 1.2rem;
     white-space: nowrap;
 }
+
 .clear-filters {
     background: #f5f5f5;
     border-color: #d4d4d4;
@@ -139,7 +131,7 @@
 }
 
 /* ============================================================
-   BUTTONS (shared styles)
+   BUTTONS
 ============================================================ */
 .btn-glass {
     display: inline-flex;
@@ -212,6 +204,28 @@
     border-color: #b91c1c;
 }
 
+.btn-glass.danger-outline {
+    background: #fff;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.btn-glass.danger-outline:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.btn-glass.warn {
+    background: #fff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.btn-glass.warn:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
+
 .pagination-btn {
     width: 38px;
     height: 38px;
@@ -250,11 +264,11 @@
 }
 
 /* ============================================================
-   REQUEST LIST HEADER (desktop)
+   LIST HEADER
 ============================================================ */
 .request-list-header {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 1fr 1.2fr 1.5fr;
+    grid-template-columns: 2fr 2fr 1fr 1fr 1.2fr 1.9fr;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
     background: #f5f5f5;
@@ -271,7 +285,7 @@
 }
 
 /* ============================================================
-   REQUEST COMPACT LIST
+   LIST
 ============================================================ */
 .request-compact-list {
     display: flex;
@@ -279,9 +293,6 @@
     gap: 0.4rem;
 }
 
-/* ============================================================
-   REQUEST ITEM
-============================================================ */
 .request-item {
     position: relative;
     padding: 0.8rem 1rem;
@@ -300,7 +311,7 @@
 
 .request-item-content {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 1fr 1.2fr 1.5fr;
+    grid-template-columns: 2fr 2fr 1fr 1fr 1.2fr 1.9fr;
     gap: 0.75rem;
     align-items: center;
     width: 100%;
@@ -331,11 +342,27 @@
 
 .request-item-dates {
     display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
     color: #525252;
     font-size: 0.8rem;
     white-space: nowrap;
+}
+
+.date-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.date-row.proposed {
+    color: #1d4ed8;
+    font-size: 0.72rem;
+}
+
+.date-row.proposed .date-label {
+    color: #60a5fa;
 }
 
 .date-label {
@@ -379,14 +406,17 @@
 
 .request-item-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 0.4rem;
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .request-item-actions .btn-glass {
-    height: 32px;
-    padding: 0 0.9rem;
-    font-size: 0.7rem;
+    height: 30px;
+    padding: 0 0.7rem;
+    font-size: 0.68rem;
+    white-space: nowrap;
 }
 
 .no-action {
@@ -445,6 +475,18 @@
     color: #737373;
 }
 
+.status-badge.date_change_pending {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.status-badge.cancelled {
+    background: #f5f5f5;
+    border-color: #e5e5e5;
+    color: #525252;
+}
+
 /* ============================================================
    PAGINATION
 ============================================================ */
@@ -464,7 +506,7 @@
 }
 
 /* ============================================================
-   MODALS (overlay, content, header, close, form)
+   MODALS
 ============================================================ */
 .modal-overlay {
     position: fixed;
@@ -532,8 +574,41 @@
     color: #171717;
 }
 
+.modal-subtitle {
+    margin: 0 0 0.5rem;
+    color: #525252;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.date-change-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+}
+
+.error-inline {
+    padding: 0.6rem 0.8rem;
+    margin-top: 0.25rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 0.8rem;
+}
+
+.modal-warning {
+    padding: 0.7rem 0.9rem;
+    margin-top: 0.5rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 0.82rem;
+}
+
 /* ============================================================
-   REQUEST DETAIL MODAL – ENHANCED
+   DETAIL MODAL
 ============================================================ */
 .request-detail-modal {
     max-width: 680px;
@@ -582,6 +657,7 @@
 
 .modal-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.6rem;
     margin-top: 1.5rem;
@@ -596,7 +672,7 @@
 }
 
 /* ============================================================
-   FORM ELEMENTS (inside modals)
+   FORM
 ============================================================ */
 .form-group {
     margin: 1rem 0;
@@ -608,7 +684,6 @@
     color: #525252;
     font-size: 0.8rem;
     font-weight: 600;
-
 }
 
 .form-control {
@@ -649,8 +724,13 @@ textarea.form-control {
 ============================================================ */
 @media (max-width: 1024px) {
     .request-item-content {
-        grid-template-columns: 1.8fr 1.8fr 0.8fr 0.8fr 1fr 1.2fr;
+        grid-template-columns: 1.8fr 1.8fr 0.8fr 0.8fr 1fr 1.6fr;
         gap: 0.5rem;
+    }
+
+    .request-item-actions .btn-glass {
+        padding: 0 0.55rem;
+        font-size: 0.64rem;
     }
 }
 
@@ -708,8 +788,14 @@ textarea.form-control {
 
     .request-item-actions {
         justify-content: flex-end;
-        padding-top: 0.3rem;
+        padding-top: 0.4rem;
         border-top: 1px solid #f0f0f0;
+    }
+
+    .request-item-actions .btn-glass {
+        height: 32px;
+        padding: 0 0.8rem;
+        font-size: 0.7rem;
     }
 
     .modal-content {
@@ -719,6 +805,10 @@ textarea.form-control {
     .request-detail-body .detail-grid {
         grid-template-columns: 1fr;
         gap: 0;
+    }
+
+    .date-change-grid {
+        grid-template-columns: 1fr;
     }
 
     .modal-actions {

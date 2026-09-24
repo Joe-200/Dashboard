@@ -1116,14 +1116,14 @@
 }
 
 /* =========================================================
-   CATEGORY MODAL — WIDE COMPACT TWO-PANE LAYOUT
+   CATEGORY MODAL — THREE-PANE COMPACT LAYOUT
 ========================================================= */
-
 .category-modal {
-  width: 96vw;
-  max-width: 1440px;
-  height: 94vh;
-  max-height: 94vh;
+  width: 98vw;
+  max-width: 1920px;
+  /* Reduced height so more is visible without scrolling */
+  height: 85vh;
+  max-height: 85vh;
   overflow: hidden;
 
   display: flex;
@@ -1131,12 +1131,12 @@
 }
 
 .category-modal .custom-modal-header {
-  padding: 1rem 1.5rem;
+  padding: 0.9rem 1.25rem;
   flex-shrink: 0;
 }
 
 .category-modal .custom-modal-header h2 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
 }
 
 .category-body {
@@ -1146,13 +1146,13 @@
   overflow: hidden;
 }
 
+/* three‑pane grid: list | form | HPMS */
 .category-layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr) 320px;
   height: 100%;
   min-height: 0;
 }
-
 /* =========================================================
    LEFT PANE — SIDEBAR
 ========================================================= */
@@ -1174,7 +1174,7 @@
   justify-content: space-between;
   gap: 0.5rem;
 
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
 
   background: #fff;
   border-bottom: 1px solid #e5e5e5;
@@ -1190,27 +1190,27 @@
   gap: 0.5rem;
 
   color: #171717;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
-/* NEW BUTTON — text only, prominent */
+/* NEW BUTTON */
 .btn-new-category {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  height: 38px;
-  padding: 0 1.4rem;
+  height: 34px;
+  padding: 0 1.2rem;
 
   background: #171717;
   color: #fff;
 
   border: none;
-  border-radius: 9px;
+  border-radius: 8px;
 
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 
@@ -1239,7 +1239,7 @@
 }
 
 .category-sidebar-state {
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   text-align: center;
   color: #737373;
   font-size: 0.75rem;
@@ -1250,29 +1250,28 @@
   flex: 1;
   overflow-y: auto;
 
-  padding: 0.5rem;
+  padding: 0.4rem;
 
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 /* Sidebar list item */
-
 .category-list-item {
   position: relative;
 
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.6rem;
 
-  padding: 0.55rem;
+  padding: 0.5rem;
 
   width: 100%;
 
   background: #fff;
   border: 1px solid #e5e5e5;
-  border-radius: 9px;
+  border-radius: 8px;
 
   cursor: pointer;
   text-align: left;
@@ -1297,11 +1296,11 @@
 }
 
 .category-list-thumb {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
 
-  border-radius: 7px;
+  border-radius: 6px;
   overflow: hidden;
 
   background: #f5f5f5;
@@ -1323,7 +1322,7 @@
   justify-content: center;
 
   color: #a3a3a3;
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-weight: 700;
 }
 
@@ -1334,7 +1333,7 @@
 
 .category-list-name {
   color: #171717;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
 
   overflow: hidden;
@@ -1343,10 +1342,10 @@
 }
 
 .category-list-meta {
-  margin-top: 2px;
+  margin-top: 1px;
 
   color: #737373;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
 
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1358,19 +1357,19 @@
   color: #bdbdbd;
 }
 
-/* DELETE BUTTON — bigger, always visible */
+/* DELETE BUTTON */
 .category-list-delete {
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
 
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 7px;
 
   color: #dc2626;
 
@@ -1395,7 +1394,7 @@
 }
 
 /* =========================================================
-   RIGHT PANE — FORM
+   MIDDLE PANE — FORM
 ========================================================= */
 
 .category-form-panel {
@@ -1405,34 +1404,34 @@
   min-width: 0;
   min-height: 0;
 
-  padding: 1rem 1.5rem 0;
+  padding: 0.85rem 1.25rem 0;
 
   overflow-y: auto;
 }
 
 .category-form-panel .section-header {
-  padding: 0 0 0.6rem;
-  margin: 0 0 0.7rem;
+  padding: 0 0 0.5rem;
+  margin: 0 0 0.6rem;
 
   border-bottom: 1px solid #eeeeee;
 }
 
 .category-form-panel .section-header h3 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
 }
 
 /* ---------- Form sections ---------- */
 
 .category-form {
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.6rem;
 }
 
 .form-section {
-  padding: 0.7rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px dashed #eeeeee;
 }
 
@@ -1442,20 +1441,20 @@
 }
 
 .form-section-title {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.45rem;
 
   color: #171717;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-/* ---------- Form grids (symmetric 4-column base) ---------- */
+/* ---------- Form grids ---------- */
 
 .form-grid {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.6rem;
 }
 
 .form-grid-4 {
@@ -1478,31 +1477,31 @@
 
 .category-form label {
   display: block;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
 
   color: #525252;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
 .category-form .form-control {
-  min-height: 38px;
-  padding: 0.45rem 0.7rem;
-  font-size: 0.9rem;
-  border-radius: 7px;
+  min-height: 36px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
 }
 
 .category-form .textarea {
-  min-height: 60px;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
+  min-height: 55px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
   line-height: 1.45;
   resize: vertical;
 }
 
 .category-form .error {
-  margin-top: 0.22rem;
-  font-size: 0.72rem;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
 }
 
 .category-form .price-input input {
@@ -1510,66 +1509,72 @@
 }
 
 .category-form .price-input span {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   right: 10px;
 }
 
-/* Compact Wi-Fi toggle in the wide form */
+/* Compact Wi-Fi toggle */
 .category-form .checkbox-toggle {
-  min-height: 38px;
-  padding: 5px 12px;
-  border-radius: 7px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border-radius: 6px;
 }
 
-/* Compact file input in the wide form */
+/* Compact file input */
 .category-form .file-input {
-  min-height: 38px;
-  padding: 0.35rem 0.55rem;
-  font-size: 0.85rem;
+  min-height: 36px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
 }
 
-/* Compact image gallery inside the wide form */
+/* Compact image gallery */
 .category-form .image-gallery {
-  margin-top: 0.55rem;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.5rem;
+  margin-top: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.45rem;
 }
 
 .category-form .gallery-item img {
-  height: 82px;
+  height: 75px;
 }
 
 /* Compact footer */
 .category-form .custom-modal-footer {
-  margin-top: 0.7rem;
-  padding-top: 0.75rem;
+  margin-top: 0.6rem;
+  padding-top: 0.65rem;
 }
 
 .category-form .custom-modal-footer .btn {
-  height: 38px;
-  font-size: 0.85rem;
+  height: 36px;
+  font-size: 0.8rem;
 }
 
 /* =========================================================
-   HPMS CATEGORIES — READ-ONLY REFERENCE BLOCK
-   (names + ids pulled from the HPMS API)
+   RIGHT PANE — HPMS CATEGORIES
 ========================================================= */
 
-.hpms-categories {
-  padding: 0.7rem 0.85rem;
-  margin-bottom: 0.9rem;
+.hpms-panel {
+  display: flex;
+  flex-direction: column;
 
   background: #fafafa;
-  border: 1px solid #e5e5e5;
-  border-radius: 9px;
+  border-left: 1px solid #e5e5e5;
+
+  min-height: 0;
+  overflow: hidden;
 }
 
-.hpms-categories-header {
+.hpms-panel-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
 
-  margin-bottom: 0.55rem;
+  padding: 0.75rem 0.9rem;
+
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+
+  flex-shrink: 0;
 }
 
 .hpms-categories-title {
@@ -1580,9 +1585,36 @@
   text-transform: uppercase;
 }
 
+.hpms-note {
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+
+  background: #f0f9ff;
+  border-bottom: 1px solid #e0f2fe;
+
+  color: #0369a1;
+  font-size: 0.7rem;
+  line-height: 1.45;
+
+  flex-shrink: 0;
+}
+
+.hpms-panel-body {
+  flex: 1;
+  overflow-y: auto;
+
+  padding: 0.5rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .hpms-categories-state {
+  padding: 1rem;
+  text-align: center;
   color: #737373;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.5;
 }
 
@@ -1590,76 +1622,106 @@
   color: #dc2626;
 }
 
-.hpms-categories-list {
+/* Clickable HPMS category item — stacked name + id */
+.hpms-category-item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
 
-  max-height: 108px;
-  overflow-y: auto;
-}
+  width: 100%;
 
-.hpms-category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  padding: 4px 9px;
+  padding: 0.6rem 0.75rem;
 
   background: #fff;
   border: 1px solid #e5e5e5;
-  border-radius: 999px;
+  border-radius: 8px;
 
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-family: inherit;
   color: #171717;
 
-  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
 
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.hpms-category-chip:hover {
+.hpms-category-item:hover {
   background: #f5f5f5;
-  border-color: #d4d4d4;
+  border-color: #bdbdbd;
+}
+
+.hpms-category-item.active {
+  border-color: #171717;
+  background: #f0f4ff;
+  box-shadow: 0 0 0 2px rgba(23, 23, 23, 0.06);
 }
 
 .hpms-category-name {
+  width: 100%;
+
   color: #171717;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+
+  /* Allow up to 2 lines so long names are readable */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .hpms-category-id {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
 
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  padding: 2px 8px;
 
-  background: #171717;
-  color: #fff;
-
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
   border-radius: 999px;
 
-  font-size: 0.6rem;
+  color: #525252;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+
+  flex-shrink: 0;
 }
 
+/* Optional: prefix the ID chip with a label */
+.hpms-category-id::before {
+  content: "ID: ";
+  color: #a3a3a3;
+  font-weight: 600;
+  margin-right: 2px;
+}
 /* =========================================================
    RESPONSIVE
 ========================================================= */
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .category-layout {
+    grid-template-columns: 260px minmax(0, 1fr) 240px;
+  }
+}
 
+@media (max-width: 1100px) {
   .form-grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .category-layout {
+    grid-template-columns: 240px minmax(0, 1fr) 220px;
   }
 }
 
 @media (max-width: 900px) {
-
   .filters-card {
     flex-wrap: wrap;
   }
@@ -1679,20 +1741,25 @@
   }
 
   .category-modal {
-    height: 92vh;
-    max-height: 92vh;
+    height: 90vh;
+    max-height: 90vh;
   }
 
+  /* Stack the three panes vertically on small screens */
   .category-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: 260px minmax(0, 1fr);
+    grid-template-rows: 200px minmax(0, 1fr) 200px;
     height: 100%;
   }
 
   .category-sidebar {
-    max-height: none;
     border-right: none;
     border-bottom: 1px solid #e5e5e5;
+  }
+
+  .hpms-panel {
+    border-left: none;
+    border-top: 1px solid #e5e5e5;
   }
 
   .category-form-panel {
@@ -1701,7 +1768,6 @@
 }
 
 @media (max-width: 768px) {
-
   .page-header {
     flex-direction: column;
     align-items: stretch;
@@ -1739,7 +1805,6 @@
 }
 
 @media (max-width: 650px) {
-
   .form-row {
     grid-template-columns: 1fr;
     gap: 0;
@@ -1761,7 +1826,7 @@
   }
 
   .category-layout {
-    grid-template-rows: 220px minmax(0, 1fr);
+    grid-template-rows: 180px minmax(0, 1fr) 180px;
   }
 
   .form-grid-4 {
@@ -1773,10 +1838,10 @@
   }
 
   .category-form-panel {
-    padding: 0.85rem 1rem 0;
+    padding: 0.7rem 0.9rem 0;
   }
 
   .category-form .image-gallery {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   }
 }
