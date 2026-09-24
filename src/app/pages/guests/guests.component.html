@@ -128,77 +128,83 @@
   </div>
 
   <!-- =========================
-       GRID
+       GUEST LIST
   ========================== -->
-  <div class="rooms-grid" *ngIf="!loading && guests.length > 0">
+  <div class="guest-list" *ngIf="!loading && guests.length > 0">
+    <!-- List header (desktop only) -->
+    <div class="guest-list-header">
+      <span class="col col-guest">Guest</span>
+      <span class="col col-contact">Contact</span>
+      <span class="col col-nationality">Nationality</span>
+      <span class="col col-stays">Stays</span>
+      <span class="col col-status">Status</span>
+      <span class="col col-joined">Joined</span>
+    </div>
+
+    <!-- Rows -->
     <article
-      class="room-card guest-card"
+      class="guest-row"
       *ngFor="let guest of guests; trackBy: trackByGuestId"
     >
-      <!-- Avatar header -->
-      <div class="guest-avatar">
-        <span class="guest-initials">{{ initials(guest) }}</span>
+      <!-- Guest (avatar + name + id) -->
+      <div class="col col-guest">
+        <div class="guest-avatar-sm">
+          {{ initials(guest) }}
+        </div>
 
-        <span
-          class="status-badge"
-          [ngClass]="
-            guest.emailVerified ? 'status-available' : 'status-cleaning'
-          "
-        >
-          {{ guest.emailVerified ? 'VERIFIED' : 'UNVERIFIED' }}
-        </span>
-
-        <span class="guest-id-chip">#{{ guest.id }}</span>
+        <div class="guest-main">
+          <span class="guest-name">{{ fullName(guest) }}</span>
+          <span class="guest-id">#{{ guest.id }}</span>
+        </div>
       </div>
 
-      <!-- Body -->
-      <div class="room-body">
-        <div class="room-heading">
-          <div>
-            <h3>{{ fullName(guest) }}</h3>
-            <span class="room-floor">
-              {{ hasValue(guest.nationality) ? guest.nationality : 'Unknown nationality' }}
-            </span>
-          </div>
-
-          <div class="room-price">
-            <strong>{{ guest.totalStays }}</strong>
-            <span>STAY{{ guest.totalStays === 1 ? '' : 'S' }}</span>
-          </div>
-        </div>
-
-        <!-- Contact -->
-        <div class="guest-contact">
-          <div class="guest-contact-row">
-            <span class="contact-label">Email</span>
-            <span class="contact-value">{{ guest.email || '—' }}</span>
-          </div>
-
-          <div class="guest-contact-row">
-            <span class="contact-label">Phone</span>
-            <span class="contact-value">{{ guest.phone || '—' }}</span>
-          </div>
-
-          <div class="guest-contact-row">
-            <span class="contact-label">Joined</span>
-            <span class="contact-value">
-              {{ guest.createdAt | date: 'mediumDate' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Tags -->
-        <div class="room-tags">
-          <span class="room-tag">{{ guest.totalStays }} stays</span>
-          <span class="room-tag">
-            {{
-              guest.emailVerified ? 'Email verified' : 'Email unverified'
-            }}
-          </span>
-          <span *ngIf="hasValue(guest.nationality)" class="room-tag">
-            {{ guest.nationality }}
+      <!-- Contact -->
+      <div class="col col-contact">
+        <div class="contact-line">
+          <span class="contact-label">Email</span>
+          <span class="contact-value" [title]="guest.email">
+            {{ guest.email || '—' }}
           </span>
         </div>
+        <div class="contact-line">
+          <span class="contact-label">Phone</span>
+          <span class="contact-value" [title]="guest.phone">
+            {{ guest.phone || '—' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Nationality -->
+      <div class="col col-nationality">
+        <span class="value-text">
+          {{ hasValue(guest.nationality) ? guest.nationality : '—' }}
+        </span>
+      </div>
+
+      <!-- Stays -->
+      <div class="col col-stays">
+        <span class="pill pill-neutral">
+          {{ guest.totalStays }} stay{{ guest.totalStays === 1 ? '' : 's' }}
+        </span>
+      </div>
+
+      <!-- Status -->
+      <div class="col col-status">
+        <span
+          class="pill"
+          [ngClass]="
+            guest.emailVerified ? 'pill-success' : 'pill-warning'
+          "
+        >
+          {{ guest.emailVerified ? 'Verified' : 'Unverified' }}
+        </span>
+      </div>
+
+      <!-- Joined -->
+      <div class="col col-joined">
+        <span class="value-text">
+          {{ guest.createdAt | date: 'mediumDate' }}
+        </span>
       </div>
     </article>
   </div>
