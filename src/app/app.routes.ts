@@ -7,6 +7,7 @@ import { SpecialOffersComponent } from './pages/special-offers-component/special
 import { AiComponent } from './pages/ai-component/ai-component.component';
 import { CalendarComponent } from './pages/calendar-component/calendar-component.component';
 import { RequestsViewComponent } from './pages/requests-view-component/requests-view-component.component';
+import { GuestsComponent } from './pages/guests/guests.component';
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
@@ -19,7 +20,8 @@ export const routes: Routes = [
       { path: 'ai', component: AiComponent },
       { path: '', redirectTo: 'rooms', pathMatch: 'full' },
       { path: 'calendar', component: CalendarComponent },
-      { path: 'reservations' , component:RequestsViewComponent}
+      { path: 'reservations' , component:RequestsViewComponent},
+      { path: 'guests' , component:GuestsComponent}
     ]
   },
   { path: '**', redirectTo: '/login' }

@@ -1,0 +1,244 @@
+<div class="rooms-container">
+  <!-- =========================
+       HEADER
+  ========================== -->
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">MANAGER · GUESTS</span>
+      <h1>Guests</h1>
+      <p>Browse, search and manage every guest registered in your hotel.</p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="refresh()"
+        [disabled]="loading"
+      >
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================
+       FILTERS + SEARCH
+  ========================== -->
+  <div class="filters-card">
+    <div class="filter-group search-group">
+      <label for="guestSearch">Search guests</label>
+
+      <div class="search-input-wrapper">
+        <svg
+          class="search-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+
+        <input
+          id="guestSearch"
+          type="text"
+          class="form-control search-input"
+          placeholder="Name, email, phone or nationality…"
+          [ngModel]="searchQuery"
+          (ngModelChange)="onSearchInput($event)"
+          autocomplete="off"
+        />
+
+        <button
+          *ngIf="searchQuery"
+          type="button"
+          class="search-clear"
+          title="Clear search"
+          (click)="clearSearch()"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label for="pageSize">Per page</label>
+      <select
+        id="pageSize"
+        class="form-control"
+        [ngModel]="size"
+        (ngModelChange)="changeSize($event)"
+      >
+        <option *ngFor="let opt of pageSizeOptions" [value]="opt">
+          {{ opt }}
+        </option>
+      </select>
+    </div>
+
+    <div class="room-count">
+      <span>{{ totalElements }}</span> guest{{ totalElements === 1 ? '' : 's' }}
+    </div>
+  </div>
+
+  <!-- =========================
+       ERROR
+  ========================== -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+  <!-- =========================
+       LOADING
+  ========================== -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="loading-spinner"></div>
+    <span>Loading guests…</span>
+  </div>
+
+  <!-- =========================
+       EMPTY
+  ========================== -->
+  <div
+    *ngIf="!loading && !errorMessage && guests.length === 0"
+    class="empty-state"
+  >
+    <h3>No guests found</h3>
+    <p>
+      {{
+        searchQuery
+          ? 'No guests match your search. Try a different keyword.'
+          : 'There are no guests registered yet.'
+      }}
+    </p>
+
+    <button
+      *ngIf="searchQuery"
+      type="button"
+      class="btn btn-primary"
+      (click)="clearSearch()"
+    >
+      Clear search
+    </button>
+  </div>
+
+  <!-- =========================
+       GRID
+  ========================== -->
+  <div class="rooms-grid" *ngIf="!loading && guests.length > 0">
+    <article
+      class="room-card guest-card"
+      *ngFor="let guest of guests; trackBy: trackByGuestId"
+    >
+      <!-- Avatar header -->
+      <div class="guest-avatar">
+        <span class="guest-initials">{{ initials(guest) }}</span>
+
+        <span
+          class="status-badge"
+          [ngClass]="
+            guest.emailVerified ? 'status-available' : 'status-cleaning'
+          "
+        >
+          {{ guest.emailVerified ? 'VERIFIED' : 'UNVERIFIED' }}
+        </span>
+
+        <span class="guest-id-chip">#{{ guest.id }}</span>
+      </div>
+
+      <!-- Body -->
+      <div class="room-body">
+        <div class="room-heading">
+          <div>
+            <h3>{{ fullName(guest) }}</h3>
+            <span class="room-floor">
+              {{ hasValue(guest.nationality) ? guest.nationality : 'Unknown nationality' }}
+            </span>
+          </div>
+
+          <div class="room-price">
+            <strong>{{ guest.totalStays }}</strong>
+            <span>STAY{{ guest.totalStays === 1 ? '' : 'S' }}</span>
+          </div>
+        </div>
+
+        <!-- Contact -->
+        <div class="guest-contact">
+          <div class="guest-contact-row">
+            <span class="contact-label">Email</span>
+            <span class="contact-value">{{ guest.email || '—' }}</span>
+          </div>
+
+          <div class="guest-contact-row">
+            <span class="contact-label">Phone</span>
+            <span class="contact-value">{{ guest.phone || '—' }}</span>
+          </div>
+
+          <div class="guest-contact-row">
+            <span class="contact-label">Joined</span>
+            <span class="contact-value">
+              {{ guest.createdAt | date: 'mediumDate' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="room-tags">
+          <span class="room-tag">{{ guest.totalStays }} stays</span>
+          <span class="room-tag">
+            {{
+              guest.emailVerified ? 'Email verified' : 'Email unverified'
+            }}
+          </span>
+          <span *ngIf="hasValue(guest.nationality)" class="room-tag">
+            {{ guest.nationality }}
+          </span>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- =========================
+       PAGINATION
+  ========================== -->
+  <div
+    class="pagination-container"
+    *ngIf="!loading && totalElements > 0"
+  >
+    <span>
+      Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalElements }} guests
+    </span>
+
+    <div class="pagination">
+      <button
+        type="button"
+        (click)="previousPage()"
+        [disabled]="page === 0"
+      >
+        ‹
+      </button>
+
+      <button
+        type="button"
+        *ngFor="let p of visiblePages"
+        [class.active]="p === page"
+        (click)="goToPage(p)"
+      >
+        {{ p + 1 }}
+      </button>
+
+      <button
+        type="button"
+        (click)="nextPage()"
+        [disabled]="page >= totalPages - 1"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+</div>
