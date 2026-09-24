@@ -17,18 +17,28 @@ import {
 
 import { RoomService, RoomResponse } from '../../room-response.service';
 
+import {
+  StayService,
+  StayDetailsResponse,
+  PagedModelStayDetailsResponse,
+  FullStaySummaryResponse,
+  ReceiptResponse
+} from '../../stay-service.service'
+
+
+
 import { AuthService } from '../../auth-service.service';
 import { environment } from '../../environment';
-/**
- * Local extension so template can access date-change + cancel fields
- * even if the imported interface hasn't been updated yet.
- */
+
 export type ReservationRequestExt = ReservationRequest & {
   proposedCheckInDate?: string;
   proposedCheckOutDate?: string;
   canCancel?: boolean;
   cancellationDeadline?: string;
 };
+
+export type ViewTab = 'requests' | 'stays';
+export type StayQuickFilter = 'ALL' | 'CHECKIN_TODAY' | 'CHECKOUT_TODAY';
 
 @Component({
   selector: 'app-requests-view',
@@ -38,13 +48,25 @@ export type ReservationRequestExt = ReservationRequest & {
   styleUrl: './requests-view-component.component.css'
 })
 export class RequestsViewComponent implements OnInit, OnDestroy {
-  // ============================================================
-  // OUTPUT
-  // ============================================================
   @Output() dataChanged = new EventEmitter<void>();
 
   // ============================================================
-  // FILTERS & SEARCH
+  // TAB
+  // ============================================================
+  activeTab: ViewTab = 'requests';
+
+  setTab(tab: ViewTab): void {
+    if (this.activeTab === tab) return;
+    this.activeTab = tab;
+    if (tab === 'requests') {
+      this.loadRequests();
+    } else {
+      this.loadStays();
+    }
+  }
+
+  // ============================================================
+  // REQUESTS — FILTERS & SEARCH
   // ============================================================
   searchTerm = '';
   statusFilter = '';
@@ -54,7 +76,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
 
   // ============================================================
-  // DATA & PAGINATION
+  // REQUESTS — DATA & PAGINATION
   // ============================================================
   requests: ReservationRequestExt[] = [];
   loading = false;
@@ -76,12 +98,11 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   private sseReloadTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
 
-  /** Full URL to the SSE stream endpoint, built from the environment apiUrl. */
   private static readonly SSE_URL =
     `${environment.apiUrl}/api/dashboard/front-desk/live`;
 
   // ============================================================
-  // FILTERED REQUESTS
+  // REQUESTS — FILTERED GETTER
   // ============================================================
   get filteredRequests(): ReservationRequestExt[] {
     let result = this.requests;
@@ -94,19 +115,17 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
         req.guestPhone?.toLowerCase().includes(term)
       );
     }
-
     if (this.dateFrom) {
       result = result.filter(req => req.checkInDate >= this.dateFrom);
     }
     if (this.dateTo) {
       result = result.filter(req => req.checkInDate <= this.dateTo);
     }
-
     return result;
   }
 
   // ============================================================
-  // MODALS
+  // REQUESTS — MODALS
   // ============================================================
   showDetailsModal = false;
   selectedRequest: ReservationRequestExt | null = null;
@@ -136,11 +155,83 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   cancelLoading = false;
 
   // ============================================================
+  // STAYS — STATE
+  // ============================================================
+  stays: StayDetailsResponse[] = [];
+  staysLoading = false;
+  staysError = '';
+
+  staysPage = 0;
+  staysPageSize = 20;
+  staysTotalElements = 0;
+  staysTotalPages = 0;
+
+  stayQuickFilter: StayQuickFilter = 'ALL';
+  stayStatusFilter = '';
+  staysSearchTerm = '';
+
+  private staysSearchSubject = new Subject<string>();
+
+  // Stays — summary modal
+  showStaySummaryModal = false;
+  staySummaryLoading = false;
+  staySummary: FullStaySummaryResponse | null = null;
+  staySummaryError = '';
+
+  // Stays — receipt modal
+  showReceiptModal = false;
+  receiptLoading = false;
+  receipt: ReceiptResponse | null = null;
+  receiptError = '';
+
+  // Stays — extend modal
+  showExtendModal = false;
+  extendStayId: number | null = null;
+  extendGuestName = '';
+  newCheckOutDate = '';
+  extendLoading = false;
+  extendError = '';
+
+  // Stays — propose date change modal
+  showStayDateChangeModal = false;
+  stayDateChangeId: number | null = null;
+  stayDateChangeGuestName = '';
+  stayProposedCheckIn = '';
+  stayProposedCheckOut = '';
+  stayDateChangeLoading = false;
+  stayDateChangeError = '';
+
+  // Stays — update status modal
+  showStayStatusModal = false;
+  stayStatusId: number | null = null;
+  stayStatusGuestName = '';
+  newStayStatus = '';
+  stayStatusLoading = false;
+
+  // Stays — per-row busy flag
+  stayActionBusy: Record<number, boolean> = {};
+
+  // ============================================================
+  // STAYS — FILTERED GETTER (client-side search only)
+  // ============================================================
+  get filteredStays(): StayDetailsResponse[] {
+    const term = this.staysSearchTerm.trim().toLowerCase();
+    if (!term) return this.stays;
+    return this.stays.filter(s =>
+      s.guestName?.toLowerCase().includes(term) ||
+      s.email?.toLowerCase().includes(term) ||
+      s.guestPhone?.toLowerCase().includes(term) ||
+      s.roomNumber?.toLowerCase().includes(term)
+    );
+  }
+
+  // ============================================================
   // CONSTRUCTOR
   // ============================================================
   constructor(
     private reservationService: ReservationRequestService,
     private roomService: RoomService,
+    private stayService: StayService,
     private authService: AuthService
   ) {}
 
@@ -152,6 +243,11 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
       this.currentPage = 0;
       this.loadRequests();
     });
+
+    this.staysSearchSubject.pipe(debounceTime(400)).subscribe(() => {
+      // client-side filter — no reload
+    });
+
     this.loadRequests();
     this.connectLiveStream();
   }
@@ -162,16 +258,10 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // LOAD
+  // REQUESTS — LOAD
   // ============================================================
-  /**
-   * @param silent when true, does not toggle `loading` (used for SSE-driven
-   *               background refreshes so the list does not flicker).
-   */
   loadRequests(silent: boolean = false): void {
-    if (!silent) {
-      this.loading = true;
-    }
+    if (!silent) this.loading = true;
     this.error = '';
 
     const status = this.statusFilter || undefined;
@@ -195,7 +285,79 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // LIVE STREAM (SSE via fetch-event-source)
+  // STAYS — LOAD
+  // ============================================================
+  loadStays(silent: boolean = false): void {
+    if (!silent) this.staysLoading = true;
+    this.staysError = '';
+
+    const status = this.stayStatusFilter || undefined;
+    let req$;
+
+    if (this.stayQuickFilter === 'CHECKIN_TODAY') {
+      req$ = this.stayService.getStaysCheckInToday(
+        this.staysPage,
+        this.staysPageSize
+      );
+    } else if (this.stayQuickFilter === 'CHECKOUT_TODAY') {
+      req$ = this.stayService.getStaysCheckOutToday(
+        this.staysPage,
+        this.staysPageSize
+      );
+    } else {
+      req$ = this.stayService.getStays(
+        status,
+        this.staysPage,
+        this.staysPageSize
+      );
+    }
+
+    req$.subscribe({
+      next: (data: PagedModelStayDetailsResponse) => {
+        this.stays = data.content || [];
+        this.staysTotalElements = data.page?.totalElements ?? 0;
+        this.staysTotalPages = data.page?.totalPages ?? 0;
+        this.staysLoading = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.staysError =
+          'Failed to load stays: ' +
+          (err.error?.message || err.message);
+        this.staysLoading = false;
+      }
+    });
+  }
+
+  onStayQuickFilterChange(): void {
+    this.staysPage = 0;
+    this.loadStays();
+  }
+
+  onStayStatusFilterChange(): void {
+    this.staysPage = 0;
+    this.loadStays();
+  }
+
+  onStaysSearchChange(): void {
+    this.staysSearchSubject.next(this.staysSearchTerm);
+  }
+
+  clearStaysFilters(): void {
+    this.staysSearchTerm = '';
+    this.stayStatusFilter = '';
+    this.stayQuickFilter = 'ALL';
+    this.staysPage = 0;
+    this.loadStays();
+  }
+
+  changeStaysPage(page: number): void {
+    if (page < 0 || page >= this.staysTotalPages) return;
+    this.staysPage = page;
+    this.loadStays();
+  }
+
+  // ============================================================
+  // LIVE STREAM (SSE)
   // ============================================================
   private connectLiveStream(): void {
     if (this.destroyed || this.abortController) return;
@@ -203,7 +365,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     const token = this.authService.getToken();
     const hotelId = this.authService.getHotelId();
 
-    // If we have no token, don't even attempt — the stream will 401.
     if (!token) {
       this.liveConnected = false;
       return;
@@ -215,79 +376,57 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
       Accept: 'text/event-stream',
       Authorization: `Bearer ${token}`
     };
-    if (hotelId) {
-      headers['X-Tenant-ID'] = hotelId;
-    }
+    if (hotelId) headers['X-Tenant-ID'] = hotelId;
 
     fetchEventSource(RequestsViewComponent.SSE_URL, {
       method: 'GET',
       headers,
-      // We're authenticating with the Bearer token, so we don't need cookies.
-      // (Cross-origin cookie flows require SameSite=None; Secure + specific CORS.)
       credentials: 'omit',
       signal: this.abortController.signal,
-      // Keep the stream alive even when the browser tab is hidden.
       openWhenHidden: true,
 
       async onopen(response: Response) {
         const contentType = response.headers.get('content-type') || '';
+        if (response.ok && contentType.includes('text/event-stream')) return;
 
-        if (
-          response.ok &&
-          contentType.includes('text/event-stream')
-        ) {
-          return; // connection established
-        }
-
-        // Non-retryable errors — throw to stop the library's auto-retry.
         if (
           response.status === 401 ||
           response.status === 403 ||
           response.status === 404
         ) {
-          throw new Error(`SSE fatal: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `SSE fatal: ${response.status} ${response.statusText}`
+          );
         }
-
-        // Everything else (5xx, network hiccup) → let onerror retry.
         throw new Error(`SSE error: ${response.status} ${response.statusText}`);
       },
 
       onmessage: (event: EventSourceMessage) => {
-        // Fires for both named and unnamed events.
         this.handleLiveEvent(event);
       },
 
       onclose: () => {
-        // Server closed the stream gracefully; the library will retry.
         this.liveConnected = false;
       },
 
       onerror: (err: any) => {
         this.liveConnected = false;
-
-        // Throwing inside onerror STOPS retries permanently.
-        if (typeof err?.message === 'string' && err.message.startsWith('SSE fatal')) {
+        if (
+          typeof err?.message === 'string' &&
+          err.message.startsWith('SSE fatal')
+        ) {
           throw err;
         }
-
-        // Returning a number tells the library to retry after that many ms.
-        // (e.g. 3s fixed. Increase / use backoff if you prefer.)
         return 3000;
       }
     })
       .then(() => {
-        // Resolved because the stream ended cleanly (or was aborted).
-        // Only mark connected if we weren't destroyed mid-flight.
-        if (!this.destroyed) {
-          this.liveConnected = false;
-        }
+        if (!this.destroyed) this.liveConnected = false;
       })
       .catch(() => {
-        // Rejected because onerror threw (fatal) or the abort signal fired.
         this.liveConnected = false;
       });
 
-    // Mark connected optimistically; `onmessage` proves the stream is flowing.
     this.liveConnected = true;
   }
 
@@ -307,25 +446,20 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     this.liveConnected = false;
   }
 
-  /**
-   * Coalesces a burst of SSE events into a single background reload.
-   * This avoids hammering the API when many events fire in quick succession.
-   */
   private handleLiveEvent(_event: EventSourceMessage): void {
     if (this.destroyed) return;
-
-    // We don't inspect `event.data` — any event triggers a silent refetch.
-    // If your backend sends a "type" in `event.event`, you can filter here.
-    if (this.sseReloadTimer) {
-      clearTimeout(this.sseReloadTimer);
-    }
+    if (this.sseReloadTimer) clearTimeout(this.sseReloadTimer);
     this.sseReloadTimer = setTimeout(() => {
       this.sseReloadTimer = null;
-      this.loadRequests(true); // silent refresh
+      // Refresh whichever tab is visible.
+      if (this.activeTab === 'stays') {
+        this.loadStays(true);
+      } else {
+        this.loadRequests(true);
+      }
     }, 300);
   }
 
-  /** Public — used by the live status pill in the template. */
   reconnectLive(): void {
     if (this.liveConnected) return;
     this.disconnectLiveStream();
@@ -333,7 +467,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // FILTER / SEARCH
+  // REQUESTS — FILTERS
   // ============================================================
   onSearchChange(): void {
     this.searchSubject.next(this.searchTerm);
@@ -359,9 +493,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     this.loadRequests();
   }
 
-  // ============================================================
-  // PAGINATION
-  // ============================================================
   changePage(page: number): void {
     if (page < 0 || page >= this.totalPages) return;
     this.currentPage = page;
@@ -369,7 +500,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // ACTION AVAILABILITY
+  // REQUESTS — ACTION AVAILABILITY
   // ============================================================
   canProposeDateChange(req: ReservationRequestExt): boolean {
     return req.status === 'PENDING' || req.status === 'APPROVED';
@@ -384,7 +515,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // DETAILS MODAL
+  // REQUESTS — MODALS
   // ============================================================
   openDetails(request: ReservationRequestExt): void {
     this.selectedRequest = request;
@@ -396,9 +527,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     this.selectedRequest = null;
   }
 
-  // ============================================================
-  // ACCEPT MODAL
-  // ============================================================
   openAccept(requestId: number, categoryId: number | string): void {
     this.acceptingRequestId = requestId;
     this.selectedRoomId = null;
@@ -435,9 +563,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   confirmAccept(): void {
-    if (this.acceptingRequestId === null || this.selectedRoomId === null) {
-      return;
-    }
+    if (this.acceptingRequestId === null || this.selectedRoomId === null) return;
     this.acceptLoading = true;
     this.reservationService
       .approveRequest(this.acceptingRequestId, this.selectedRoomId)
@@ -451,15 +577,11 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.acceptLoading = false;
           this.error =
-            'Failed to accept: ' +
-            (err.error?.message || err.message);
+            'Failed to accept: ' + (err.error?.message || err.message);
         }
       });
   }
 
-  // ============================================================
-  // REJECT MODAL
-  // ============================================================
   openReject(requestId: number): void {
     this.rejectingRequestId = requestId;
     this.rejectReason = '';
@@ -474,9 +596,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   confirmReject(): void {
-    if (this.rejectingRequestId === null || !this.rejectReason.trim()) {
-      return;
-    }
+    if (this.rejectingRequestId === null || !this.rejectReason.trim()) return;
     this.rejectLoading = true;
     this.reservationService
       .rejectRequest(this.rejectingRequestId, this.rejectReason.trim())
@@ -490,15 +610,11 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.rejectLoading = false;
           this.error =
-            'Failed to reject: ' +
-            (err.error?.message || err.message);
+            'Failed to reject: ' + (err.error?.message || err.message);
         }
       });
   }
 
-  // ============================================================
-  // PROPOSE DATE CHANGE
-  // ============================================================
   openDateChange(request: ReservationRequestExt): void {
     this.dateChangeRequestId = request.id;
     this.dateChangeGuestName = request.guestName;
@@ -556,9 +672,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ============================================================
-  // CANCEL RESERVATION
-  // ============================================================
   openCancel(request: ReservationRequestExt): void {
     this.cancelingRequestId = request.id;
     this.cancelGuestName = request.guestName;
@@ -591,5 +704,270 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
           (err.error?.message || err.message);
       }
     });
+  }
+
+  // ============================================================
+  // STAYS — SUMMARY MODAL
+  // ============================================================
+  openStaySummary(stay: StayDetailsResponse): void {
+    this.staySummary = null;
+    this.staySummaryError = '';
+    this.staySummaryLoading = true;
+    this.showStaySummaryModal = true;
+
+    this.stayService.getStaySummary(stay.stayId).subscribe({
+      next: (data) => {
+        this.staySummary = data;
+        this.staySummaryLoading = false;
+      },
+      error: (err) => {
+        this.staySummaryError =
+          'Failed to load summary: ' +
+          (err.error?.message || err.message);
+        this.staySummaryLoading = false;
+      }
+    });
+  }
+
+  closeStaySummary(): void {
+    this.showStaySummaryModal = false;
+    this.staySummary = null;
+    this.staySummaryError = '';
+    this.staySummaryLoading = false;
+  }
+
+  // ============================================================
+  // STAYS — RECEIPT MODAL
+  // ============================================================
+  openReceipt(stay: StayDetailsResponse): void {
+    this.receipt = null;
+    this.receiptError = '';
+    this.receiptLoading = true;
+    this.showReceiptModal = true;
+
+    this.stayService.getStayReceipt(stay.stayId).subscribe({
+      next: (data) => {
+        this.receipt = data;
+        this.receiptLoading = false;
+      },
+      error: (err) => {
+        this.receiptError =
+          'Failed to load receipt: ' +
+          (err.error?.message || err.message);
+        this.receiptLoading = false;
+      }
+    });
+  }
+
+  closeReceipt(): void {
+    this.showReceiptModal = false;
+    this.receipt = null;
+    this.receiptError = '';
+    this.receiptLoading = false;
+  }
+
+  // ============================================================
+  // STAYS — CHECK IN / OUT
+  // ============================================================
+  canCheckIn(stay: StayDetailsResponse): boolean {
+    return stay.status === 'RESERVED';
+  }
+
+  canCheckOut(stay: StayDetailsResponse): boolean {
+    return stay.status === 'ACTIVE';
+  }
+
+  canExtend(stay: StayDetailsResponse): boolean {
+    return stay.status === 'RESERVED' || stay.status === 'ACTIVE';
+  }
+
+  canProposeStayDateChange(stay: StayDetailsResponse): boolean {
+    return stay.status === 'RESERVED' || stay.status === 'ACTIVE';
+  }
+
+  canViewReceipt(stay: StayDetailsResponse): boolean {
+    return stay.status === 'CLOSED';
+  }
+
+  checkInStay(stay: StayDetailsResponse): void {
+    if (!this.canCheckIn(stay) || this.stayActionBusy[stay.stayId]) return;
+    this.stayActionBusy[stay.stayId] = true;
+    this.stayService.checkIn(stay.stayId).subscribe({
+      next: () => {
+        this.stayActionBusy[stay.stayId] = false;
+        this.loadStays();
+        this.dataChanged.emit();
+      },
+      error: (err) => {
+        this.stayActionBusy[stay.stayId] = false;
+        this.staysError =
+          'Check-in failed: ' + (err.error?.message || err.message);
+      }
+    });
+  }
+
+  checkOutStay(stay: StayDetailsResponse): void {
+    if (!this.canCheckOut(stay) || this.stayActionBusy[stay.stayId]) return;
+    this.stayActionBusy[stay.stayId] = true;
+    this.stayService.checkOut(stay.stayId).subscribe({
+      next: () => {
+        this.stayActionBusy[stay.stayId] = false;
+        this.loadStays();
+        this.dataChanged.emit();
+      },
+      error: (err) => {
+        this.stayActionBusy[stay.stayId] = false;
+        this.staysError =
+          'Check-out failed: ' + (err.error?.message || err.message);
+      }
+    });
+  }
+
+  // ============================================================
+  // STAYS — EXTEND MODAL
+  // ============================================================
+  openExtend(stay: StayDetailsResponse): void {
+    this.extendStayId = stay.stayId;
+    this.extendGuestName = stay.guestName;
+    this.newCheckOutDate = stay.expectedCheckOutDate || '';
+    this.extendError = '';
+    this.extendLoading = false;
+    this.showExtendModal = true;
+  }
+
+  closeExtend(): void {
+    this.showExtendModal = false;
+    this.extendStayId = null;
+    this.extendGuestName = '';
+    this.newCheckOutDate = '';
+    this.extendError = '';
+    this.extendLoading = false;
+  }
+
+  confirmExtend(): void {
+    if (this.extendStayId === null) return;
+    if (!this.newCheckOutDate) {
+      this.extendError = 'New check-out date is required.';
+      return;
+    }
+    this.extendError = '';
+    this.extendLoading = true;
+
+    this.stayService
+      .extendStay(this.extendStayId, this.newCheckOutDate)
+      .subscribe({
+        next: () => {
+          this.extendLoading = false;
+          this.closeExtend();
+          this.loadStays();
+          this.dataChanged.emit();
+        },
+        error: (err) => {
+          this.extendLoading = false;
+          this.extendError =
+            'Failed to extend stay: ' +
+            (err.error?.message || err.message);
+        }
+      });
+  }
+
+  // ============================================================
+  // STAYS — PROPOSE DATE CHANGE MODAL
+  // ============================================================
+  openStayDateChange(stay: StayDetailsResponse): void {
+    this.stayDateChangeId = stay.stayId;
+    this.stayDateChangeGuestName = stay.guestName;
+    this.stayProposedCheckIn = stay.expectedCheckInDate || '';
+    this.stayProposedCheckOut = stay.expectedCheckOutDate || '';
+    this.stayDateChangeError = '';
+    this.stayDateChangeLoading = false;
+    this.showStayDateChangeModal = true;
+  }
+
+  closeStayDateChange(): void {
+    this.showStayDateChangeModal = false;
+    this.stayDateChangeId = null;
+    this.stayDateChangeGuestName = '';
+    this.stayProposedCheckIn = '';
+    this.stayProposedCheckOut = '';
+    this.stayDateChangeError = '';
+    this.stayDateChangeLoading = false;
+  }
+
+  confirmStayDateChange(): void {
+    if (this.stayDateChangeId === null) return;
+    if (!this.stayProposedCheckIn || !this.stayProposedCheckOut) {
+      this.stayDateChangeError = 'Both dates are required.';
+      return;
+    }
+    if (this.stayProposedCheckOut <= this.stayProposedCheckIn) {
+      this.stayDateChangeError = 'Check-out must be after check-in.';
+      return;
+    }
+
+    this.stayDateChangeError = '';
+    this.stayDateChangeLoading = true;
+
+    this.stayService
+      .proposeDateChange(
+        this.stayDateChangeId,
+        this.stayProposedCheckIn,
+        this.stayProposedCheckOut
+      )
+      .subscribe({
+        next: () => {
+          this.stayDateChangeLoading = false;
+          this.closeStayDateChange();
+          this.loadStays();
+          this.dataChanged.emit();
+        },
+        error: (err) => {
+          this.stayDateChangeLoading = false;
+          this.stayDateChangeError =
+            'Failed to propose new dates: ' +
+            (err.error?.message || err.message);
+        }
+      });
+  }
+
+  // ============================================================
+  // STAYS — UPDATE STATUS MODAL
+  // ============================================================
+  openStayStatus(stay: StayDetailsResponse): void {
+    this.stayStatusId = stay.stayId;
+    this.stayStatusGuestName = stay.guestName;
+    this.newStayStatus = stay.status || '';
+    this.stayStatusLoading = false;
+    this.showStayStatusModal = true;
+  }
+
+  closeStayStatus(): void {
+    this.showStayStatusModal = false;
+    this.stayStatusId = null;
+    this.stayStatusGuestName = '';
+    this.newStayStatus = '';
+    this.stayStatusLoading = false;
+  }
+
+  confirmStayStatus(): void {
+    if (this.stayStatusId === null || !this.newStayStatus) return;
+    this.stayStatusLoading = true;
+
+    this.stayService
+      .updateStatus(this.stayStatusId, this.newStayStatus)
+      .subscribe({
+        next: () => {
+          this.stayStatusLoading = false;
+          this.closeStayStatus();
+          this.loadStays();
+          this.dataChanged.emit();
+        },
+        error: (err) => {
+          this.stayStatusLoading = false;
+          this.staysError =
+            'Failed to update status: ' +
+            (err.error?.message || err.message);
+        }
+      });
   }
 }
