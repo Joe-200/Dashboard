@@ -1,8 +1,13 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { debounceTime, Subject } from 'rxjs';
+
+import {
+  fetchEventSource,
+  EventSourceMessage
+} from '@microsoft/fetch-event-source';
 
 import {
   ReservationRequestService,
@@ -12,6 +17,8 @@ import {
 
 import { RoomService, RoomResponse } from '../../room-response.service';
 
+import { AuthService } from '../../auth-service.service';
+import { environment } from '../../environment';
 /**
  * Local extension so template can access date-change + cancel fields
  * even if the imported interface hasn't been updated yet.
@@ -30,7 +37,7 @@ export type ReservationRequestExt = ReservationRequest & {
   templateUrl: './requests-view-component.component.html',
   styleUrl: './requests-view-component.component.css'
 })
-export class RequestsViewComponent implements OnInit {
+export class RequestsViewComponent implements OnInit, OnDestroy {
   // ============================================================
   // OUTPUT
   // ============================================================
@@ -59,6 +66,19 @@ export class RequestsViewComponent implements OnInit {
   totalPages = 0;
 
   todayIso = new Date().toISOString().substring(0, 10);
+
+  // ============================================================
+  // LIVE (SSE)
+  // ============================================================
+  liveConnected = false;
+
+  private abortController: AbortController | null = null;
+  private sseReloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private destroyed = false;
+
+  /** Full URL to the SSE stream endpoint, built from the environment apiUrl. */
+  private static readonly SSE_URL =
+    `${environment.apiUrl}/api/dashboard/front-desk/live`;
 
   // ============================================================
   // FILTERED REQUESTS
@@ -120,7 +140,8 @@ export class RequestsViewComponent implements OnInit {
   // ============================================================
   constructor(
     private reservationService: ReservationRequestService,
-    private roomService: RoomService
+    private roomService: RoomService,
+    private authService: AuthService
   ) {}
 
   // ============================================================
@@ -132,13 +153,25 @@ export class RequestsViewComponent implements OnInit {
       this.loadRequests();
     });
     this.loadRequests();
+    this.connectLiveStream();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.disconnectLiveStream();
   }
 
   // ============================================================
   // LOAD
   // ============================================================
-  loadRequests(): void {
-    this.loading = true;
+  /**
+   * @param silent when true, does not toggle `loading` (used for SSE-driven
+   *               background refreshes so the list does not flicker).
+   */
+  loadRequests(silent: boolean = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     this.error = '';
 
     const status = this.statusFilter || undefined;
@@ -159,6 +192,144 @@ export class RequestsViewComponent implements OnInit {
           this.loading = false;
         }
       });
+  }
+
+  // ============================================================
+  // LIVE STREAM (SSE via fetch-event-source)
+  // ============================================================
+  private connectLiveStream(): void {
+    if (this.destroyed || this.abortController) return;
+
+    const token = this.authService.getToken();
+    const hotelId = this.authService.getHotelId();
+
+    // If we have no token, don't even attempt — the stream will 401.
+    if (!token) {
+      this.liveConnected = false;
+      return;
+    }
+
+    this.abortController = new AbortController();
+
+    const headers: Record<string, string> = {
+      Accept: 'text/event-stream',
+      Authorization: `Bearer ${token}`
+    };
+    if (hotelId) {
+      headers['X-Tenant-ID'] = hotelId;
+    }
+
+    fetchEventSource(RequestsViewComponent.SSE_URL, {
+      method: 'GET',
+      headers,
+      // We're authenticating with the Bearer token, so we don't need cookies.
+      // (Cross-origin cookie flows require SameSite=None; Secure + specific CORS.)
+      credentials: 'omit',
+      signal: this.abortController.signal,
+      // Keep the stream alive even when the browser tab is hidden.
+      openWhenHidden: true,
+
+      async onopen(response: Response) {
+        const contentType = response.headers.get('content-type') || '';
+
+        if (
+          response.ok &&
+          contentType.includes('text/event-stream')
+        ) {
+          return; // connection established
+        }
+
+        // Non-retryable errors — throw to stop the library's auto-retry.
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          response.status === 404
+        ) {
+          throw new Error(`SSE fatal: ${response.status} ${response.statusText}`);
+        }
+
+        // Everything else (5xx, network hiccup) → let onerror retry.
+        throw new Error(`SSE error: ${response.status} ${response.statusText}`);
+      },
+
+      onmessage: (event: EventSourceMessage) => {
+        // Fires for both named and unnamed events.
+        this.handleLiveEvent(event);
+      },
+
+      onclose: () => {
+        // Server closed the stream gracefully; the library will retry.
+        this.liveConnected = false;
+      },
+
+      onerror: (err: any) => {
+        this.liveConnected = false;
+
+        // Throwing inside onerror STOPS retries permanently.
+        if (typeof err?.message === 'string' && err.message.startsWith('SSE fatal')) {
+          throw err;
+        }
+
+        // Returning a number tells the library to retry after that many ms.
+        // (e.g. 3s fixed. Increase / use backoff if you prefer.)
+        return 3000;
+      }
+    })
+      .then(() => {
+        // Resolved because the stream ended cleanly (or was aborted).
+        // Only mark connected if we weren't destroyed mid-flight.
+        if (!this.destroyed) {
+          this.liveConnected = false;
+        }
+      })
+      .catch(() => {
+        // Rejected because onerror threw (fatal) or the abort signal fired.
+        this.liveConnected = false;
+      });
+
+    // Mark connected optimistically; `onmessage` proves the stream is flowing.
+    this.liveConnected = true;
+  }
+
+  private disconnectLiveStream(): void {
+    if (this.sseReloadTimer) {
+      clearTimeout(this.sseReloadTimer);
+      this.sseReloadTimer = null;
+    }
+    if (this.abortController) {
+      try {
+        this.abortController.abort();
+      } catch {
+        /* noop */
+      }
+      this.abortController = null;
+    }
+    this.liveConnected = false;
+  }
+
+  /**
+   * Coalesces a burst of SSE events into a single background reload.
+   * This avoids hammering the API when many events fire in quick succession.
+   */
+  private handleLiveEvent(_event: EventSourceMessage): void {
+    if (this.destroyed) return;
+
+    // We don't inspect `event.data` — any event triggers a silent refetch.
+    // If your backend sends a "type" in `event.event`, you can filter here.
+    if (this.sseReloadTimer) {
+      clearTimeout(this.sseReloadTimer);
+    }
+    this.sseReloadTimer = setTimeout(() => {
+      this.sseReloadTimer = null;
+      this.loadRequests(true); // silent refresh
+    }, 300);
+  }
+
+  /** Public — used by the live status pill in the template. */
+  reconnectLive(): void {
+    if (this.liveConnected) return;
+    this.disconnectLiveStream();
+    this.connectLiveStream();
   }
 
   // ============================================================
@@ -232,7 +403,7 @@ export class RequestsViewComponent implements OnInit {
     this.acceptingRequestId = requestId;
     this.selectedRoomId = null;
     this.availableRooms = [];
-    this.acceptLoading = false;
+    this.acceptLoading = true;
     this.showAcceptModal = true;
 
     this.roomService

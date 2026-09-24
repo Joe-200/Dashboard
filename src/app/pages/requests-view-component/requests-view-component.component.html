@@ -83,6 +83,17 @@
     >
       Clear Filters
     </button>
+
+    <!-- Live SSE status pill -->
+    <div
+      class="live-status"
+      [class.connected]="liveConnected"
+      (click)="reconnectLive()"
+      [title]="liveConnected ? 'Live updates connected' : 'Click to reconnect live updates'"
+    >
+      <span class="live-dot"></span>
+      <span class="live-label">{{ liveConnected ? 'Live' : 'Offline' }}</span>
+    </div>
   </div>
 
   <!-- ==========================================================
