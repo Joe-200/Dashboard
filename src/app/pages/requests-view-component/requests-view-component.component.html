@@ -390,7 +390,7 @@
             <button
               *ngIf="canCheckIn(stay)"
               type="button"
-              class="btn-glass accept"
+              class="btn-glass accept stay-action"
               [disabled]="stayActionBusy[stay.stayId]"
               (click)="checkInStay(stay)"
             >
@@ -400,7 +400,7 @@
             <button
               *ngIf="canCheckOut(stay)"
               type="button"
-              class="btn-glass primary"
+              class="btn-glass primary stay-action"
               [disabled]="stayActionBusy[stay.stayId]"
               (click)="checkOutStay(stay)"
             >
