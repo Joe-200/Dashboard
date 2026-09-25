@@ -1,8 +1,10 @@
 <div class="rooms-container">
 
-  <!-- HEADER -->
-  <div class="page-header">
-    <div>
+  <!-- =========================================================
+       PAGE HEADER
+  ========================================================= -->
+  <header class="page-header">
+    <div class="page-header-text">
       <span class="eyebrow">FRONT DESK</span>
       <h1>Rooms</h1>
       <p>Manage rooms, availability and room information.</p>
@@ -16,55 +18,49 @@
       >
         Manage Categories
       </button>
-
-      <button
-        type="button"
-        class="btn btn-primary"
-        (click)="openCreateRoomModal()"
-      >
-        Add Room
-      </button>
     </div>
-  </div>
+  </header>
 
   <!-- ERROR -->
-  <div *ngIf="error" class="alert alert-danger">
+  <div *ngIf="error" class="alert alert-danger" role="alert">
     {{ error }}
   </div>
 
-  <!-- FILTERS + SEARCH -->
-  <div class="filters-card">
+  <!-- =========================================================
+       UNIFIED CONTROL BAR
+  ========================================================= -->
+  <div class="control-bar">
 
-    <div class="filter-group search-group">
-      <label>Search</label>
-      <div class="search-input-wrapper">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
-             width="16" height="16" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="text"
-          class="form-control search-input"
-          placeholder="Room number, category, ID, floor..."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange()"
-        />
-        <button
-          *ngIf="searchTerm"
-          type="button"
-          class="search-clear"
-          (click)="clearSearch()"
-          aria-label="Clear search"
-        >×</button>
-      </div>
+    <div class="search-wrap">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
+           width="18" height="18" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        id="room-search"
+        type="text"
+        class="form-control search-input"
+        placeholder="Search rooms, categories, floor…"
+        aria-label="Search rooms"
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+      <button
+        *ngIf="searchTerm"
+        type="button"
+        class="search-clear"
+        (click)="clearSearch()"
+        aria-label="Clear search"
+      >×</button>
     </div>
 
-    <div class="filter-group">
-      <label>Status</label>
+    <div class="select-wrap">
+      <label for="status-filter" class="visually-hidden">Status</label>
       <select
+        id="status-filter"
         class="form-control"
         [(ngModel)]="filterStatus"
         (change)="onFilterChange()"
@@ -77,9 +73,10 @@
       </select>
     </div>
 
-    <div class="filter-group">
-      <label>Floor</label>
+    <div class="select-wrap">
+      <label for="floor-filter" class="visually-hidden">Floor</label>
       <input
+        id="floor-filter"
         type="number"
         class="form-control"
         placeholder="All floors"
@@ -88,18 +85,35 @@
       />
     </div>
 
-    <div class="room-count">
-      <span>{{ filteredRooms.length }}</span>
-      rooms
-      <span *ngIf="searchTerm" class="filter-note">(filtered)</span>
-    </div>
+    <button
+      *ngIf="searchTerm || filterStatus || filterFloor"
+      type="button"
+      class="btn-text clear-filters"
+      (click)="clearFilters()"
+    >
+      Clear Filters
+    </button>
 
+    <button
+      type="button"
+      class="btn btn-primary add-room-btn"
+      (click)="openCreateRoomModal()"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Room
+    </button>
   </div>
 
   <!-- LOADING -->
   <div *ngIf="loading" class="loading-state">
     <div class="loading-spinner"></div>
-    <span>Loading rooms...</span>
+    <span>Loading rooms…</span>
   </div>
 
   <!-- EMPTY -->
@@ -107,25 +121,34 @@
     *ngIf="!loading && filteredRooms.length === 0"
     class="empty-state"
   >
-    <h3>
-      {{ searchTerm ? 'No matching rooms' : 'No rooms found' }}
-    </h3>
-
-    <p *ngIf="searchTerm">
-      No rooms match "{{ searchTerm }}". Try a different search.
-    </p>
-
-    <p *ngIf="!searchTerm">
-      Try changing your filters or add a new room.
-    </p>
-
-    <button
-      class="btn btn-primary"
-      type="button"
-      (click)="openCreateRoomModal()"
-    >
+    <div class="empty-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+        <path d="M2 15h20"/>
+        <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+        <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+      </svg>
+    </div>
+    <h3>{{ searchTerm ? 'No matching rooms' : 'No rooms yet' }}</h3>
+    <p *ngIf="searchTerm">No rooms match "{{ searchTerm }}". Try a different search.</p>
+    <p *ngIf="!searchTerm">Try changing your filters or add a new room.</p>
+    <button class="btn btn-primary" type="button" (click)="openCreateRoomModal()">
       Add Room
     </button>
+  </div>
+
+  <!-- RESULTS HEADER -->
+  <div
+    *ngIf="!loading && filteredRooms.length > 0"
+    class="results-header"
+  >
+    <span class="results-count">
+      Showing <strong>{{ filteredRooms.length }}</strong>
+      {{ filteredRooms.length === 1 ? 'room' : 'rooms' }}
+      <span *ngIf="searchTerm || filterStatus || filterFloor" class="filter-note">(filtered)</span>
+    </span>
   </div>
 
   <!-- ROOMS GRID -->
@@ -133,94 +156,167 @@
     *ngIf="!loading && filteredRooms.length > 0"
     class="rooms-grid"
   >
-    <article
-      class="room-card"
-      *ngFor="let room of filteredRooms"
-    >
-      <div class="room-image">
+    <article class="room-card" *ngFor="let room of filteredRooms">
+
+      <!-- IMAGE -->
+      <div class="card-image" [class.empty]="!room.imageUrl">
         <img
           *ngIf="room.imageUrl"
           [src]="room.imageUrl"
           [alt]="'Room ' + room.roomNumber"
           loading="lazy"
         />
-        <div
-          *ngIf="!room.imageUrl"
-          class="image-placeholder"
-        >
-          <span>NO IMAGE</span>
+        <div *ngIf="!room.imageUrl" class="image-placeholder" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+            <path d="M2 15h20"/>
+            <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+            <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+          </svg>
         </div>
-
-        <span
-          class="status-badge"
-          [ngClass]="'status-' + room.status.toLowerCase()"
-        >
-          {{ getStatusLabel(room.status) }}
-        </span>
-
-        <span class="room-number">
-          {{ room.roomNumber }}
-        </span>
       </div>
 
-      <div class="room-body">
-        <div class="room-heading">
-          <div>
-            <h3>{{ room.categoryName || 'Room' }}</h3>
-            <span class="room-floor">Floor {{ room.floor }}</span>
+      <!-- BODY -->
+      <div class="card-body">
+
+        <div class="card-title-row">
+          <div class="card-title-left">
+            <h3 class="card-title">Room {{ room.roomNumber }}</h3>
+            <span
+              class="status-pill"
+              [ngClass]="'status-' + room.status.toLowerCase()"
+            >
+              <svg *ngIf="room.status === 'AVAILABLE'" xmlns="http://www.w3.org/2000/svg"
+                   width="12" height="12" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <svg *ngIf="room.status === 'OCCUPIED'" xmlns="http://www.w3.org/2000/svg"
+                   width="12" height="12" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <svg *ngIf="room.status === 'CLEANING'" xmlns="http://www.w3.org/2000/svg"
+                   width="12" height="12" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l1.9 5.8L20 10.6l-5.6 2 1.1 5.7-3.5-4-3.5 4 1.1-5.7-5.6-2 6.1-1.8z"/>
+              </svg>
+              <svg *ngIf="room.status === 'MAINTENANCE'" xmlns="http://www.w3.org/2000/svg"
+                   width="12" height="12" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+              {{ getStatusLabel(room.status) }}
+            </span>
           </div>
-          <div class="room-price">
-            <strong>{{ room.price | number:'1.0-2' }}</strong>
+
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Edit room"
+            title="Edit room"
+            (click)="openEditRoomModal(room)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="card-subtitle">
+          Floor {{ room.floor }}
+          <span *ngIf="room.categoryName" class="dot">·</span>
+          <span *ngIf="room.categoryName">{{ room.categoryName }}</span>
+        </div>
+
+        <p class="card-description">
+          {{ room.description || 'No description available.' }}
+        </p>
+
+        <ul class="card-amenities" aria-label="Amenities">
+          <li class="amenity" [attr.title]="room.numBeds + ' ' + (room.numBeds === 1 ? 'Bed' : 'Beds')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+              <path d="M2 15h20"/>
+              <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+              <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+            </svg>
+            <span>{{ room.numBeds }}</span>
+          </li>
+
+          <li class="amenity"
+              [attr.title]="room.maxAdults + ' Adults' + (room.maxKids > 0 ? ', ' + room.maxKids + ' Kids' : '')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>
+              {{ room.maxAdults }}<ng-container *ngIf="room.maxKids > 0">+{{ room.maxKids }}</ng-container>
+            </span>
+          </li>
+
+          <li class="amenity" *ngIf="room.hasWifi" title="Wi-Fi">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            <span>Wi-Fi</span>
+          </li>
+
+          <li class="amenity" *ngIf="room.numTvs > 0"
+              [attr.title]="room.numTvs + ' ' + (room.numTvs === 1 ? 'TV' : 'TVs')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+              <polyline points="17 2 12 7 7 2"/>
+            </svg>
+            <span>{{ room.numTvs }}</span>
+          </li>
+
+          <li class="amenity" *ngIf="getViewLabel(room.viewType)"
+              [attr.title]="getViewLabel(room.viewType) + ' View'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>{{ getViewLabel(room.viewType) }}</span>
+          </li>
+        </ul>
+
+        <div class="card-footer">
+          <div class="price">
+            <strong>{{ room.price | number:'1.0-0' }}</strong>
             <span>SAR / night</span>
           </div>
         </div>
 
-        <p class="room-description">
-          {{ room.description || 'No description available.' }}
-        </p>
-
-        <div class="room-tags">
-          <span class="room-tag">
-            {{ room.categoryName || 'Uncategorized' }}
-          </span>
-          <span class="room-tag">
-            Category #{{ room.categoryId }}
-          </span>
-          <span class="room-tag">
-            {{ room.numBeds }}
-            {{ room.numBeds === 1 ? 'Bed' : 'Beds' }}
-          </span>
-          <span class="room-tag">
-            {{ getBedTypeLabel(room.bedType) }}
-          </span>
-          <span class="room-tag">
-            {{ room.maxAdults }}
-            {{ room.maxAdults === 1 ? 'Adult' : 'Adults' }}
-          </span>
-          <span class="room-tag" *ngIf="room.maxKids > 0">
-            {{ room.maxKids }}
-            {{ room.maxKids === 1 ? 'Kid' : 'Kids' }}
-          </span>
-          <span class="room-tag" *ngIf="room.hasWifi">Wi-Fi</span>
-          <span class="room-tag" *ngIf="room.numTvs > 0">
-            {{ room.numTvs }}
-            {{ room.numTvs === 1 ? 'TV' : 'TVs' }}
-          </span>
-          <span class="room-tag" *ngIf="getViewLabel(room.viewType)">
-            {{ getViewLabel(room.viewType) }} View
-          </span>
-          <span class="room-tag">Room #{{ room.id }}</span>
-        </div>
-
-        <div class="room-actions">
-          <button
-            type="button"
-            class="btn btn-edit"
-            (click)="openEditRoomModal(room)"
-          >
-            Edit Room
-          </button>
-        </div>
       </div>
     </article>
   </div>
@@ -230,12 +326,10 @@
     *ngIf="!loading && totalPages > 1"
     class="pagination-container"
   >
-    <span>
-      Page {{ currentPage + 1 }} of {{ totalPages }}
-    </span>
-
+    <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
     <div class="pagination">
       <button
+        type="button"
         [disabled]="currentPage === 0"
         (click)="onPageChange(currentPage - 1)"
       >
@@ -243,6 +337,7 @@
       </button>
 
       <button
+        type="button"
         *ngFor="let p of [].constructor(totalPages); let i = index"
         [class.active]="i === currentPage"
         (click)="onPageChange(i)"
@@ -251,6 +346,7 @@
       </button>
 
       <button
+        type="button"
         [disabled]="currentPage === totalPages - 1"
         (click)="onPageChange(currentPage + 1)"
       >
@@ -265,14 +361,13 @@
 <!-- =========================================================
      ROOM MODAL
 ========================================================= -->
-
 <div
   *ngIf="showRoomModal"
   class="custom-modal-overlay"
   (click)="closeRoomModal()"
 >
   <div
-    class="custom-modal"
+    class="custom-modal room-modal"
     (click)="$event.stopPropagation()"
   >
     <div class="custom-modal-header">
@@ -284,6 +379,7 @@
         type="button"
         class="close-btn"
         (click)="closeRoomModal()"
+        aria-label="Close"
       >×</button>
     </div>
 
@@ -292,12 +388,14 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Room Number</label>
+            <label for="room-number">Room Number</label>
             <input
+              id="room-number"
               type="text"
               class="form-control"
               formControlName="roomNumber"
-              placeholder="101"
+              placeholder="e.g. 101"
+              [attr.aria-invalid]="roomForm.get('roomNumber')?.invalid && roomForm.get('roomNumber')?.touched"
             />
             <div
               class="error"
@@ -308,14 +406,19 @@
           </div>
 
           <div class="form-group">
-            <label>Category</label>
-            <select class="form-control" formControlName="categoryId">
+            <label for="room-category">Category</label>
+            <select
+              id="room-category"
+              class="form-control"
+              formControlName="categoryId"
+              [attr.aria-invalid]="roomForm.get('categoryId')?.invalid && roomForm.get('categoryId')?.touched"
+            >
               <option [ngValue]="null">Select category</option>
               <option
                 *ngFor="let cat of categories"
                 [ngValue]="cat.id"
               >
-                {{ cat.name }} (ID: {{ cat.id }})
+                {{ cat.name }}
               </option>
             </select>
             <div
@@ -329,8 +432,9 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Floor</label>
+            <label for="room-floor">Floor</label>
             <input
+              id="room-floor"
               type="number"
               class="form-control"
               formControlName="floor"
@@ -338,41 +442,22 @@
             />
           </div>
 
-          <div class="form-group">
-            <label>View</label>
-            <select class="form-control" formControlName="viewType">
-              <option value="">Select view</option>
-              <option value="CITY">City</option>
-              <option value="PANORAMIC">Panoramic</option>
-              <option value="SEA">Sea</option>
-              <option value="GARDEN">Garden</option>
-              <option value="MOUNTAIN">Mountain</option>
-              <option value="POOL">Pool</option>
-              <option value="RIVER">River</option>
-              <option value="LANDMARK">Landmark</option>
-            </select>
-            <div
-              class="error"
-              *ngIf="roomForm.get('viewType')?.invalid && roomForm.get('viewType')?.touched"
-            >
-              View is required.
-            </div>
-          </div>
         </div>
 
         <div class="form-group">
-          <label>Description</label>
+          <label for="room-description">Description</label>
           <textarea
+            id="room-description"
             class="form-control textarea"
             formControlName="description"
-            rows="3"
-            placeholder="Describe the room..."
+            rows="4"
+            placeholder="Describe the room…"
           ></textarea>
         </div>
 
         <div class="form-group" *ngIf="isEditRoom">
-          <label>Status</label>
-          <select class="form-control" formControlName="status">
+          <label for="room-status">Status</label>
+          <select id="room-status" class="form-control" formControlName="status">
             <option value="AVAILABLE">Available</option>
             <option value="OCCUPIED">Occupied</option>
             <option value="CLEANING">Cleaning</option>
@@ -380,35 +465,43 @@
           </select>
         </div>
 
+        <!-- IMAGES -->
         <div class="form-group">
           <label>Room Images</label>
+          <p class="helper-text">Max 5 images. JPG, PNG, WebP. Auto-compressed to WebP.</p>
 
-          <p class="gallery-hint">
-            Upload multiple images, choose a primary, and reorder them.
-            Images are auto-compressed to WebP.
-          </p>
-
-          <div class="gallery-input-row">
+          <label
+            class="file-drop-zone"
+            [class.dragover]="roomDragOver"
+            (dragover)="onRoomDragOver($event)"
+            (dragleave)="onRoomDragLeave($event)"
+            (drop)="onRoomFilesDropped($event)"
+          >
             <input
+              #roomFileInput
               type="file"
-              class="form-control file-input"
+              class="file-input-hidden"
               accept="image/jpeg,image/png,image/webp,image/jpg"
               multiple
               (change)="onRoomFilesSelected($event)"
             />
+            <span class="drop-icon-wrap" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   width="26" height="26" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <path d="M16 16l-4-4-4 4"/>
+                <path d="M12 12v9"/>
+                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+              </svg>
+            </span>
+            <span class="drop-title">Drag and drop images here or click to browse</span>
+            <span class="drop-hint">PNG, JPG, WebP up to 5MB each</span>
+          </label>
 
-            <div
-              class="image-processing"
-              *ngIf="imageProcessing"
-            >
-              Processing...
-            </div>
-          </div>
+          <div class="image-processing" *ngIf="imageProcessing">Processing images…</div>
 
-          <div
-            class="image-gallery"
-            *ngIf="roomGallery.length > 0"
-          >
+          <div class="image-gallery" *ngIf="roomGallery.length > 0">
             <div
               class="gallery-item"
               *ngFor="let img of roomGallery; let i = index"
@@ -420,51 +513,24 @@
               <span class="primary-badge" *ngIf="img.isPrimary && !img.markedForDeletion">
                 PRIMARY
               </span>
-
-              <span class="deleted-badge" *ngIf="img.markedForDeletion">
-                WILL BE DELETED
-              </span>
+              <span class="deleted-badge" *ngIf="img.markedForDeletion">REMOVED</span>
 
               <div class="gallery-overlay" *ngIf="!img.markedForDeletion">
-                <button
-                  type="button"
-                  class="gallery-btn"
-                  title="Move left"
-                  [disabled]="i === 0"
-                  (click)="moveRoomImageLeft(i)"
-                >‹</button>
-
-                <button
-                  type="button"
-                  class="gallery-btn star"
-                  [class.active]="img.isPrimary"
-                  title="Set as primary"
-                  (click)="setPrimaryRoomImage(i)"
-                >★</button>
-
-                <button
-                  type="button"
-                  class="gallery-btn"
-                  title="Move right"
-                  [disabled]="i === roomGallery.length - 1"
-                  (click)="moveRoomImageRight(i)"
-                >›</button>
-
-                <button
-                  type="button"
-                  class="gallery-btn danger"
-                  title="Remove"
-                  (click)="removeRoomImage(i)"
-                >×</button>
+                <button type="button" class="gallery-btn" title="Move left"
+                        [disabled]="i === 0" (click)="moveRoomImageLeft(i)">‹</button>
+                <button type="button" class="gallery-btn star"
+                        [class.active]="img.isPrimary" title="Set as primary"
+                        (click)="setPrimaryRoomImage(i)">★</button>
+                <button type="button" class="gallery-btn" title="Move right"
+                        [disabled]="i === roomGallery.length - 1"
+                        (click)="moveRoomImageRight(i)">›</button>
+                <button type="button" class="gallery-btn danger" title="Remove"
+                        (click)="removeRoomImage(i)">×</button>
               </div>
 
               <div class="gallery-overlay" *ngIf="img.markedForDeletion">
-                <button
-                  type="button"
-                  class="gallery-btn undo"
-                  title="Undo"
-                  (click)="undoRemoveRoomImage(i)"
-                >↺</button>
+                <button type="button" class="gallery-btn undo" title="Undo"
+                        (click)="undoRemoveRoomImage(i)">↺</button>
               </div>
 
               <div class="gallery-footer">
@@ -489,13 +555,7 @@
             class="btn btn-primary"
             [disabled]="roomForm.invalid || loading || imageProcessing"
           >
-            {{
-              loading
-                ? 'Saving...'
-                : isEditRoom
-                  ? 'Save Changes'
-                  : 'Create Room'
-            }}
+            {{ loading ? 'Saving…' : (isEditRoom ? 'Save Changes' : 'Create Room') }}
           </button>
         </div>
 
@@ -506,12 +566,8 @@
 
 
 <!-- =========================================================
-     CATEGORY MANAGEMENT MODAL — three-pane layout
-     LEFT   → category list
-     MIDDLE → category form
-     RIGHT  → HPMS categories (clickable, auto‑fill)
+     CATEGORY MODAL
 ========================================================= -->
-
 <div
   *ngIf="showCategoryModal"
   class="custom-modal-overlay"
@@ -521,7 +577,6 @@
     class="custom-modal category-modal"
     (click)="$event.stopPropagation()"
   >
-    <!-- HEADER -->
     <div class="custom-modal-header">
       <div>
         <span class="modal-eyebrow">ROOM MANAGEMENT</span>
@@ -531,45 +586,38 @@
         type="button"
         class="close-btn"
         (click)="closeCategoryModal()"
+        aria-label="Close"
       >×</button>
     </div>
 
-    <!-- BODY: three-pane grid -->
     <div class="custom-modal-body category-body">
-
       <div class="category-layout">
 
-        <!-- =========================================================
-             LEFT PANE — CATEGORY LIST
-        ========================================================= -->
+        <!-- LEFT PANE -->
         <aside class="category-sidebar">
-
           <div class="category-sidebar-header">
             <h3>
               Categories
               <span class="category-count">{{ categories.length }}</span>
             </h3>
-
             <button
               type="button"
-              class="btn-new-category"
+              class="btn btn-primary btn-sm"
               (click)="startNewCategory()"
-              title="Create new category"
             >
-              New
+              + New
             </button>
           </div>
 
           <div *ngIf="categoriesLoading" class="category-sidebar-state">
-            Loading categories...
+            Loading categories…
           </div>
 
           <div
             *ngIf="!categoriesLoading && categories.length === 0"
             class="category-sidebar-state"
           >
-            No categories yet.<br/>
-            Click <strong>New</strong> to create one.
+            No categories yet. Click <strong>New</strong> to create one.
           </div>
 
           <div
@@ -580,7 +628,8 @@
               type="button"
               class="category-list-item"
               *ngFor="let category of categories"
-[class.active]="isEditCategory && selectedCategoryId === category.id.toString()"              (click)="openEditCategoryModal(category)"
+              [class.active]="isEditCategory && selectedCategoryId === category.id.toString()"
+              (click)="openEditCategoryModal(category)"
             >
               <div class="category-list-thumb">
                 <img
@@ -589,15 +638,11 @@
                   [alt]="category.name"
                   loading="lazy"
                 />
-                <div *ngIf="!category.imageUrl" class="thumb-placeholder">
-                  N/A
-                </div>
+                <div *ngIf="!category.imageUrl" class="thumb-placeholder">N/A</div>
               </div>
 
               <div class="category-list-info">
-                <div class="category-list-name">
-                  {{ category.name }}
-                </div>
+                <div class="category-list-name">{{ category.name }}</div>
                 <div class="category-list-meta">
                   #{{ category.id }}
                   <span class="separator">·</span>
@@ -611,10 +656,9 @@
                 role="button"
                 (click)="$event.stopPropagation(); deleteCategory(category.id)"
               >
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     width="16" height="16" viewBox="0 0 24 24"
-                     fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
                   <path d="M10 11v6"></path>
@@ -624,19 +668,13 @@
               </span>
             </button>
           </div>
-
         </aside>
 
-        <!-- =========================================================
-             MIDDLE PANE — CATEGORY FORM
-        ========================================================= -->
+        <!-- RIGHT PANE -->
         <section class="category-form-panel">
 
           <div class="section-header">
-            <h3>
-              {{ isEditCategory ? 'Edit Category' : 'New Category' }}
-            </h3>
-
+            <h3>{{ isEditCategory ? 'Edit Category' : 'New Category' }}</h3>
             <span *ngIf="isEditCategory" class="category-id-badge">
               ID: {{ selectedCategoryId }}
             </span>
@@ -652,10 +690,11 @@
             <div class="form-section">
               <div class="form-section-title">Identity</div>
 
-              <div class="form-grid form-grid-4">
+              <div class="form-grid form-grid-2">
                 <div class="form-group">
-                  <label>Category ID <span class="required">*</span></label>
+                  <label for="cat-id">Category ID <span class="required">*</span></label>
                   <input
+                    id="cat-id"
                     type="text"
                     class="form-control"
                     formControlName="id"
@@ -663,50 +702,44 @@
                     [readonly]="isEditCategory"
                     [class.readonly]="isEditCategory"
                   />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched"
-                  >
+                  <div class="error"
+                       *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched">
                     Category ID is required.
                   </div>
                 </div>
 
-                <div class="form-group span-2">
-                  <label>Category Name <span class="required">*</span></label>
+                <div class="form-group">
+                  <label for="cat-name">Category Name <span class="required">*</span></label>
                   <input
+                    id="cat-name"
                     type="text"
                     class="form-control"
                     formControlName="name"
                     placeholder="e.g. Deluxe Double Room"
                   />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched"
-                  >
+                  <div class="error"
+                       *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched">
                     Category name is required.
                   </div>
                 </div>
+              </div>
 
-                <div class="form-group">
-                  <label>View <span class="required">*</span></label>
-                  <select class="form-control" formControlName="viewType">
-                    <option value="">Select view</option>
-                    <option value="CITY">City</option>
-                    <option value="PANORAMIC">Panoramic</option>
-                    <option value="SEA">Sea</option>
-                    <option value="GARDEN">Garden</option>
-                    <option value="MOUNTAIN">Mountain</option>
-                    <option value="POOL">Pool</option>
-                    <option value="RIVER">River</option>
-                    <option value="LANDMARK">Landmark</option>
-                  </select>
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('viewType')?.invalid && categoryForm.get('viewType')?.touched"
-                  >
-                    Required.
-                  </div>
-                </div>
+              <div class="hpms-inline">
+                <label for="hpms-select">Load from HPMS (optional)</label>
+                <select
+                  id="hpms-select"
+                  class="form-control"
+                  (change)="onHpmsSelect($event)"
+                  [disabled]="hpmsCategoriesLoading"
+                >
+                  <option value="">
+                    {{ hpmsCategoriesLoading ? 'Loading HPMS categories…' : 'Select an HPMS category to auto-fill' }}
+                  </option>
+                  <option *ngFor="let hpms of hpmsCategories" [value]="hpms.id">
+                    {{ hpms.name }} (ID: {{ hpms.id }})
+                  </option>
+                </select>
+                <p class="helper-text" *ngIf="hpmsCategoriesError">{{ hpmsCategoriesError }}</p>
               </div>
             </div>
 
@@ -714,53 +747,49 @@
             <div class="form-section">
               <div class="form-section-title">Room Configuration</div>
 
-              <div class="form-grid form-grid-4">
+              <div class="form-grid form-grid-2">
                 <div class="form-group">
-                  <label>Bed Type <span class="required">*</span></label>
-                  <select class="form-control" formControlName="bedType">
-                    <option value="">Select bed type</option>
-                    <option value="SINGLE">Single</option>
-                    <option value="DOUBLE">Double</option>
-                    <option value="QUEEN">Queen</option>
-                    <option value="KING">King</option>
-                    <option value="TWIN">Twin</option>
+                  <label for="cat-view">View <span class="required">*</span></label>
+                  <select id="cat-view" class="form-control" formControlName="viewType">
+                    <option value="">Select view</option>
+                    <option *ngFor="let v of viewOptions" [value]="v.value">{{ v.label }}</option>
                   </select>
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('bedType')?.invalid && categoryForm.get('bedType')?.touched"
-                  >
+                  <div class="error"
+                       *ngIf="categoryForm.get('viewType')?.invalid && categoryForm.get('viewType')?.touched">
                     Required.
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Beds <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    formControlName="numBeds"
-                    min="1"
-                  />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('numBeds')?.invalid && categoryForm.get('numBeds')?.touched"
-                  >
+                  <label for="cat-bed-type">Bed Type <span class="required">*</span></label>
+                  <select id="cat-bed-type" class="form-control" formControlName="bedType">
+                    <option value="">Select bed type</option>
+                    <option *ngFor="let b of bedTypeOptions" [value]="b.value">{{ b.label }}</option>
+                  </select>
+                  <div class="error"
+                       *ngIf="categoryForm.get('bedType')?.invalid && categoryForm.get('bedType')?.touched">
+                    Required.
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-grid form-grid-3">
+                <div class="form-group">
+                  <label for="cat-beds">Beds <span class="required">*</span></label>
+                  <input id="cat-beds" type="number" class="form-control"
+                         formControlName="numBeds" min="1" />
+                  <div class="error"
+                       *ngIf="categoryForm.get('numBeds')?.invalid && categoryForm.get('numBeds')?.touched">
                     Min 1.
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>TVs <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    formControlName="numTvs"
-                    min="0"
-                  />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('numTvs')?.invalid && categoryForm.get('numTvs')?.touched"
-                  >
+                  <label for="cat-tvs">TVs <span class="required">*</span></label>
+                  <input id="cat-tvs" type="number" class="form-control"
+                         formControlName="numTvs" min="0" />
+                  <div class="error"
+                       *ngIf="categoryForm.get('numTvs')?.invalid && categoryForm.get('numTvs')?.touched">
                     Min 0.
                   </div>
                 </div>
@@ -772,7 +801,7 @@
                     <span class="checkbox-toggle-track">
                       <span class="checkbox-toggle-thumb"></span>
                     </span>
-                    <span class="checkbox-toggle-label">
+                    <span class="checkbox-toggle-state">
                       {{ categoryForm.get('hasWifi')?.value ? 'On' : 'Off' }}
                     </span>
                   </label>
@@ -784,55 +813,36 @@
             <div class="form-section">
               <div class="form-section-title">Occupancy &amp; Pricing</div>
 
-              <div class="form-grid form-grid-4">
+              <div class="form-grid form-grid-3">
                 <div class="form-group">
-                  <label>Max Adults <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    formControlName="maxAdults"
-                    min="1"
-                  />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('maxAdults')?.invalid && categoryForm.get('maxAdults')?.touched"
-                  >
+                  <label for="cat-adults">Max Adults <span class="required">*</span></label>
+                  <input id="cat-adults" type="number" class="form-control"
+                         formControlName="maxAdults" min="1" />
+                  <div class="error"
+                       *ngIf="categoryForm.get('maxAdults')?.invalid && categoryForm.get('maxAdults')?.touched">
                     Min 1.
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Max Kids <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    formControlName="maxKids"
-                    min="0"
-                  />
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('maxKids')?.invalid && categoryForm.get('maxKids')?.touched"
-                  >
+                  <label for="cat-kids">Max Kids <span class="required">*</span></label>
+                  <input id="cat-kids" type="number" class="form-control"
+                         formControlName="maxKids" min="0" />
+                  <div class="error"
+                       *ngIf="categoryForm.get('maxKids')?.invalid && categoryForm.get('maxKids')?.touched">
                     Min 0.
                   </div>
                 </div>
 
-                <div class="form-group span-2">
-                  <label>Price per Night <span class="required">*</span></label>
+                <div class="form-group">
+                  <label for="cat-price">Price per Night <span class="required">*</span></label>
                   <div class="price-input">
-                    <input
-                      type="number"
-                      class="form-control"
-                      formControlName="price"
-                      min="0"
-                      step="0.01"
-                    />
+                    <input id="cat-price" type="number" class="form-control"
+                           formControlName="price" min="0" step="0.01" />
                     <span>SAR</span>
                   </div>
-                  <div
-                    class="error"
-                    *ngIf="categoryForm.get('price')?.invalid && categoryForm.get('price')?.touched"
-                  >
+                  <div class="error"
+                       *ngIf="categoryForm.get('price')?.invalid && categoryForm.get('price')?.touched">
                     Price is required and must be 0 or greater.
                   </div>
                 </div>
@@ -842,13 +852,14 @@
             <!-- DESCRIPTION -->
             <div class="form-section">
               <div class="form-section-title">Description</div>
-
               <div class="form-group">
+                <label for="cat-description" class="visually-hidden">Description</label>
                 <textarea
+                  id="cat-description"
                   class="form-control textarea"
                   formControlName="description"
-                  rows="2"
-                  placeholder="Describe the category — amenities, size, what guests can expect..."
+                  rows="3"
+                  placeholder="Describe the category — amenities, size, what guests can expect…"
                 ></textarea>
               </div>
             </div>
@@ -857,24 +868,39 @@
             <div class="form-section">
               <div class="form-section-title">Images</div>
 
-              <div class="gallery-input-row">
+              <p class="helper-text">Max 5 images. JPG, PNG, WebP. Auto-compressed to WebP.</p>
+
+              <label
+                class="file-drop-zone"
+                [class.dragover]="categoryDragOver"
+                (dragover)="onCategoryDragOver($event)"
+                (dragleave)="onCategoryDragLeave($event)"
+                (drop)="onCategoryFilesDropped($event)"
+              >
                 <input
                   type="file"
-                  class="form-control file-input"
+                  class="file-input-hidden"
                   accept="image/jpeg,image/png,image/webp,image/jpg"
                   multiple
                   (change)="onCategoryFilesSelected($event)"
                 />
+                <span class="drop-icon-wrap" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       width="26" height="26" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <path d="M16 16l-4-4-4 4"/>
+                    <path d="M12 12v9"/>
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                  </svg>
+                </span>
+                <span class="drop-title">Drag and drop images here or click to browse</span>
+                <span class="drop-hint">PNG, JPG, WebP up to 5MB each</span>
+              </label>
 
-                <div class="image-processing" *ngIf="imageProcessing">
-                  Processing...
-                </div>
-              </div>
+              <div class="image-processing" *ngIf="imageProcessing">Processing images…</div>
 
-              <div
-                class="image-gallery"
-                *ngIf="categoryGallery.length > 0"
-              >
+              <div class="image-gallery" *ngIf="categoryGallery.length > 0">
                 <div
                   class="gallery-item"
                   *ngFor="let img of categoryGallery; let i = index"
@@ -883,62 +909,27 @@
                 >
                   <img [src]="img.previewUrl" [alt]="'Category image ' + (i + 1)" />
 
-                  <span
-                    class="primary-badge"
-                    *ngIf="img.isPrimary && !img.markedForDeletion"
-                  >PRIMARY</span>
+                  <span class="primary-badge"
+                        *ngIf="img.isPrimary && !img.markedForDeletion">PRIMARY</span>
+                  <span class="deleted-badge"
+                        *ngIf="img.markedForDeletion">REMOVED</span>
 
-                  <span
-                    class="deleted-badge"
-                    *ngIf="img.markedForDeletion"
-                  >WILL BE DELETED</span>
-
-                  <div
-                    class="gallery-overlay"
-                    *ngIf="!img.markedForDeletion"
-                  >
-                    <button
-                      type="button"
-                      class="gallery-btn"
-                      title="Move left"
-                      [disabled]="i === 0"
-                      (click)="moveCategoryImageLeft(i)"
-                    >‹</button>
-
-                    <button
-                      type="button"
-                      class="gallery-btn star"
-                      [class.active]="img.isPrimary"
-                      title="Set as primary"
-                      (click)="setPrimaryCategoryImage(i)"
-                    >★</button>
-
-                    <button
-                      type="button"
-                      class="gallery-btn"
-                      title="Move right"
-                      [disabled]="i === categoryGallery.length - 1"
-                      (click)="moveCategoryImageRight(i)"
-                    >›</button>
-
-                    <button
-                      type="button"
-                      class="gallery-btn danger"
-                      title="Remove"
-                      (click)="removeCategoryImage(i)"
-                    >×</button>
+                  <div class="gallery-overlay" *ngIf="!img.markedForDeletion">
+                    <button type="button" class="gallery-btn" title="Move left"
+                            [disabled]="i === 0" (click)="moveCategoryImageLeft(i)">‹</button>
+                    <button type="button" class="gallery-btn star"
+                            [class.active]="img.isPrimary" title="Set as primary"
+                            (click)="setPrimaryCategoryImage(i)">★</button>
+                    <button type="button" class="gallery-btn" title="Move right"
+                            [disabled]="i === categoryGallery.length - 1"
+                            (click)="moveCategoryImageRight(i)">›</button>
+                    <button type="button" class="gallery-btn danger" title="Remove"
+                            (click)="removeCategoryImage(i)">×</button>
                   </div>
 
-                  <div
-                    class="gallery-overlay"
-                    *ngIf="img.markedForDeletion"
-                  >
-                    <button
-                      type="button"
-                      class="gallery-btn undo"
-                      title="Undo"
-                      (click)="undoRemoveCategoryImage(i)"
-                    >↺</button>
+                  <div class="gallery-overlay" *ngIf="img.markedForDeletion">
+                    <button type="button" class="gallery-btn undo" title="Undo"
+                            (click)="undoRemoveCategoryImage(i)">↺</button>
                   </div>
 
                   <div class="gallery-footer">
@@ -949,12 +940,10 @@
               </div>
             </div>
 
-            <!-- ERROR -->
-            <div *ngIf="categoriesError" class="alert alert-danger">
+            <div *ngIf="categoriesError" class="alert alert-danger" role="alert">
               {{ categoriesError }}
             </div>
 
-            <!-- ACTIONS -->
             <div class="custom-modal-footer">
               <button
                 type="button"
@@ -978,78 +967,16 @@
                 class="btn btn-primary"
                 [disabled]="categoryForm.invalid || categoriesLoading || imageProcessing"
               >
-                {{
-                  categoriesLoading
-                    ? 'Saving...'
-                    : isEditCategory
-                      ? 'Save Changes'
-                      : 'Create Category'
-                }}
+                {{ categoriesLoading
+                    ? 'Saving…'
+                    : (isEditCategory ? 'Save Changes' : 'Create Category') }}
               </button>
             </div>
 
           </form>
-
         </section>
 
-        <!-- =========================================================
-             RIGHT PANE — HPMS CATEGORIES (read-only reference)
-             Click a category to auto-fill the Name + ID fields.
-        ========================================================= -->
-        <aside class="hpms-panel">
-
-          <div class="hpms-panel-header">
-            <span class="hpms-categories-title">HPMS Categories</span>
-            <span class="category-count">{{ hpmsCategories.length }}</span>
-          </div>
-
-          <p class="hpms-note">
-            These are the categories of your booking account.
-            Click one to fill the Name &amp; ID fields, then use that ID
-            to match its rates. You can still edit the fields afterwards.
-          </p>
-
-          <div class="hpms-panel-body">
-
-            <div
-              *ngIf="hpmsCategoriesLoading"
-              class="hpms-categories-state"
-            >
-              Loading HPMS categories...
-            </div>
-
-            <div
-              *ngIf="!hpmsCategoriesLoading && hpmsCategoriesError"
-              class="hpms-categories-state hpms-categories-error"
-            >
-              {{ hpmsCategoriesError }}
-            </div>
-
-            <div
-              *ngIf="!hpmsCategoriesLoading && !hpmsCategoriesError && hpmsCategories.length === 0"
-              class="hpms-categories-state"
-            >
-              No HPMS categories found.
-            </div>
-
-            <button
-              type="button"
-              class="hpms-category-item"
-              *ngFor="let hpms of hpmsCategories"
-              [class.active]="isHpmsCategorySelected(hpms)"
-              (click)="applyHpmsCategory(hpms)"
-              [title]="'Use ' + hpms.name + ' (ID: ' + hpms.id + ')'"
-            >
-              <span class="hpms-category-name">{{ hpms.name }}</span>
-              <span class="hpms-category-id">{{ hpms.id }}</span>
-            </button>
-
-          </div>
-
-        </aside>
-
       </div>
-
     </div>
   </div>
 </div>

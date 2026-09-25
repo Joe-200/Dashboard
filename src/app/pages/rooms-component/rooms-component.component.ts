@@ -11,14 +11,12 @@ import {
 import { RouterModule } from '@angular/router';
 import { environment } from '../../environment';
 
-
 import {
   RoomService,
   CreateRoomRequest,
   UpdateRoomRequest,
   Pageable,
-  RoomResponse,
-  ImageDto
+  RoomResponse
 } from '../../room-response.service';
 
 import {
@@ -48,6 +46,23 @@ interface HpmsRoomSummary {
   name: string;
 }
 
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/* =========================================================
+   CONSTANTS — canonical enum values
+========================================================= */
+const VALID_VIEWS: readonly string[] = [
+  'CITY', 'PANORAMIC', 'SEA', 'GARDEN',
+  'MOUNTAIN', 'POOL', 'RIVER', 'LANDMARK'
+];
+
+const VALID_BED_TYPES: readonly string[] = [
+  'SINGLE', 'DOUBLE', 'QUEEN', 'KING', 'TWIN'
+];
+
 @Component({
   selector: 'app-rooms',
   standalone: true,
@@ -65,7 +80,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      ROOMS
   ========================================================= */
-
   rooms: RoomResponse[] = [];
   totalElements = 0;
   currentPage = 0;
@@ -80,18 +94,17 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      ROOM MODAL
   ========================================================= */
-
   showRoomModal = false;
   isEditRoom = false;
   selectedRoomId: number | null = null;
   roomForm: FormGroup;
   roomGallery: GalleryImage[] = [];
+  roomDragOver = false;
   imageProcessing = false;
 
   /* =========================================================
      CATEGORIES
   ========================================================= */
-
   categories: RoomCategory[] = [];
   categoriesLoading = false;
   categoriesError = '';
@@ -99,17 +112,25 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      CATEGORY MODAL
   ========================================================= */
-
   showCategoryModal = false;
   isEditCategory = false;
-  selectedCategoryId: string | null = null; // now string
+  selectedCategoryId: string | null = null;
   categoryForm: FormGroup;
   categoryGallery: GalleryImage[] = [];
+  categoryDragOver = false;
 
   /* =========================================================
-     HPMS CATEGORIES (read-only reference)
+     DROPDOWN OPTIONS
+     Only used by the Category modal now — the Room form no
+     longer exposes View/Bed Type (they are inherited from the
+     selected Category).
   ========================================================= */
+  viewOptions: SelectOption[] = this.buildViewOptions();
+  bedTypeOptions: SelectOption[] = this.buildBedTypeOptions();
 
+  /* =========================================================
+     HPMS CATEGORIES (reference dropdown)
+  ========================================================= */
   hpmsCategories: HpmsRoomSummary[] = [];
   hpmsCategoriesLoading = false;
   hpmsCategoriesError = '';
@@ -125,17 +146,16 @@ export class RoomsComponent implements OnInit {
     private http: HttpClient
   ) {
 
-    /* ROOM FORM */
+    /* ROOM FORM — View removed; it is derived from the Category. */
     this.roomForm = this.fb.group({
       roomNumber: ['', Validators.required],
       categoryId: [null, [Validators.required, Validators.min(1)]],
       floor: [1, [Validators.required, Validators.min(1)]],
-      viewType: ['', Validators.required],
       description: [''],
       status: ['AVAILABLE']
     });
 
-    /* CATEGORY FORM — ID is now string */
+    /* CATEGORY FORM */
     this.categoryForm = this.fb.group({
       id: ['', Validators.required],
       name: ['', [Validators.required, Validators.maxLength(100)]],
@@ -159,44 +179,39 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      SEARCH / FILTER
   ========================================================= */
-
   get filteredRooms(): RoomResponse[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.rooms;
 
-    return this.rooms.filter(room => {
-      return (
-        (room.roomNumber || '').toLowerCase().includes(term) ||
-        (room.categoryName || '').toLowerCase().includes(term) ||
-        (room.description || '').toLowerCase().includes(term) ||
-        (room.status || '').toLowerCase().includes(term) ||
-        (room.viewType || '').toLowerCase().includes(term) ||
-        String(room.id).includes(term) ||
-        String(room.floor).includes(term)
-      );
-    });
+    return this.rooms.filter(room => (
+      (room.roomNumber || '').toLowerCase().includes(term) ||
+      (room.categoryName || '').toLowerCase().includes(term) ||
+      (room.description || '').toLowerCase().includes(term) ||
+      (room.status || '').toLowerCase().includes(term) ||
+      (room.viewType || '').toLowerCase().includes(term) ||
+      String(room.id).includes(term) ||
+      String(room.floor).includes(term)
+    ));
   }
 
-  onSearchChange(): void {
-    // Client-side filtering; nothing to reload
-  }
+  onSearchChange(): void { /* client-side filtering */ }
+  clearSearch(): void { this.searchTerm = ''; }
 
-  clearSearch(): void {
+  clearFilters(): void {
     this.searchTerm = '';
+    this.filterStatus = '';
+    this.filterFloor = null;
+    this.onFilterChange();
   }
 
   /* =========================================================
      ROOMS LOAD / PAGINATION
   ========================================================= */
-
   loadRooms(): void {
     this.loading = true;
     this.error = '';
 
-    const pageable: Pageable = {
-      page: this.currentPage,
-      size: this.pageSize
-    };
+    const pageable: Pageable = { page: this.currentPage, size: this.pageSize };
 
     this.roomService
       .getRooms({
@@ -231,9 +246,8 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
-     CREATE ROOM
+     CREATE / EDIT ROOM
   ========================================================= */
-
   openCreateRoomModal(): void {
     this.isEditRoom = false;
     this.selectedRoomId = null;
@@ -242,7 +256,6 @@ export class RoomsComponent implements OnInit {
       roomNumber: '',
       categoryId: null,
       floor: 1,
-      viewType: '',
       description: '',
       status: 'AVAILABLE'
     });
@@ -251,19 +264,15 @@ export class RoomsComponent implements OnInit {
     this.showRoomModal = true;
   }
 
-  /* =========================================================
-     EDIT ROOM
-  ========================================================= */
-
   openEditRoomModal(room: RoomResponse): void {
     this.isEditRoom = true;
     this.selectedRoomId = room.id;
 
+    /* View is no longer part of the form — it comes from the Category. */
     this.roomForm.patchValue({
       roomNumber: room.roomNumber,
       categoryId: room.categoryId,
       floor: room.floor,
-      viewType: room.viewType || '',
       description: room.description || '',
       status: room.status
     });
@@ -298,8 +307,8 @@ export class RoomsComponent implements OnInit {
 
   /* =========================================================
      SAVE ROOM
+     View is derived from the selected category.
   ========================================================= */
-
   async saveRoom(): Promise<void> {
     if (this.roomForm.invalid) {
       this.roomForm.markAllAsTouched();
@@ -307,6 +316,12 @@ export class RoomsComponent implements OnInit {
     }
 
     const formValue = this.roomForm.value;
+
+    /* Derive viewType from the selected category. */
+    const selectedCategory = this.categories.find(
+      c => String(c.id) === String(formValue.categoryId)
+    );
+    const derivedViewType = selectedCategory?.viewType || '';
 
     this.loading = true;
     this.error = '';
@@ -321,7 +336,7 @@ export class RoomsComponent implements OnInit {
           roomNumber: formValue.roomNumber,
           categoryId: formValue.categoryId,
           floor: formValue.floor,
-          viewType: formValue.viewType,
+          viewType: derivedViewType,
           description: formValue.description,
           status: formValue.status
         };
@@ -332,7 +347,7 @@ export class RoomsComponent implements OnInit {
           roomNumber: formValue.roomNumber,
           categoryId: formValue.categoryId,
           floor: formValue.floor,
-          viewType: formValue.viewType,
+          viewType: derivedViewType,
           description: formValue.description
         };
 
@@ -340,9 +355,7 @@ export class RoomsComponent implements OnInit {
           .createRoom(createData)
           .toPromise();
 
-        if (!created) {
-          throw new Error('Room creation returned no data.');
-        }
+        if (!created) throw new Error('Room creation returned no data.');
 
         roomId = created.id;
       }
@@ -363,7 +376,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      SYNC ROOM GALLERY
   ========================================================= */
-
   private async syncRoomGallery(roomId: number): Promise<void> {
     const gallery = this.roomGallery;
     const finalList = gallery.filter(img => !img.markedForDeletion);
@@ -379,9 +391,7 @@ export class RoomsComponent implements OnInit {
     }
 
     const knownIds = new Set(
-      finalList
-        .filter(i => !i.isNew && i.id)
-        .map(i => i.id as number)
+      finalList.filter(i => !i.isNew && i.id).map(i => i.id as number)
     );
 
     for (const img of finalList) {
@@ -431,14 +441,17 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
-     ROOM GALLERY – FILE PICKER
+     ROOM GALLERY — FILE PICKER
   ========================================================= */
-
   async onRoomFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
-
     const files = Array.from(input.files);
+    input.value = '';
+    await this.processRoomFiles(files);
+  }
+
+  private async processRoomFiles(files: File[]): Promise<void> {
     this.imageProcessing = true;
     this.error = '';
 
@@ -459,14 +472,38 @@ export class RoomsComponent implements OnInit {
       this.error = 'Could not process one or more images.';
     } finally {
       this.imageProcessing = false;
-      input.value = '';
     }
   }
 
-  /* =========================================================
-     ROOM GALLERY – ACTIONS
-  ========================================================= */
+  onRoomDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.roomDragOver = true;
+  }
 
+  onRoomDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.roomDragOver = false;
+  }
+
+  async onRoomFilesDropped(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.roomDragOver = false;
+
+    const dt = event.dataTransfer;
+    if (!dt?.files?.length) return;
+
+    const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    await this.processRoomFiles(files);
+  }
+
+  /* =========================================================
+     ROOM GALLERY — ACTIONS
+  ========================================================= */
   setPrimaryRoomImage(index: number): void {
     this.roomGallery = this.roomGallery.map((img, i) => ({
       ...img,
@@ -521,9 +558,7 @@ export class RoomsComponent implements OnInit {
 
   clearRoomGallery(): void {
     for (const img of this.roomGallery) {
-      if (img.isNew && img.previewUrl) {
-        URL.revokeObjectURL(img.previewUrl);
-      }
+      if (img.isNew && img.previewUrl) URL.revokeObjectURL(img.previewUrl);
     }
     this.roomGallery = [];
   }
@@ -531,7 +566,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      IMAGE COMPRESSION (WebP)
   ========================================================= */
-
   private async compressToWebP(
     file: File,
     maxWidth = 1600,
@@ -575,8 +609,7 @@ export class RoomsComponent implements OnInit {
 
       if (!blob) throw new Error('Could not convert image to WebP');
 
-      const newFileName =
-        file.name.replace(/\.[^/.]+$/, '') + '.webp';
+      const newFileName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
 
       return new File([blob], newFileName, {
         type: 'image/webp',
@@ -596,7 +629,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      CATEGORIES
   ========================================================= */
-
   loadCategories(): void {
     this.categoriesLoading = true;
     this.categoriesError = '';
@@ -616,13 +648,10 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
-     HPMS CATEGORIES (read-only reference)
+     HPMS CATEGORIES
   ========================================================= */
-
   private loadHpmsCategoriesIfNeeded(): void {
-    if (this.hpmsCategoriesLoaded || this.hpmsCategoriesLoading) {
-      return;
-    }
+    if (this.hpmsCategoriesLoaded || this.hpmsCategoriesLoading) return;
     this.loadHpmsCategories();
   }
 
@@ -630,27 +659,24 @@ export class RoomsComponent implements OnInit {
     this.hpmsCategoriesLoading = true;
     this.hpmsCategoriesError = '';
 
-    this.http
-      .get<HpmsRoomSummary[]>(this.hpmsRoomsUrl)
-      .subscribe({
-        next: (data) => {
-          this.hpmsCategories = data || [];
-          this.hpmsCategoriesLoading = false;
-          this.hpmsCategoriesLoaded = true;
-        },
-        error: (err) => {
-          this.hpmsCategoriesError =
-            'Failed to load HPMS categories: ' +
-            (err?.error?.message || err?.message || 'Unknown error');
-          this.hpmsCategoriesLoading = false;
-        }
-      });
+    this.http.get<HpmsRoomSummary[]>(this.hpmsRoomsUrl).subscribe({
+      next: (data) => {
+        this.hpmsCategories = data || [];
+        this.hpmsCategoriesLoading = false;
+        this.hpmsCategoriesLoaded = true;
+      },
+      error: (err) => {
+        this.hpmsCategoriesError =
+          'Failed to load HPMS categories: ' +
+          (err?.error?.message || err?.message || 'Unknown error');
+        this.hpmsCategoriesLoading = false;
+      }
+    });
   }
 
   /* =========================================================
-     CATEGORY MODAL – ENTRY POINTS
+     CATEGORY MODAL — ENTRY POINTS
   ========================================================= */
-
   openCreateCategoryModal(): void {
     this.startNewCategory();
     this.loadHpmsCategoriesIfNeeded();
@@ -660,6 +686,10 @@ export class RoomsComponent implements OnInit {
   startNewCategory(): void {
     this.isEditCategory = false;
     this.selectedCategoryId = null;
+
+    /* Reset dropdown options to the standard set */
+    this.viewOptions = this.buildViewOptions();
+    this.bedTypeOptions = this.buildBedTypeOptions();
 
     this.categoryForm.reset({
       id: '',
@@ -681,8 +711,18 @@ export class RoomsComponent implements OnInit {
 
   openEditCategoryModal(category: RoomCategory): void {
     this.isEditCategory = true;
-    // convert id to string
     this.selectedCategoryId = String(category.id);
+
+    /* Normalize whatever the backend sends; if unmatched,
+       inject it as a one-off option so the dropdown isn't empty. */
+    const rawView = (category.viewType ?? '').toString();
+    const rawBed  = (category.bedType  ?? '').toString();
+
+    const normalizedView = this.normalizeEnum(rawView, VALID_VIEWS) || rawView;
+    const normalizedBed  = this.normalizeEnum(rawBed, VALID_BED_TYPES) || rawBed;
+
+    this.viewOptions = this.buildViewOptions(normalizedView || undefined);
+    this.bedTypeOptions = this.buildBedTypeOptions(normalizedBed || undefined);
 
     this.categoryForm.patchValue({
       id: String(category.id),
@@ -690,12 +730,12 @@ export class RoomsComponent implements OnInit {
       description: category.description || '',
       price: category.price,
       numBeds: category.numBeds,
-      bedType: category.bedType,
+      bedType: normalizedBed,
       maxAdults: category.maxAdults,
       maxKids: category.maxKids,
       hasWifi: category.hasWifi,
       numTvs: category.numTvs,
-      viewType: category.viewType || ''
+      viewType: normalizedView
     });
 
     this.clearCategoryGallery();
@@ -729,28 +769,26 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
-     APPLY HPMS CATEGORY (click to fill ID + Name)
+     APPLY HPMS CATEGORY
   ========================================================= */
+  onHpmsSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const id = select.value;
+    if (!id) return;
 
-  applyHpmsCategory(hpms: HpmsRoomSummary): void {
-    this.categoryForm.patchValue({
-      id: hpms.id,
-      name: hpms.name
-    });
-    // Optionally mark as touched so validation updates
+    const hpms = this.hpmsCategories.find(h => h.id === id);
+    if (!hpms) return;
+
+    this.categoryForm.patchValue({ id: hpms.id, name: hpms.name });
     this.categoryForm.get('id')?.markAsTouched();
     this.categoryForm.get('name')?.markAsTouched();
-  }
 
-  isHpmsCategorySelected(hpms: HpmsRoomSummary): boolean {
-    const currentId = this.categoryForm.get('id')?.value;
-    return currentId === hpms.id;
+    select.value = '';
   }
 
   /* =========================================================
      SAVE CATEGORY
   ========================================================= */
-
   async saveCategory(): Promise<void> {
     if (this.categoryForm.invalid) {
       this.categoryForm.markAllAsTouched();
@@ -769,7 +807,7 @@ export class RoomsComponent implements OnInit {
         categoryId = this.selectedCategoryId;
 
         const updateData: UpdateCategoryRequest = {
-          id: formValue.id, // string
+          id: formValue.id,
           name: formValue.name,
           description: formValue.description,
           price: formValue.price,
@@ -780,14 +818,14 @@ export class RoomsComponent implements OnInit {
           hasWifi: formValue.hasWifi,
           numTvs: formValue.numTvs,
           viewType: formValue.viewType
-        } as any; // cast because service expects number
+        } as any;
 
         await this.categoryService
           .updateCategory(categoryId as any, updateData)
           .toPromise();
       } else {
         const createData: CreateCategoryRequest = {
-          id: formValue.id, // string
+          id: formValue.id,
           name: formValue.name,
           description: formValue.description,
           price: formValue.price,
@@ -804,9 +842,7 @@ export class RoomsComponent implements OnInit {
           .createCategory(createData)
           .toPromise();
 
-        if (!created) {
-          throw new Error('Category creation returned no data.');
-        }
+        if (!created) throw new Error('Category creation returned no data.');
 
         categoryId = String(created.id);
       }
@@ -828,7 +864,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      SYNC CATEGORY GALLERY
   ========================================================= */
-
   private async syncCategoryGallery(categoryId: number): Promise<void> {
     const gallery = this.categoryGallery;
     const finalList = gallery.filter(img => !img.markedForDeletion);
@@ -846,9 +881,7 @@ export class RoomsComponent implements OnInit {
     }
 
     const knownIds = new Set(
-      finalList
-        .filter(i => !i.isNew && i.id)
-        .map(i => i.id as number)
+      finalList.filter(i => !i.isNew && i.id).map(i => i.id as number)
     );
 
     for (const img of finalList) {
@@ -898,14 +931,17 @@ export class RoomsComponent implements OnInit {
   }
 
   /* =========================================================
-     CATEGORY GALLERY – FILE PICKER & ACTIONS
+     CATEGORY GALLERY — FILE PICKER & ACTIONS
   ========================================================= */
-
   async onCategoryFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
-
     const files = Array.from(input.files);
+    input.value = '';
+    await this.processCategoryFiles(files);
+  }
+
+  private async processCategoryFiles(files: File[]): Promise<void> {
     this.imageProcessing = true;
     this.categoriesError = '';
 
@@ -926,8 +962,33 @@ export class RoomsComponent implements OnInit {
       this.categoriesError = 'Could not process one or more category images.';
     } finally {
       this.imageProcessing = false;
-      input.value = '';
     }
+  }
+
+  onCategoryDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.categoryDragOver = true;
+  }
+
+  onCategoryDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.categoryDragOver = false;
+  }
+
+  async onCategoryFilesDropped(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.categoryDragOver = false;
+
+    const dt = event.dataTransfer;
+    if (!dt?.files?.length) return;
+
+    const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    await this.processCategoryFiles(files);
   }
 
   setPrimaryCategoryImage(index: number): void {
@@ -959,9 +1020,7 @@ export class RoomsComponent implements OnInit {
       URL.revokeObjectURL(img.previewUrl);
       const arr = [...this.categoryGallery];
       arr.splice(index, 1);
-      if (img.isPrimary && arr.length > 0) {
-        arr[0].isPrimary = true;
-      }
+      if (img.isPrimary && arr.length > 0) arr[0].isPrimary = true;
       this.categoryGallery = arr;
     } else {
       const arr = [...this.categoryGallery];
@@ -984,9 +1043,7 @@ export class RoomsComponent implements OnInit {
 
   clearCategoryGallery(): void {
     for (const img of this.categoryGallery) {
-      if (img.isNew && img.previewUrl) {
-        URL.revokeObjectURL(img.previewUrl);
-      }
+      if (img.isNew && img.previewUrl) URL.revokeObjectURL(img.previewUrl);
     }
     this.categoryGallery = [];
   }
@@ -994,18 +1051,14 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      DELETE CATEGORY
   ========================================================= */
-
   deleteCategory(id: number | string): void {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
-    // Convert to number if the service expects it
     const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
 
     this.categoryService.deleteCategory(numericId).subscribe({
       next: () => {
-        if (this.selectedCategoryId === String(id)) {
-          this.startNewCategory();
-        }
+        if (this.selectedCategoryId === String(id)) this.startNewCategory();
         this.loadCategories();
         this.loadRooms();
       },
@@ -1020,7 +1073,6 @@ export class RoomsComponent implements OnInit {
   /* =========================================================
      LABELS
   ========================================================= */
-
   getStatusLabel(status: string): string {
     const map: Record<string, string> = {
       AVAILABLE: 'Available',
@@ -1041,13 +1093,55 @@ export class RoomsComponent implements OnInit {
       .replace(/\b\w/g, char => char.toUpperCase());
   }
 
-  getBedTypeLabel(type: string | null | undefined): string {
-    if (!type) return '';
-    return type
+  /* =========================================================
+     DROPDOWN OPTION BUILDERS (used by Category modal)
+  ========================================================= */
+  private buildViewOptions(extra?: string): SelectOption[] {
+    const base: SelectOption[] = VALID_VIEWS.map(v => ({
+      value: v,
+      label: this.getViewLabel(v)
+    }));
+
+    if (extra && !base.some(o => o.value === extra)) {
+      base.push({ value: extra, label: this.getViewLabel(extra) });
+    }
+    return base;
+  }
+
+  private buildBedTypeOptions(extra?: string): SelectOption[] {
+    const base: SelectOption[] = VALID_BED_TYPES.map(b => ({
+      value: b,
+      label: this.getViewLabel(b)
+    }));
+
+    if (extra && !base.some(o => o.value === extra)) {
+      base.push({ value: extra, label: this.getViewLabel(extra) });
+    }
+    return base;
+  }
+
+  /* =========================================================
+     ENUM NORMALIZER
+  ========================================================= */
+  private normalizeEnum(
+    value: string | null | undefined,
+    valid: readonly string[]
+  ): string {
+    if (!value) return '';
+
+    const cleaned = value
       .toString()
       .trim()
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, char => char.toUpperCase());
+      .replace(/[\s-]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toUpperCase();
+
+    if (valid.includes(cleaned)) return cleaned;
+
+    const stripped = cleaned.replace(/_(VIEW|TYPE)$/, '');
+    if (valid.includes(stripped)) return stripped;
+
+    return '';
   }
 }
