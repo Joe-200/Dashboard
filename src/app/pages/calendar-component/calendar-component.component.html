@@ -512,11 +512,7 @@
           </p>
 
           <div class="hpms-pulse-actions">
-            <button type="button" class="btn-glass primary"
-                    (click)="triggerHpmsPulse()"
-                    [disabled]="hpmsPulseLoading">
-              {{ hpmsPulseLoading ? 'Triggering...' : 'Trigger Pulse' }}
-            </button>
+
             <button type="button" class="btn-glass primary"
                     (click)="matchRates()"
                     [disabled]="hpmsMatchLoading">
