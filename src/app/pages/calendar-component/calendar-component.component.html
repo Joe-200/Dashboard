@@ -388,23 +388,11 @@
     <div class="modal-content rate-match-modal" (click)="$event.stopPropagation()">
 
       <div class="modal-header">
-        <h3>Rate Match (HPMS)</h3>
+        <h3>Rate Match Intelligence</h3>
         <button type="button" class="close-btn" (click)="closeRateMatchModal()">×</button>
       </div>
 
       <div class="rate-match-body hpms-panel">
-
-        <div class="info-hint">
-          <p>
-            Uses the HPMS dashboard endpoints:
-            <code>/api/dashboard/front-desk/hpms/config</code>,
-            <code>/api/dashboard/front-desk/hpms/pulse</code>,
-            <code>/api/dashboard/front-desk/hpms/rooms</code>,
-            <code>/api/dashboard/front-desk/room-categories/rates/match</code> and
-            <code>/api/dashboard/front-desk/hpms/match-rates/selective</code>.
-            Category matching is handled entirely by the backend.
-          </p>
-        </div>
 
         <!-- ================== CONFIG ================== -->
         <div class="hpms-section">
@@ -670,45 +658,10 @@
           </div>
         </div>
 
-        <!-- ================== HPMS ROOMS ================== -->
-        <div class="hpms-section">
-          <div class="hpms-section-header">
-            <h4>HPMS Rooms</h4>
-            <div class="hpms-section-actions">
-              <button type="button" class="btn-glass btn-sm"
-                      (click)="loadHpmsRooms()"
-                      [disabled]="hpmsRoomsLoading">
-                {{ hpmsRoomsLoading ? 'Loading...' : 'Fetch' }}
-              </button>
-            </div>
-          </div>
-
-          <div *ngIf="hpmsRoomsError" class="error">{{ hpmsRoomsError }}</div>
-
-          <div *ngIf="hpmsRooms.length > 0" class="hpms-rooms-list">
-            <div class="hpms-rooms-header">
-              <span>ID</span>
-              <span>Name</span>
-              <span></span>
-            </div>
-            <div class="hpms-room-row" *ngFor="let r of hpmsRooms">
-              <span class="hpms-room-name">{{ r.id }}</span>
-              <span class="hpms-room-name">{{ r.name }}</span>
-              <span></span>
-            </div>
-          </div>
-
-          <div *ngIf="hpmsRooms.length === 0 && !hpmsRoomsLoading && hpmsRoomsLoaded"
-               class="no-data" style="padding: 1rem;">
-            No rooms returned.
-          </div>
-        </div>
+    
 
       </div>
 
-      <div class="modal-actions">
-        <button type="button" class="btn-glass" (click)="closeRateMatchModal()">Close</button>
-      </div>
     </div>
   </div>
 
