@@ -23,18 +23,22 @@ import {
   PagedModelStayDetailsResponse,
   FullStaySummaryResponse,
   ReceiptResponse
-} from '../../stay-service.service'
-
-
+} from '../../stay-service.service';
 
 import { AuthService } from '../../auth-service.service';
 import { environment } from '../../environment';
 
 export type ReservationRequestExt = ReservationRequest & {
+  referenceCode?: string;
   proposedCheckInDate?: string;
   proposedCheckOutDate?: string;
   canCancel?: boolean;
   cancellationDeadline?: string;
+};
+
+/** StayDetailsResponse with fields that exist in the API but are missing from the local type. */
+export type StayDetailsExt = StayDetailsResponse & {
+  referenceCode?: string;
 };
 
 export type ViewTab = 'requests' | 'stays';
@@ -112,7 +116,9 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
       result = result.filter(req =>
         req.guestName?.toLowerCase().includes(term) ||
         req.guestEmail?.toLowerCase().includes(term) ||
-        req.guestPhone?.toLowerCase().includes(term)
+        req.guestPhone?.toLowerCase().includes(term) ||
+        req.referenceCode?.toLowerCase().includes(term) ||
+        String(req.id ?? '').includes(term)
       );
     }
     if (this.dateFrom) {
@@ -157,7 +163,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   // ============================================================
   // STAYS — STATE
   // ============================================================
-  stays: StayDetailsResponse[] = [];
+  stays: StayDetailsExt[] = [];
   staysLoading = false;
   staysError = '';
 
@@ -214,14 +220,16 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   // ============================================================
   // STAYS — FILTERED GETTER (client-side search only)
   // ============================================================
-  get filteredStays(): StayDetailsResponse[] {
+  get filteredStays(): StayDetailsExt[] {
     const term = this.staysSearchTerm.trim().toLowerCase();
     if (!term) return this.stays;
     return this.stays.filter(s =>
       s.guestName?.toLowerCase().includes(term) ||
       s.email?.toLowerCase().includes(term) ||
       s.guestPhone?.toLowerCase().includes(term) ||
-      s.roomNumber?.toLowerCase().includes(term)
+      s.roomNumber?.toLowerCase().includes(term) ||
+      s.referenceCode?.toLowerCase().includes(term) ||
+      String(s.stayId ?? '').includes(term)
     );
   }
 
@@ -314,7 +322,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
 
     req$.subscribe({
       next: (data: PagedModelStayDetailsResponse) => {
-        this.stays = data.content || [];
+        this.stays = (data.content || []) as StayDetailsExt[];
         this.staysTotalElements = data.page?.totalElements ?? 0;
         this.staysTotalPages = data.page?.totalPages ?? 0;
         this.staysLoading = false;

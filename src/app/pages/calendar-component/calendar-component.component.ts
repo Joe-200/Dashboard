@@ -104,6 +104,19 @@ interface HpmsRoomSummary {
   name: string;
 }
 
+// Selective match request/response (POST /hpms/match-rates/selective)
+interface SelectiveMatchRatesRequest {
+  categoryIds: string[];
+  targetDate?: string;
+}
+
+interface SelectiveMatchRatesResponse {
+  targetDate?: string;
+  matchedCategories?: string[];
+  unmatchedCategoryIds?: string[];
+  message?: string;
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -130,6 +143,9 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly MATCH_RATES_URL =
     `${this.API_BASE}/api/dashboard/front-desk/room-categories/rates/match`;
+
+  private readonly SELECTIVE_MATCH_URL =
+    `${this.API_BASE}/api/dashboard/front-desk/hpms/match-rates/selective`;
 
   private readonly TEXT_HEADERS = new HttpHeaders({
     'Accept': 'application/json, text/plain, */*',
@@ -202,6 +218,14 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   hpmsRoomsLoading = false;
   hpmsRoomsLoaded = false;
   hpmsRoomsError = '';
+
+  // -------- Selective match state --------
+  selectedHpmsRoomIds: string[] = [];
+  selectiveMatchDate = '';
+  selectiveMatchLoading = false;
+  selectiveMatchError = '';
+  selectiveMatchSuccess = '';
+  selectiveMatchResult: SelectiveMatchRatesResponse | null = null;
 
   // ============================================================
   // CALENDAR DATA
@@ -590,8 +614,19 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hpmsConfigSuccess = '';
     this.hpmsConfigEditing = false;
 
+    // Selective match state
+    this.selectedHpmsRoomIds = [];
+    this.selectiveMatchError = '';
+    this.selectiveMatchSuccess = '';
+    this.selectiveMatchResult = null;
+    this.selectiveMatchLoading = false;
+
+    // Default target date = today
+    this.selectiveMatchDate = this.formatDate(new Date());
+
     this.showRateMatchModal = true;
     this.loadHpmsConfig();
+    this.loadHpmsRooms();
   }
 
   closeRateMatchModal(): void {
@@ -599,6 +634,7 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hpmsConfigEditing = false;
     this.hpmsPulseLoading = false;
     this.hpmsMatchLoading = false;
+    this.selectiveMatchLoading = false;
   }
 
   // ============================================================
@@ -723,7 +759,7 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ============================================================
-  // HPMS MATCH RATES
+  // HPMS MATCH RATES (match all)
   // ============================================================
   matchRates(): void {
     this.hpmsMatchLoading = true;
@@ -759,6 +795,93 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ============================================================
+  // HPMS SELECTIVE MATCH
+  // ============================================================
+  matchRatesSelective(): void {
+    if (this.selectedHpmsRoomIds.length === 0) {
+      this.selectiveMatchError = 'Please select at least one HPMS category.';
+      return;
+    }
+
+    this.selectiveMatchLoading = true;
+    this.selectiveMatchError = '';
+    this.selectiveMatchSuccess = '';
+    this.selectiveMatchResult = null;
+
+    const payload: SelectiveMatchRatesRequest = {
+      categoryIds: [...this.selectedHpmsRoomIds]
+    };
+    if (this.selectiveMatchDate) {
+      payload.targetDate = this.selectiveMatchDate;
+    }
+
+    this.http.post(this.SELECTIVE_MATCH_URL, payload, {
+      headers: this.TEXT_HEADERS,
+      responseType: 'text'
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (raw) => {
+          this.selectiveMatchLoading = false;
+          const res = this.safeParse<SelectiveMatchRatesResponse>(raw);
+          if (!res) {
+            this.selectiveMatchError = 'Server returned an empty or non-JSON response.';
+            return;
+          }
+          this.selectiveMatchResult = res;
+          const matched = res.matchedCategories?.length ?? 0;
+          const unmatched = res.unmatchedCategoryIds?.length ?? 0;
+          const dateNote = res.targetDate ? ` (${res.targetDate})` : '';
+          this.selectiveMatchSuccess =
+            `✅ Matched ${matched} categor${matched === 1 ? 'y' : 'ies'}${dateNote}` +
+            (unmatched ? ` · ${unmatched} unmatched` : '');
+          this.loadData();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.selectiveMatchLoading = false;
+          this.selectiveMatchError = this.fmtError(err);
+        }
+      });
+  }
+
+  // -------- Selection helpers --------
+  isHpmsRoomSelected(id: string): boolean {
+    return this.selectedHpmsRoomIds.includes(id);
+  }
+
+  toggleHpmsRoomSelection(id: string): void {
+    const idx = this.selectedHpmsRoomIds.indexOf(id);
+    if (idx >= 0) {
+      this.selectedHpmsRoomIds = this.selectedHpmsRoomIds.filter(x => x !== id);
+    } else {
+      this.selectedHpmsRoomIds = [...this.selectedHpmsRoomIds, id];
+    }
+    // Clear previous selective results when the selection changes
+    this.selectiveMatchSuccess = '';
+    this.selectiveMatchError = '';
+    this.selectiveMatchResult = null;
+  }
+
+  selectAllHpmsRooms(): void {
+    this.selectedHpmsRoomIds = this.hpmsRooms.map(r => r.id);
+    this.selectiveMatchSuccess = '';
+    this.selectiveMatchError = '';
+    this.selectiveMatchResult = null;
+  }
+
+  clearHpmsRoomSelection(): void {
+    this.selectedHpmsRoomIds = [];
+    this.selectiveMatchSuccess = '';
+    this.selectiveMatchError = '';
+    this.selectiveMatchResult = null;
+  }
+
+  get allHpmsRoomsSelected(): boolean {
+    return this.hpmsRooms.length > 0 &&
+      this.selectedHpmsRoomIds.length === this.hpmsRooms.length;
+  }
+
+  // ============================================================
   // HPMS ROOMS
   // ============================================================
   loadHpmsRooms(): void {
@@ -777,6 +900,9 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
           this.hpmsRoomsLoaded = true;
           const parsed = this.safeParse<HpmsRoomSummary[]>(raw);
           this.hpmsRooms = parsed || [];
+          // Drop any selected IDs no longer present
+          const validIds = new Set(this.hpmsRooms.map(r => r.id));
+          this.selectedHpmsRoomIds = this.selectedHpmsRoomIds.filter(id => validIds.has(id));
         },
         error: (err: HttpErrorResponse) => {
           this.hpmsRoomsLoading = false;

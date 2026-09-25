@@ -399,8 +399,9 @@
             Uses the HPMS dashboard endpoints:
             <code>/api/dashboard/front-desk/hpms/config</code>,
             <code>/api/dashboard/front-desk/hpms/pulse</code>,
-            <code>/api/dashboard/front-desk/hpms/rooms</code> and
-            <code>/api/dashboard/front-desk/room-categories/rates/match</code>.
+            <code>/api/dashboard/front-desk/hpms/rooms</code>,
+            <code>/api/dashboard/front-desk/room-categories/rates/match</code> and
+            <code>/api/dashboard/front-desk/hpms/match-rates/selective</code>.
             Category matching is handled entirely by the backend.
           </p>
         </div>
@@ -531,7 +532,7 @@
             <button type="button" class="btn-glass primary"
                     (click)="matchRates()"
                     [disabled]="hpmsMatchLoading">
-              {{ hpmsMatchLoading ? 'Matching...' : 'Match Rates' }}
+              {{ hpmsMatchLoading ? 'Matching...' : 'Match All Rates' }}
             </button>
           </div>
 
@@ -546,6 +547,97 @@
               <code>{{ hpmsProcessUuid }}</code>
             </div>
           </div>
+        </div>
+
+        <!-- ================== SELECTIVE MATCH ================== -->
+        <div class="hpms-section">
+          <div class="hpms-section-header">
+            <h4>Selective Match</h4>
+            <div class="hpms-section-actions">
+              <button type="button" class="btn-glass btn-sm"
+                      (click)="loadHpmsRooms()"
+                      [disabled]="hpmsRoomsLoading">
+                {{ hpmsRoomsLoading ? 'Loading...' : 'Refresh HPMS Categories' }}
+              </button>
+            </div>
+          </div>
+
+          <p class="hpms-hint">
+            Pick which <strong>HPMS categories</strong> you want to re-match.
+            Only categories returned by HPMS can be selected — the list below is
+            the live HPMS catalogue, not your local room categories.
+          </p>
+
+          <div *ngIf="hpmsRoomsError" class="error">{{ hpmsRoomsError }}</div>
+
+          <div *ngIf="hpmsRoomsLoading" class="loading">Loading HPMS categories...</div>
+
+          <div *ngIf="!hpmsRoomsLoading && hpmsRoomsLoaded && hpmsRooms.length === 0"
+               class="no-data" style="padding: 1rem;">
+            No HPMS categories returned. Trigger a Pulse first, then refresh.
+          </div>
+
+          <ng-container *ngIf="!hpmsRoomsLoading && hpmsRooms.length > 0">
+
+            <div class="hpms-select-toolbar">
+              <button type="button" class="btn-glass btn-sm"
+                      (click)="selectAllHpmsRooms()"
+                      [disabled]="allHpmsRoomsSelected">Select All</button>
+              <button type="button" class="btn-glass btn-sm"
+                      (click)="clearHpmsRoomSelection()"
+                      [disabled]="selectedHpmsRoomIds.length === 0">Clear</button>
+              <span class="hpms-select-count">
+                {{ selectedHpmsRoomIds.length }} / {{ hpmsRooms.length }} selected
+              </span>
+            </div>
+
+            <div class="hpms-select-list">
+              <label class="hpms-select-item"
+                     *ngFor="let r of hpmsRooms"
+                     [class.selected]="isHpmsRoomSelected(r.id)">
+                <input type="checkbox"
+                       [checked]="isHpmsRoomSelected(r.id)"
+                       (change)="toggleHpmsRoomSelection(r.id)" />
+                <span class="hpms-select-name">{{ r.name }}</span>
+                <span class="hpms-select-id">{{ r.id }}</span>
+              </label>
+            </div>
+
+            <div class="hpms-selective-actions">
+              <div class="form-group hpms-date-group">
+                <label for="selectiveMatchDate">Target date</label>
+                <input id="selectiveMatchDate" type="date" class="form-control"
+                       [(ngModel)]="selectiveMatchDate" />
+              </div>
+              <button type="button" class="btn-glass primary"
+                      (click)="matchRatesSelective()"
+                      [disabled]="selectiveMatchLoading || selectedHpmsRoomIds.length === 0">
+                {{ selectiveMatchLoading ? 'Matching...' : 'Match Selected' }}
+              </button>
+            </div>
+
+            <div *ngIf="selectiveMatchError" class="error" style="margin-top: 0.75rem;">{{ selectiveMatchError }}</div>
+            <div *ngIf="selectiveMatchSuccess" class="match-success" style="margin-top: 0.75rem;">{{ selectiveMatchSuccess }}</div>
+
+     <div *ngIf="selectiveMatchResult" class="hpms-process-card">
+  <div class="hpms-process-row" *ngIf="selectiveMatchResult.targetDate">
+    <strong>Target date</strong>
+    <code>{{ selectiveMatchResult.targetDate }}</code>
+  </div>
+  <div class="hpms-process-row" *ngIf="selectiveMatchResult.matchedCategories?.length">
+    <strong>Matched</strong>
+    <span class="hpms-process-value">
+      {{ (selectiveMatchResult.matchedCategories || []).join(', ') }}
+    </span>
+  </div>
+  <div class="hpms-process-row" *ngIf="selectiveMatchResult.unmatchedCategoryIds?.length">
+    <strong>Unmatched</strong>
+    <span class="hpms-process-value">
+      {{ (selectiveMatchResult.unmatchedCategoryIds || []).join(', ') }}
+    </span>
+  </div>
+</div>
+          </ng-container>
         </div>
 
         <!-- ================== MATCH RESULTS ================== -->
@@ -896,7 +988,7 @@
         </div>
       </div>
 
-      <p class="below-base-note">Do you want to proceed anyway?</p>
+      <p class="below-base-note">Dos you want to proceed anyway?</p>
 
       <div class="modal-actions">
         <button type="button" class="btn-glass" (click)="cancelBelowBaseWarning()">Cancel</button>

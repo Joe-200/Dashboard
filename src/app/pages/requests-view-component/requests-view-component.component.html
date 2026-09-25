@@ -39,7 +39,7 @@
           <input
             type="text"
             class="form-control search-input"
-            placeholder="Search by guest, email or phone..."
+            placeholder="Search by Reservation ID, guest, email or phone..."
             [(ngModel)]="searchTerm"
             (input)="onSearchChange()"
           />
@@ -151,6 +151,9 @@
           <div class="request-item-main">
             <span class="guest-name">{{ req.guestName }}</span>
             <span class="guest-email">{{ req.guestEmail }}</span>
+            <span class="ref-code" *ngIf="req.referenceCode">
+              Reservation ID: <strong>{{ req.referenceCode }}</strong>
+            </span>
           </div>
 
           <div class="request-item-dates">
@@ -263,7 +266,7 @@
           <input
             type="text"
             class="form-control search-input"
-            placeholder="Search by guest, email, phone or room..."
+            placeholder="Search by Reservation ID, guest, email, phone or room..."
             [(ngModel)]="staysSearchTerm"
             (input)="onStaysSearchChange()"
           />
@@ -357,6 +360,9 @@
           <div class="request-item-main">
             <span class="guest-name">{{ stay.guestName }}</span>
             <span class="guest-email">{{ stay.email }}</span>
+            <span class="ref-code" *ngIf="stay.referenceCode">
+              Reservation ID: <strong>{{ stay.referenceCode }}</strong>
+            </span>
           </div>
 
           <div class="request-item-dates">
@@ -480,13 +486,23 @@
     <div class="modal-header">
       <div>
         <h3>Request Details</h3>
-        <p class="modal-eyebrow">Reservation request #{{ selectedRequest.id }}</p>
+        <p class="modal-eyebrow">
+          Reservation ID {{ selectedRequest.referenceCode || '—' }}
+        </p>
       </div>
       <button type="button" class="close-btn" (click)="closeDetails()" aria-label="Close">✕</button>
     </div>
 
     <div class="request-detail-body">
       <div class="detail-grid">
+        <div>
+          <strong>Reservation ID</strong>
+          <span>{{ selectedRequest.referenceCode || '—' }}</span>
+        </div>
+        <div>
+          <strong>System ID</strong>
+          <span>#{{ selectedRequest.id }}</span>
+        </div>
         <div><strong>Guest</strong><span>{{ selectedRequest.guestName }}</span></div>
         <div><strong>Email</strong><span>{{ selectedRequest.guestEmail }}</span></div>
         <div><strong>Phone</strong><span>{{ selectedRequest.guestPhone }}</span></div>
@@ -744,7 +760,9 @@
     <div class="modal-header">
       <div>
         <h3>Stay Summary</h3>
-        <p class="modal-eyebrow">Stay #{{ staySummary?.stayDetails?.stayId ?? '' }}</p>
+        <p class="modal-eyebrow">
+          Reservation ID {{ $any(staySummary?.stayDetails)?.referenceCode || '—' }}
+        </p>
       </div>
       <button type="button" class="close-btn" (click)="closeStaySummary()" aria-label="Close">✕</button>
     </div>
@@ -754,6 +772,14 @@
 
     <div class="request-detail-body" *ngIf="!staySummaryLoading && staySummary">
       <div class="detail-grid">
+        <div>
+          <strong>Reservation ID</strong>
+          <span>{{ $any(staySummary.stayDetails).referenceCode || '—' }}</span>
+        </div>
+        <div>
+          <strong>System ID</strong>
+          <span>#{{ staySummary.stayDetails.stayId }}</span>
+        </div>
         <div><strong>Guest</strong><span>{{ staySummary.stayDetails.guestName }}</span></div>
         <div><strong>Email</strong><span>{{ staySummary.stayDetails.email }}</span></div>
         <div><strong>Phone</strong><span>{{ staySummary.stayDetails.guestPhone }}</span></div>

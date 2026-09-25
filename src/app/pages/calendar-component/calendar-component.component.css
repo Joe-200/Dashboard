@@ -1045,6 +1045,11 @@ textarea.form-control { min-height: 90px; padding: 0.75rem; resize: vertical; }
   font-size: 0.72rem;
   word-break: break-all;
 }
+.hpms-process-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  word-break: break-word;
+}
 
 .hpms-rooms-list {
   display: flex;
@@ -1077,6 +1082,104 @@ textarea.form-control { min-height: 90px; padding: 0.75rem; resize: vertical; }
 .hpms-room-price { font-family: monospace; font-size: 0.78rem; font-weight: 700; color: #171717; }
 
 /* ============================================================
+   HPMS SELECTIVE MATCH
+============================================================ */
+
+.hpms-select-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hpms-select-count {
+  margin-left: auto;
+  color: #737373;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hpms-select-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  scrollbar-width: thin;
+}
+
+.hpms-select-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #f3f3f3;
+  font-size: 0.78rem;
+  color: #171717;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease;
+}
+.hpms-select-item:last-child { border-bottom: none; }
+.hpms-select-item:hover { background: #f7f7f7; }
+.hpms-select-item.selected { background: #f0f4ff; }
+.hpms-select-item.selected:hover { background: #e6ecff; }
+
+.hpms-select-item input[type="checkbox"] {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #171717;
+}
+
+.hpms-select-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpms-select-id {
+  font-family: monospace;
+  font-size: 0.68rem;
+  color: #a3a3a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.hpms-selective-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hpms-date-group {
+  flex: 1;
+  min-width: 160px;
+  margin: 0;
+}
+.hpms-date-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #525252;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.hpms-date-group .form-control { min-height: 38px; font-size: 0.8rem; }
+
+/* ============================================================
    RESPONSIVE
 ============================================================ */
 
@@ -1094,6 +1197,8 @@ textarea.form-control { min-height: 90px; padding: 0.75rem; resize: vertical; }
   .hpms-rooms-header, .hpms-room-row { grid-template-columns: 1fr 0.7fr; }
   .hpms-rooms-header span:nth-child(3),
   .hpms-room-row .hpms-room-match { display: none; }
+  .hpms-selective-actions { flex-direction: column; align-items: stretch; }
+  .hpms-select-count { margin-left: 0; }
 }
 
 @media (max-width: 576px) {
@@ -1104,4 +1209,6 @@ textarea.form-control { min-height: 90px; padding: 0.75rem; resize: vertical; }
   .below-base-header, .below-base-row { grid-template-columns: 1.3fr 1fr 0.7fr; }
   .below-base-header span:nth-child(3),
   .below-base-row .bba-base { display: none; }
+  .hpms-select-item { grid-template-columns: auto 1fr; }
+  .hpms-select-id { display: none; }
 }

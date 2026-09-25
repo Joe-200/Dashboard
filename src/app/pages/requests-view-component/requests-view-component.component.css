@@ -3,6 +3,8 @@
 ============================================================ */
 .requests-container {
     margin-top: 0.5rem;
+    width: 100%;
+    max-width: 100%;
 }
 
 /* Global box-sizing for everything inside this component */
@@ -392,11 +394,11 @@ input[type="date"].form-control {
 }
 
 /* ============================================================
-   LIST HEADER  (5 columns — Total removed)
+   LIST HEADER  (rebalanced for wider rows)
 ============================================================ */
 .request-list-header {
     display: grid;
-    grid-template-columns: 2.6fr 2.8fr 1.4fr 1.5fr 2.4fr;
+    grid-template-columns: 3fr 2.8fr 1.2fr 1.3fr 2fr;
     gap: 1rem;
     padding: 0.65rem 1.1rem;
     background: #fafafa;
@@ -421,6 +423,7 @@ input[type="date"].form-control {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    width: 100%;
 }
 
 .request-compact-list .request-list-header + .request-item {
@@ -447,7 +450,7 @@ input[type="date"].form-control {
 
 .request-item-content {
     display: grid;
-    grid-template-columns: 2.6fr 2.8fr 1.4fr 1.5fr 2.4fr;
+    grid-template-columns: 3fr 2.8fr 1.2fr 1.3fr 2fr;
     gap: 1rem;
     align-items: center;
     width: 100%;
@@ -467,6 +470,7 @@ input[type="date"].form-control {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .guest-email {
@@ -477,6 +481,26 @@ input[type="date"].form-control {
     text-overflow: ellipsis;
 }
 
+/* Reservation ID line under the email */
+.ref-code {
+    display: block;
+    color: #737373;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+.ref-code strong {
+    color: #1d4ed8;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.02em;
+}
+
 .request-item-dates {
     display: flex;
     flex-direction: column;
@@ -485,6 +509,7 @@ input[type="date"].form-control {
     color: #404040;
     font-size: 0.82rem;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .date-row {
@@ -1018,7 +1043,7 @@ textarea.form-control {
 @media (max-width: 1100px) {
     .request-list-header,
     .request-item-content {
-        grid-template-columns: 2.4fr 2.6fr 1.3fr 1.4fr 2.2fr;
+        grid-template-columns: 2.6fr 2.6fr 1.2fr 1.3fr 2fr;
         gap: 0.75rem;
     }
 
