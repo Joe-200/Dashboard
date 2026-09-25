@@ -426,14 +426,10 @@
           <!-- READ-ONLY VIEW -->
           <div *ngIf="hpmsConfig && !hpmsConfigEditing" class="hpms-config-grid">
             <div class="hpms-config-item"><span class="label">Enabled</span><span class="value">{{ hpmsConfig.enabled ? 'On' : 'Off' }}</span></div>
-            <div class="hpms-config-item"><span class="label">Webhook</span><span class="value">{{ hpmsConfig.webhook || '—' }}</span></div>
-            <div class="hpms-config-item"><span class="label">Currency</span><span class="value">{{ hpmsConfig.currency }}</span></div>
             <div class="hpms-config-item"><span class="label">Reduction</span><span class="value">{{ hpmsConfig.reduction }} ({{ hpmsConfig.reductionType }})</span></div>
-            <div class="hpms-config-item"><span class="label">Days</span><span class="value">{{ hpmsConfig.days }}</span></div>
-            <div class="hpms-config-item"><span class="label">Start Day</span><span class="value">{{ hpmsConfig.startDay }}</span></div>
+
             <div class="hpms-config-item"><span class="label">Interval</span><span class="value">{{ hpmsConfig.interval }} min</span></div>
-            <div class="hpms-config-item"><span class="label">Interval Requests</span><span class="value">{{ hpmsConfig.intervalRequests ? 'On' : 'Off' }}</span></div>
-            <div class="hpms-config-item"><span class="label">Pulse Requests</span><span class="value">{{ hpmsConfig.pulseRequests ? 'On' : 'Off' }}</span></div>
+            
           </div>
 
           <!-- EDIT FORM -->
