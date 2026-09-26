@@ -34,9 +34,7 @@
     </div>
   </header>
 
-  <!-- ============================================================
-       ERROR
-  ============================================================ -->
+  <!-- ERROR -->
   <div *ngIf="error" class="alert alert-danger" role="alert">
     {{ error }}
   </div>
@@ -115,12 +113,21 @@
                 Luxury Hotel AI
               </div>
 
+              <!-- USER: plain text -->
               <div
+                *ngIf="msg.role === 'user'"
                 class="message-text"
                 [attr.dir]="isRtl(msg.content) ? 'rtl' : 'ltr'"
-              >
-                {{ msg.content }}
-              </div>
+              >{{ msg.content }}</div>
+
+              <!-- ASSISTANT: rendered markdown -->
+              <div
+                *ngIf="msg.role === 'assistant'"
+                class="message-text ai-markdown-body"
+                [attr.dir]="isRtl(msg.content) ? 'rtl' : 'ltr'"
+                (click)="onMessageTextClick($event)"
+                [innerHTML]="renderMarkdown(msg.content)"
+              ></div>
             </div>
 
             <div class="message-meta" *ngIf="shouldShowTimestamp(i)">

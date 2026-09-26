@@ -10,10 +10,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Chart, registerables } from 'chart.js';
+import { marked, Renderer } from 'marked';
+import DOMPurify from 'dompurify';
 import { AiService, GraphData } from '../../ai-service.service';
 
-// Register all Chart.js components once
 Chart.register(...registerables);
 
 export interface ChatMessage {
@@ -25,6 +27,7 @@ export interface ChatMessage {
 
 const STORAGE_KEY = 'aiChatHistory';
 const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
+const NEAR_BOTTOM_PX = 120;
 
 @Component({
   selector: 'app-ai',
@@ -46,6 +49,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   messages: ChatMessage[] = [];
 
   private chartInstance: Chart | null = null;
+  private readonly markdownCache = new Map<string, SafeHtml>();
 
   readonly suggestedPrompts: string[] = [
     'What is the occupancy rate today?',
@@ -56,10 +60,182 @@ export class AiComponent implements AfterViewInit, OnDestroy {
 
   showClearConfirm = false;
 
+  private static markedConfigured = false;
+
   constructor(
     private readonly aiService: AiService,
-    private readonly cdr: ChangeDetectorRef
-  ) {}
+    private readonly cdr: ChangeDetectorRef,
+    private readonly sanitizer: DomSanitizer
+  ) {
+    this.configureMarked();
+  }
+
+  // ------------------------------------------------------------
+  // MARKED CONFIG
+  // ------------------------------------------------------------
+  private configureMarked(): void {
+    if (AiComponent.markedConfigured) return;
+
+    marked.setOptions({
+      gfm: true,
+      breaks: true
+    });
+
+    const renderer = new Renderer();
+
+    /**
+     * Fenced code block — supports marked v12+ (token object) AND legacy
+     * (code, infostring) signatures. Renders a header bar with a language
+     * label and a Copy button.
+     */
+    (renderer as any).code = (...args: any[]) => {
+      let code = '';
+      let language = '';
+
+      if (args[0] && typeof args[0] === 'object' && 'text' in args[0]) {
+        // marked v12+
+        code = args[0].text ?? '';
+        language = args[0].lang ?? '';
+      } else {
+        // legacy
+        code = String(args[0] ?? '');
+        language = String(args[1] ?? '');
+      }
+
+      const lang = language.trim().split(/\s+/)[0] || '';
+      const label = lang || 'code';
+      const langClass = lang ? ` class="language-${this.escapeHtml(lang)}"` : '';
+      const escaped = this.escapeHtml(code);
+
+      return [
+        '<div class="md-code-block">',
+          '<div class="md-code-header">',
+            `<span class="md-code-lang">${this.escapeHtml(label)}</span>`,
+            '<button type="button" class="md-copy-btn" aria-label="Copy code">Copy</button>',
+          '</div>',
+          `<pre><code${langClass}>${escaped}</code></pre>`,
+        '</div>'
+      ].join('');
+    };
+
+    // Force external links to open safely in a new tab.
+    (renderer as any).link = (...args: any[]) => {
+      let href = '';
+      let title: string | null | undefined = null;
+      let text = '';
+
+      if (args[0] && typeof args[0] === 'object' && 'href' in args[0]) {
+        href = args[0].href ?? '';
+        title = args[0].title;
+        text = args[0].text ?? '';
+      } else {
+        href = String(args[0] ?? '');
+        title = args[1];
+        text = String(args[2] ?? '');
+      }
+
+      const safeHref = this.escapeHtml(href || '#');
+      const safeTitle = title ? ` title="${this.escapeHtml(title)}"` : '';
+      return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer"${safeTitle}>${text}</a>`;
+    };
+
+    marked.use({ renderer });
+    AiComponent.markedConfigured = true;
+  }
+
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ------------------------------------------------------------
+  // MARKDOWN → SafeHtml (cached)
+  // ------------------------------------------------------------
+  renderMarkdown(text: string): SafeHtml {
+    if (!text) return '';
+
+    const cached = this.markdownCache.get(text);
+    if (cached) return cached;
+
+    // Force SYNC parse — guaranteed to return a string, not a Promise.
+    const raw = marked.parse(text, { async: false }) as string;
+
+    const clean = DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'hr',
+        'strong', 'em', 'u', 's', 'del', 'ins', 'mark', 'sub', 'sup',
+        'code', 'pre', 'kbd', 'samp',
+        'blockquote',
+        'ul', 'ol', 'li',
+        'a', 'img',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+        'div', 'span', 'button', 'input'
+      ],
+      ALLOWED_ATTR: [
+        'href', 'title', 'target', 'rel', 'class', 'type', 'aria-label',
+        'align', 'colspan', 'rowspan', 'src', 'alt',
+        'checked', 'disabled'
+      ],
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|#|\/)/i,
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style']
+    });
+
+    const safe = this.sanitizer.bypassSecurityTrustHtml(clean);
+    this.markdownCache.set(text, safe);
+    return safe;
+  }
+
+  // ------------------------------------------------------------
+  // COPY-CODE EVENT DELEGATION
+  // ------------------------------------------------------------
+  onMessageTextClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+
+    const btn = target.closest('.md-copy-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    const block = btn.closest('.md-code-block');
+    const codeEl = block?.querySelector('pre code');
+    if (!codeEl) return;
+
+    const text = codeEl.textContent ?? '';
+
+    const flash = (label: string, cls: string) => {
+      btn.textContent = label;
+      btn.classList.add(cls);
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove(cls);
+      }, 1400);
+    };
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => flash('Copied!', 'copied'))
+        .catch(() => flash('Failed', 'copy-error'));
+    } else {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        flash('Copied!', 'copied');
+      } catch {
+        flash('Failed', 'copy-error');
+      }
+    }
+  }
 
   // ------------------------------------------------------------
   // LIFECYCLE
@@ -67,7 +243,8 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.loadHistory();
     this.cdr.detectChanges();
-    setTimeout(() => this.scrollToBottom(), 0);
+    // Give the DOM a beat to lay out restored messages, then snap to bottom.
+    setTimeout(() => this.scrollToBottom(false, true), 50);
   }
 
   ngOnDestroy(): void {
@@ -84,7 +261,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   // ------------------------------------------------------------
-  // TRACKBY HELPERS (performance)
+  // TRACKBY
   // ------------------------------------------------------------
   trackByIndex(index: number): number { return index; }
   trackByMsgIndex(index: number): number { return index; }
@@ -97,16 +274,17 @@ export class AiComponent implements AfterViewInit, OnDestroy {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return;
 
-      const parsed = JSON.parse(stored) as Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>;
+      const parsed = JSON.parse(stored) as Array<
+        Omit<ChatMessage, 'timestamp'> & { timestamp: string }
+      >;
       this.messages = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
 
-      // Re-render last graph if any
       const lastWithGraph = [...this.messages]
         .reverse()
         .find(m => m.role === 'assistant' && m.graph);
 
       if (lastWithGraph?.graph) {
-        setTimeout(() => this.renderChart(lastWithGraph.graph!), 150);
+        setTimeout(() => this.renderChart(lastWithGraph.graph!), 200);
       }
     } catch (e) {
       console.warn('Failed to load chat history', e);
@@ -124,13 +302,8 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   // ------------------------------------------------------------
   // CLEAR HISTORY
   // ------------------------------------------------------------
-  requestClearHistory(): void {
-    this.showClearConfirm = true;
-  }
-
-  cancelClearHistory(): void {
-    this.showClearConfirm = false;
-  }
+  requestClearHistory(): void { this.showClearConfirm = true; }
+  cancelClearHistory(): void  { this.showClearConfirm = false; }
 
   confirmClearHistory(): void {
     this.clearHistory();
@@ -139,8 +312,10 @@ export class AiComponent implements AfterViewInit, OnDestroy {
 
   clearHistory(): void {
     this.messages = [];
+    this.markdownCache.clear();
     this.destroyChart();
     localStorage.removeItem(STORAGE_KEY);
+    this.cdr.markForCheck();
   }
 
   // ------------------------------------------------------------
@@ -171,6 +346,10 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     this.error = '';
     this.destroyChart();
 
+    // User always wants to see their own message.
+    this.cdr.markForCheck();
+    requestAnimationFrame(() => this.scrollToBottom(true, true));
+
     this.aiService.ask(text).subscribe({
       next: (res) => {
         const assistantMessage: ChatMessage = {
@@ -185,12 +364,18 @@ export class AiComponent implements AfterViewInit, OnDestroy {
         this.loading = false;
 
         if (assistantMessage.graph) {
-          // Wait for the DOM to render the canvas
           setTimeout(() => this.renderChart(assistantMessage.graph!), 0);
         }
 
         this.cdr.markForCheck();
-        this.scrollToBottom();
+
+        // Let Angular paint the new bubble, then auto-scroll if the user
+        // hasn't scrolled away. Second pass handles tall content (tables,
+        // code blocks) that finishes laying out one tick later.
+        requestAnimationFrame(() => {
+          this.scrollToBottom(true);
+          setTimeout(() => this.scrollToBottom(true), 80);
+        });
       },
       error: (err) => {
         this.loading = false;
@@ -200,13 +385,13 @@ export class AiComponent implements AfterViewInit, OnDestroy {
           ...this.messages,
           {
             role: 'assistant',
-            content: '⚠️ Error: ' + (err?.message ?? 'Unknown error'),
+            content: '⚠️ **Error:** ' + (err?.message ?? 'Unknown error'),
             timestamp: new Date()
           }
         ];
         this.saveHistory();
         this.cdr.markForCheck();
-        this.scrollToBottom();
+        requestAnimationFrame(() => this.scrollToBottom(true));
       }
     });
   }
@@ -282,9 +467,6 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // ------------------------------------------------------------
-  // COLOR PALETTE — matches brand tokens
-  // ------------------------------------------------------------
   private getColors(numDatasets: number, numLabels: number): string[] {
     const preset = [
       '#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED',
@@ -310,8 +492,28 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     return /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
   }
 
-  private scrollToBottom(): void {
+  // ------------------------------------------------------------
+  // AUTO-SCROLL
+  // ------------------------------------------------------------
+  private isNearBottom(): boolean {
     const el = this.chatContainer?.nativeElement;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+  }
+
+  /**
+   * Scroll the chat container to the bottom.
+   * - `smooth` : whether to animate.
+   * - `force`  : scroll even if the user scrolled away.
+   */
+  private scrollToBottom(smooth: boolean, force = false): void {
+    const el = this.chatContainer?.nativeElement;
+    if (!el) return;
+    if (!force && !this.isNearBottom()) return;
+
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
   }
 }
