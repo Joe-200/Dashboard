@@ -64,6 +64,7 @@
     <div
       class="chat-messages"
       #chatContainer
+      (scroll)="onChatScroll()"
       role="log"
       aria-live="polite"
       aria-label="Conversation with Luxury Hotel AI"

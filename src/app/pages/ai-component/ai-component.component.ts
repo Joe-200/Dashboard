@@ -1,6 +1,7 @@
 import {
   Component,
   AfterViewInit,
+  AfterViewChecked,
   ViewChild,
   ElementRef,
   OnDestroy,
@@ -27,7 +28,7 @@ export interface ChatMessage {
 
 const STORAGE_KEY = 'aiChatHistory';
 const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
-const NEAR_BOTTOM_PX = 120;
+const NEAR_BOTTOM_PX = 140;
 
 @Component({
   selector: 'app-ai',
@@ -37,7 +38,7 @@ const NEAR_BOTTOM_PX = 120;
   styleUrl: './ai-component.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AiComponent implements AfterViewInit, OnDestroy {
+export class AiComponent implements AfterViewInit, AfterViewChecked, OnDestroy {
 
   @ViewChild('chartCanvas')   chartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chatContainer') chatContainer!: ElementRef<HTMLElement>;
@@ -50,6 +51,11 @@ export class AiComponent implements AfterViewInit, OnDestroy {
 
   private chartInstance: Chart | null = null;
   private readonly markdownCache = new Map<string, SafeHtml>();
+
+  /** Set to true whenever we want the view to snap to the bottom after render. */
+  private pendingScroll = false;
+  /** True when the user has manually scrolled up away from the bottom. */
+  private userScrolledUp = false;
 
   readonly suggestedPrompts: string[] = [
     'What is the occupancy rate today?',
@@ -83,21 +89,14 @@ export class AiComponent implements AfterViewInit, OnDestroy {
 
     const renderer = new Renderer();
 
-    /**
-     * Fenced code block — supports marked v12+ (token object) AND legacy
-     * (code, infostring) signatures. Renders a header bar with a language
-     * label and a Copy button.
-     */
     (renderer as any).code = (...args: any[]) => {
       let code = '';
       let language = '';
 
       if (args[0] && typeof args[0] === 'object' && 'text' in args[0]) {
-        // marked v12+
         code = args[0].text ?? '';
         language = args[0].lang ?? '';
       } else {
-        // legacy
         code = String(args[0] ?? '');
         language = String(args[1] ?? '');
       }
@@ -107,18 +106,28 @@ export class AiComponent implements AfterViewInit, OnDestroy {
       const langClass = lang ? ` class="language-${this.escapeHtml(lang)}"` : '';
       const escaped = this.escapeHtml(code);
 
+      const copyIcon =
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true">' +
+          '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+          '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+        '</svg>';
+
       return [
         '<div class="md-code-block">',
           '<div class="md-code-header">',
-            `<span class="md-code-lang">${this.escapeHtml(label)}</span>`,
-            '<button type="button" class="md-copy-btn" aria-label="Copy code">Copy</button>',
+            `<span class="md-code-lang">${this.escapeHtml(label.toLowerCase())}</span>`,
+            '<button type="button" class="md-copy-btn" aria-label="Copy code">',
+              copyIcon,
+              '<span class="md-copy-text">Copy</span>',
+            '</button>',
           '</div>',
           `<pre><code${langClass}>${escaped}</code></pre>`,
         '</div>'
       ].join('');
     };
 
-    // Force external links to open safely in a new tab.
     (renderer as any).link = (...args: any[]) => {
       let href = '';
       let title: string | null | undefined = null;
@@ -161,7 +170,6 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     const cached = this.markdownCache.get(text);
     if (cached) return cached;
 
-    // Force SYNC parse — guaranteed to return a string, not a Promise.
     const raw = marked.parse(text, { async: false }) as string;
 
     const clean = DOMPurify.sanitize(raw, {
@@ -174,12 +182,15 @@ export class AiComponent implements AfterViewInit, OnDestroy {
         'a', 'img',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
-        'div', 'span', 'button', 'input'
+        'div', 'span', 'button', 'input', 'svg', 'rect', 'path'
       ],
       ALLOWED_ATTR: [
         'href', 'title', 'target', 'rel', 'class', 'type', 'aria-label',
         'align', 'colspan', 'rowspan', 'src', 'alt',
-        'checked', 'disabled'
+        'checked', 'disabled',
+        'width', 'height', 'viewBox', 'fill', 'stroke',
+        'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+        'x', 'y', 'rx', 'ry', 'd'
       ],
       ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|#|\/)/i,
       FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
@@ -192,7 +203,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   // ------------------------------------------------------------
-  // COPY-CODE EVENT DELEGATION
+  // COPY-CODE
   // ------------------------------------------------------------
   onMessageTextClick(event: MouseEvent): void {
     const target = event.target as HTMLElement | null;
@@ -207,18 +218,23 @@ export class AiComponent implements AfterViewInit, OnDestroy {
 
     const text = codeEl.textContent ?? '';
 
+    const textEl = btn.querySelector('.md-copy-text');
+    const setLabel = (label: string) => {
+      if (textEl) textEl.textContent = label;
+    };
+
     const flash = (label: string, cls: string) => {
-      btn.textContent = label;
+      setLabel(label);
       btn.classList.add(cls);
       setTimeout(() => {
-        btn.textContent = 'Copy';
+        setLabel('Copy');
         btn.classList.remove(cls);
       }, 1400);
     };
 
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text)
-        .then(() => flash('Copied!', 'copied'))
+        .then(() => flash('Copied', 'copied'))
         .catch(() => flash('Failed', 'copy-error'));
     } else {
       try {
@@ -230,7 +246,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        flash('Copied!', 'copied');
+        flash('Copied', 'copied');
       } catch {
         flash('Failed', 'copy-error');
       }
@@ -243,8 +259,18 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.loadHistory();
     this.cdr.detectChanges();
-    // Give the DOM a beat to lay out restored messages, then snap to bottom.
-    setTimeout(() => this.scrollToBottom(false, true), 50);
+    // After history restoration, jump to bottom (no animation).
+    this.requestScroll(true, false);
+  }
+
+  /**
+   * Runs after every change-detection cycle — the perfect place to scroll
+   * because the DOM has already been updated with the new content.
+   */
+  ngAfterViewChecked(): void {
+    if (!this.pendingScroll) return;
+    this.pendingScroll = false;
+    this.performScroll();
   }
 
   ngOnDestroy(): void {
@@ -258,6 +284,44 @@ export class AiComponent implements AfterViewInit, OnDestroy {
       this.showClearConfirm = false;
       this.cdr.markForCheck();
     }
+  }
+
+  // ------------------------------------------------------------
+  // SCROLL
+  // ------------------------------------------------------------
+  /**
+   * Mark a scroll as pending. The actual scroll happens in
+   * `ngAfterViewChecked` once Angular has finished laying out the DOM.
+   */
+  private requestScroll(force: boolean, smooth: boolean = false): void {
+    if (force) this.userScrolledUp = false;
+    this.pendingScroll = true;
+    this.pendingScrollSmooth = smooth;
+    this.cdr.markForCheck();
+  }
+
+  private pendingScrollSmooth = false;
+
+  private performScroll(): void {
+    if (this.userScrolledUp) return;
+    const el = this.chatContainer?.nativeElement;
+    if (!el) return;
+
+    if (this.pendingScrollSmooth) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  /** Called from the template on the scrollable container. */
+  onChatScroll(): void {
+    const el = this.chatContainer?.nativeElement;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // Only mark as "scrolled up" when meaningfully far from the bottom,
+    // so tiny scroll jitter / programmatic scroll doesn't disable auto-scroll.
+    this.userScrolledUp = distance > NEAR_BOTTOM_PX;
   }
 
   // ------------------------------------------------------------
@@ -346,9 +410,8 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     this.error = '';
     this.destroyChart();
 
-    // User always wants to see their own message.
-    this.cdr.markForCheck();
-    requestAnimationFrame(() => this.scrollToBottom(true, true));
+    // User always wants to see their own message + the thinking dots.
+    this.requestScroll(true, true);
 
     this.aiService.ask(text).subscribe({
       next: (res) => {
@@ -367,15 +430,10 @@ export class AiComponent implements AfterViewInit, OnDestroy {
           setTimeout(() => this.renderChart(assistantMessage.graph!), 0);
         }
 
+        // Scroll after the new bubble renders — the flag is honoured
+        // inside ngAfterViewChecked.
+        this.requestScroll(false, true);
         this.cdr.markForCheck();
-
-        // Let Angular paint the new bubble, then auto-scroll if the user
-        // hasn't scrolled away. Second pass handles tall content (tables,
-        // code blocks) that finishes laying out one tick later.
-        requestAnimationFrame(() => {
-          this.scrollToBottom(true);
-          setTimeout(() => this.scrollToBottom(true), 80);
-        });
       },
       error: (err) => {
         this.loading = false;
@@ -390,8 +448,8 @@ export class AiComponent implements AfterViewInit, OnDestroy {
           }
         ];
         this.saveHistory();
+        this.requestScroll(false, true);
         this.cdr.markForCheck();
-        requestAnimationFrame(() => this.scrollToBottom(true));
       }
     });
   }
@@ -490,30 +548,5 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   isRtl(text: string): boolean {
     if (!text) return false;
     return /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
-  }
-
-  // ------------------------------------------------------------
-  // AUTO-SCROLL
-  // ------------------------------------------------------------
-  private isNearBottom(): boolean {
-    const el = this.chatContainer?.nativeElement;
-    if (!el) return true;
-    return el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
-  }
-
-  /**
-   * Scroll the chat container to the bottom.
-   * - `smooth` : whether to animate.
-   * - `force`  : scroll even if the user scrolled away.
-   */
-  private scrollToBottom(smooth: boolean, force = false): void {
-    const el = this.chatContainer?.nativeElement;
-    if (!el) return;
-    if (!force && !this.isNearBottom()) return;
-
-    el.scrollTo({
-      top: el.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto'
-    });
   }
 }
