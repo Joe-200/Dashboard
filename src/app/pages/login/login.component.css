@@ -1,86 +1,49 @@
 /* =========================================================
-   GLOBAL / DESIGN TOKENS
-   ========================================================= */
+   LOGIN
+   Uses global design tokens from styles.css
+========================================================= */
 
-:host {
-  --black: #111111;
-  --black-hover: #242424;
-  --white: #ffffff;
-  --background: #f5f5f3;
-  --surface: #ffffff;
-  --text: #171717;
-  --text-secondary: #737373;
-  --text-muted: #a3a3a3;
-  --border: #e5e5e5;
-  --border-hover: #d4d4d4;
-  --border-focus: #171717;
-  --danger: #dc2626;
-  --danger-bg: #fef2f2;
-  --success: #16845b;
-  --warning: #b77900;
-  --radius-sm: 7px;
-  --radius-md: 11px;
-  --radius-lg: 18px;
-
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-}
+:host { display: block; }
 
 /* =========================================================
    PAGE
-   ========================================================= */
-
+========================================================= */
 .login-container {
   min-height: 100vh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 32px 16px;
   background:
-    radial-gradient(
-      circle at 50% 0%,
-      #ffffff 0%,
-      #f8f8f7 35%,
-      var(--background) 100%
-    );
-  box-sizing: border-box;
+    radial-gradient(ellipse at 50% 0%, #FFFFFF 0%, #F8F8F7 40%, var(--bg) 100%);
 }
 
 /* =========================================================
-   LOGIN CARD
-   ========================================================= */
-
+   CARD
+========================================================= */
 .login-card {
   width: 100%;
-  max-width: 430px;
-  padding: 42px;
+  max-width: 420px;
+  padding: 40px;
   background: var(--surface);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.02),
-    0 8px 30px rgba(0, 0, 0, 0.055),
-    0 30px 70px rgba(0, 0, 0, 0.045);
-  box-sizing: border-box;
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 8px 30px rgba(15, 23, 42, 0.05),
+    0 32px 72px rgba(15, 23, 42, 0.05);
+  animation: pop-in var(--duration-slow) var(--ease-out);
 }
 
 /* =========================================================
    BRAND
-   ========================================================= */
-
+========================================================= */
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 36px;
+  gap: 11px;
+  margin-bottom: 34px;
 }
 
 .brand-mark {
@@ -89,261 +52,221 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--black);
-  color: white;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary) 0%, #4F46E5 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .brand-name {
   color: var(--text);
-  font-size: 15px;
-  font-weight: 650;
-  letter-spacing: -0.2px;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 /* =========================================================
    HEADER
-   ========================================================= */
-
-.login-header {
-  margin-bottom: 30px;
-}
+========================================================= */
+.login-header { margin-bottom: 28px; }
 
 .login-header h2 {
-  margin: 0 0 9px;
+  margin: 0 0 8px;
   color: var(--text);
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.2;
-  font-weight: 650;
-  letter-spacing: -0.8px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .login-header p {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
+  color: var(--text-3);
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
 /* =========================================================
    FORM
-   ========================================================= */
-
-.form-group {
-  margin-bottom: 21px;
-}
+========================================================= */
+.form-group { margin-bottom: 20px; }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #303030;
-  font-size: 13px;
-  line-height: 1;
+  color: var(--text-2);
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
-/* =========================================================
-   PASSWORD WRAPPER (for toggle button)
-   ========================================================= */
-
-.password-wrapper {
-  position: relative;
-}
-
-.password-wrapper .form-control {
-  padding-right: 48px;
-}
+/* ---------- Password wrapper ---------- */
+.password-wrapper { position: relative; }
+.password-wrapper .form-control { padding-right: 46px; }
 
 .toggle-password-btn {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  transition: all 160ms ease;
-  width: auto;
-  height: auto;
-  margin: 0;
-  color: var(--text-secondary);
-  line-height: 1;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+              color     var(--duration-fast) var(--ease-out);
 }
-
-.toggle-password-btn:hover:not(:disabled) {
+.toggle-password-btn:hover {
   color: var(--text);
-  background: rgba(0, 0, 0, 0.04);
-  box-shadow: none;
-  transform: translateY(-50%);
+  background: var(--surface-3);
 }
+.toggle-password-btn:active { transform: translateY(-50%) scale(0.94); }
 
-.toggle-password-btn:active:not(:disabled) {
-  transform: translateY(-50%) scale(0.92);
-}
-
-.toggle-password-btn:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
-}
-
-.toggle-password-btn svg {
-  display: block;
-  flex-shrink: 0;
-}
-
-/* =========================================================
-   INPUT
-   ========================================================= */
-
+/* ---------- Inputs ---------- */
 .form-control {
   width: 100%;
   height: 46px;
   padding: 0 14px;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
   color: var(--text);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--text-md);
+  font-weight: 500;
   outline: none;
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease;
-  box-sizing: border-box;
+    background   var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow   var(--duration-fast) var(--ease-out);
 }
 
-.form-control::placeholder {
-  color: #a1a1a1;
-}
+.form-control::placeholder { color: var(--text-muted); font-weight: 500; }
 
-.form-control:hover {
-  border-color: var(--border-hover);
-}
+.form-control:hover { border-color: var(--border-hover); }
 
 .form-control:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* =========================================================
-   INVALID INPUT
-   ========================================================= */
-
+/* ---------- Invalid ---------- */
 .form-control.ng-invalid.ng-touched {
   border-color: var(--danger);
+  background: var(--danger-bg);
 }
-
 .form-control.ng-invalid.ng-touched:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
 }
 
 /* =========================================================
-   ERROR
-   ========================================================= */
-
+   ERRORS
+========================================================= */
 .error {
-  margin-top: 7px;
+  margin-top: 6px;
   color: var(--danger);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
-
-/* =========================================================
-   SERVER ERROR
-   ========================================================= */
 
 .error-message {
   display: flex;
   align-items: center;
+  gap: 8px;
   margin-top: 16px;
-  padding: 11px 13px;
+  padding: 11px 14px;
   background: var(--danger-bg);
-  border: 1px solid rgba(220, 38, 38, 0.12);
-  border-radius: var(--radius-sm);
-  color: var(--danger);
-  font-size: 13px;
-  line-height: 1.4;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius);
+  color: var(--danger-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+  animation: pop-in var(--duration) var(--ease-out);
+}
+
+.error-message::before {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  flex-shrink: 0;
 }
 
 /* =========================================================
-   SUBMIT BUTTON
-   ========================================================= */
-
+   SUBMIT
+========================================================= */
 button[type="submit"] {
   width: 100%;
   height: 46px;
-  margin-top: 6px;
+  margin-top: 8px;
   border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--black);
-  color: #ffffff;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #fff;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.005em;
   cursor: pointer;
   transition:
-    background 160ms ease,
-    transform 100ms ease,
-    box-shadow 160ms ease;
+    background   var(--duration-fast) var(--ease-out),
+    transform    var(--duration-fast) var(--ease-out),
+    box-shadow   var(--duration-fast) var(--ease-out);
 }
 
 button[type="submit"]:hover:not(:disabled) {
-  background: var(--black-hover);
-  box-shadow: 0 4px 12px rgba(119, 119, 119, 0.12);
+  background: var(--primary-hover);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+  transform: translateY(-1px);
 }
 
 button[type="submit"]:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-button[type="submit"]:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+  transform: translateY(0);
+  background: var(--primary-active);
 }
 
 button[type="submit"]:disabled {
-  background: #e5e5e5;
-  color: #a3a3a3;
+  background: var(--surface-3);
+  color: var(--text-muted);
   cursor: not-allowed;
   box-shadow: none;
 }
 
 /* =========================================================
    FOOTER
-   ========================================================= */
-
+========================================================= */
 .login-footer {
-  margin-top: 25px;
+  margin-top: 24px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 /* =========================================================
    RESPONSIVE
-   ========================================================= */
-
+========================================================= */
 @media (max-width: 520px) {
-  .login-container {
-    padding: 16px;
-    align-items: center;
-  }
-
+  .login-container { padding: 16px; }
   .login-card {
     padding: 30px 24px;
-    border-radius: 14px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius-xl);
   }
-
-  .login-header h2 {
-    font-size: 25px;
-  }
+  .login-header h2 { font-size: 22px; }
 }

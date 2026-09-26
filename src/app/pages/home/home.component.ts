@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  Router,
+  RouterOutlet,
+  RouterLink,
+  RouterLinkActive
+} from '@angular/router';
 import { AuthService } from '../../auth-service.service';
 
 @Component({
@@ -11,11 +16,15 @@ import { AuthService } from '../../auth-service.service';
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent {
+
   get user() {
     return this.auth.getUser();
   }
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly router: Router
+  ) {}
 
   logout(): void {
     this.auth.logout();

@@ -1,100 +1,73 @@
 <div class="app-container">
 
-  <!-- Navigation -->
-  <nav class="dashboard-navbar">
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <nav class="dashboard-navbar" aria-label="Primary navigation">
 
     <!-- Brand -->
-    <div class="nav-brand">
-      <div class="brand-mark">H</div>
+    <a class="nav-brand" routerLink="/calendar" aria-label="Luxury Hotel home">
+      <div class="brand-mark" aria-hidden="true">H</div>
 
       <div class="brand-info">
         <span class="brand-name">Luxury Hotel</span>
         <span class="brand-label">Management</span>
       </div>
-    </div>
+    </a>
 
-
-    <!-- Navigation -->
-    <ul class="nav-links">
-
+    <!-- Nav -->
+    <ul class="nav-links" role="list">
       <li>
-        <a
-          routerLink="/reservations"
-          routerLinkActive="active"
-        >
+        <a routerLink="/reservations" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           Reservations
         </a>
       </li>
-
       <li>
-        <a
-          routerLink="/calendar"
-          routerLinkActive="active"
-        >
+        <a routerLink="/calendar" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           Calendar
         </a>
       </li>
-
       <li>
-        <a
-          routerLink="/rooms"
-          routerLinkActive="active"
-        >
+        <a routerLink="/rooms" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           Rooms
         </a>
       </li>
-
       <li>
-        <a
-          routerLink="/guests"
-          routerLinkActive="active"
-        >
+        <a routerLink="/guests" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           Guests
         </a>
       </li>
-
       <li>
-        <a
-          routerLink="/special-offers"
-          routerLinkActive="active"
-        >
+        <a routerLink="/special-offers" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           Offers
         </a>
       </li>
-
       <li>
-        <a
-          routerLink="/ai"
-          routerLinkActive="active"
-        >
+        <a routerLink="/ai" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }">
           AI
         </a>
       </li>
-
     </ul>
-
 
     <!-- User -->
     <div class="nav-user">
 
       <div class="user-info">
-        <span class="user-name">
-          {{ user?.username }}
-        </span>
-
-        <span class="user-role">
-          {{ user?.role }}
-        </span>
+        <span class="user-name">{{ user?.username }}</span>
+        <span class="user-role">{{ user?.role }}</span>
       </div>
 
-      <div class="user-avatar">
+      <div class="user-avatar" aria-hidden="true">
         {{ user?.username?.charAt(0)?.toUpperCase() }}
       </div>
 
-      <button
-        class="btn-logout"
-        (click)="logout()"
-      >
+      <button class="btn-logout" type="button" (click)="logout()">
         Logout
       </button>
 
@@ -102,8 +75,9 @@
 
   </nav>
 
-
-  <!-- Main -->
+  <!-- ============================================================
+       MAIN
+  ============================================================ -->
   <main class="main-content">
     <router-outlet></router-outlet>
   </main>

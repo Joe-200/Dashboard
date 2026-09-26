@@ -1,21 +1,21 @@
-// ai-component.component.ts
 import {
   Component,
   AfterViewInit,
   ViewChild,
   ElementRef,
   OnDestroy,
-  HostListener
+  HostListener,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
-import { AiService, AgentResponse, GraphData } from '../../ai-service.service';
+import { AiService, GraphData } from '../../ai-service.service';
 
-// Register all Chart.js components
+// Register all Chart.js components once
 Chart.register(...registerables);
 
-// ✅ Define ChatMessage interface here
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -23,43 +23,50 @@ export interface ChatMessage {
   graph?: GraphData;
 }
 
+const STORAGE_KEY = 'aiChatHistory';
+const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
+
 @Component({
   selector: 'app-ai',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './ai-component.component.html',
-  styleUrl: './ai-component.component.css'
+  styleUrl: './ai-component.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AiComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
+
+  @ViewChild('chartCanvas')   chartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('chatContainer') chatContainer!: ElementRef<HTMLElement>;
 
   query = '';
   loading = false;
   error = '';
 
-  // Chat history
   messages: ChatMessage[] = [];
-  private chartInstance: Chart | null = null;
-  private lastGraphMessage: ChatMessage | null = null;
 
-  // Suggested prompts (empty state)
-  suggestedPrompts: string[] = [
+  private chartInstance: Chart | null = null;
+
+  readonly suggestedPrompts: string[] = [
     'What is the occupancy rate today?',
     'Show me revenue for last month',
     'List unverified guests',
     'Which rooms need maintenance?'
   ];
 
-  // Clear-history confirmation modal
   showClearConfirm = false;
 
-  /** Only show a timestamp when >5 min have passed since the previous message. */
-  private readonly TIMESTAMP_GAP_MS = 5 * 60 * 1000;
+  constructor(
+    private readonly aiService: AiService,
+    private readonly cdr: ChangeDetectorRef
+  ) {}
 
-  constructor(private aiService: AiService) {}
-
+  // ------------------------------------------------------------
+  // LIFECYCLE
+  // ------------------------------------------------------------
   ngAfterViewInit(): void {
     this.loadHistory();
+    this.cdr.detectChanges();
     setTimeout(() => this.scrollToBottom(), 0);
   }
 
@@ -68,43 +75,54 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     this.saveHistory();
   }
 
-  /** Close the confirmation modal with Escape. */
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.showClearConfirm) {
       this.showClearConfirm = false;
+      this.cdr.markForCheck();
     }
   }
+
+  // ------------------------------------------------------------
+  // TRACKBY HELPERS (performance)
+  // ------------------------------------------------------------
+  trackByIndex(index: number): number { return index; }
+  trackByMsgIndex(index: number): number { return index; }
 
   // ------------------------------------------------------------
   // HISTORY
   // ------------------------------------------------------------
   private loadHistory(): void {
     try {
-      const stored = localStorage.getItem('aiChatHistory');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        this.messages = parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored) as Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>;
+      this.messages = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+
+      // Re-render last graph if any
+      const lastWithGraph = [...this.messages]
+        .reverse()
+        .find(m => m.role === 'assistant' && m.graph);
+
+      if (lastWithGraph?.graph) {
+        setTimeout(() => this.renderChart(lastWithGraph.graph!), 150);
       }
     } catch (e) {
       console.warn('Failed to load chat history', e);
     }
-    this.renderLastGraph();
   }
 
   private saveHistory(): void {
     try {
-      localStorage.setItem('aiChatHistory', JSON.stringify(this.messages));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages));
     } catch (e) {
       console.warn('Failed to save chat history', e);
     }
   }
 
   // ------------------------------------------------------------
-  // CLEAR HISTORY (with confirmation)
+  // CLEAR HISTORY
   // ------------------------------------------------------------
   requestClearHistory(): void {
     this.showClearConfirm = true;
@@ -122,8 +140,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   clearHistory(): void {
     this.messages = [];
     this.destroyChart();
-    this.lastGraphMessage = null;
-    localStorage.removeItem('aiChatHistory');
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   // ------------------------------------------------------------
@@ -136,27 +153,25 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   // ------------------------------------------------------------
-  // SEND QUERY
+  // SEND
   // ------------------------------------------------------------
   ask(): void {
     if (this.loading) return;
-    if (!this.query.trim()) return;
+    const text = this.query.trim();
+    if (!text) return;
 
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: this.query.trim(),
-      timestamp: new Date()
-    };
-    this.messages.push(userMessage);
+    this.messages = [
+      ...this.messages,
+      { role: 'user', content: text, timestamp: new Date() }
+    ];
     this.saveHistory();
 
-    const queryText = this.query.trim();
     this.query = '';
     this.loading = true;
     this.error = '';
     this.destroyChart();
 
-    this.aiService.ask(queryText).subscribe({
+    this.aiService.ask(text).subscribe({
       next: (res) => {
         const assistantMessage: ChatMessage = {
           role: 'assistant',
@@ -164,29 +179,34 @@ export class AiComponent implements AfterViewInit, OnDestroy {
           timestamp: new Date(),
           graph: res.showGraph ? res.graph : undefined
         };
-        this.messages.push(assistantMessage);
+
+        this.messages = [...this.messages, assistantMessage];
         this.saveHistory();
         this.loading = false;
+
         if (assistantMessage.graph) {
-          this.lastGraphMessage = assistantMessage;
-          this.renderChart(assistantMessage.graph);
-        } else {
-          this.lastGraphMessage = null;
+          // Wait for the DOM to render the canvas
+          setTimeout(() => this.renderChart(assistantMessage.graph!), 0);
         }
+
+        this.cdr.markForCheck();
         this.scrollToBottom();
       },
       error: (err) => {
-        this.error = 'Failed to get AI response: ' + err.message;
         this.loading = false;
-        const errorMessage: ChatMessage = {
-          role: 'assistant',
-          content: '⚠️ Error: ' + err.message,
-          timestamp: new Date()
-        };
-        this.messages.push(errorMessage);
+        this.error = 'Failed to get AI response: ' + (err?.message ?? 'Unknown error');
+
+        this.messages = [
+          ...this.messages,
+          {
+            role: 'assistant',
+            content: '⚠️ Error: ' + (err?.message ?? 'Unknown error'),
+            timestamp: new Date()
+          }
+        ];
         this.saveHistory();
+        this.cdr.markForCheck();
         this.scrollToBottom();
-        console.error(err);
       }
     });
   }
@@ -196,6 +216,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   // ------------------------------------------------------------
   private renderChart(graph: GraphData): void {
     if (!this.chartCanvas) return;
+
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
@@ -205,7 +226,7 @@ export class AiComponent implements AfterViewInit, OnDestroy {
         label: ds.label,
         data: ds.data,
         backgroundColor: this.getColors(graph.datasets.length, ds.data.length),
-        borderColor: '#5AA454',
+        borderColor: '#2563EB',
         borderWidth: 1
       }))
     };
@@ -215,28 +236,43 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     else if (graph.type === 'LINE') type = 'line';
 
     this.destroyChart();
+
     this.chartInstance = new Chart(ctx, {
-      type: type,
+      type,
       data: chartData,
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: graph.title || '' },
-          legend: { display: graph.datasets.length > 0 }
+          title: {
+            display: !!graph.title,
+            text: graph.title ?? '',
+            color: '#0F172A',
+            font: { size: 13, weight: 700 }
+          },
+          legend: {
+            display: graph.datasets.length > 0,
+            labels: {
+              color: '#334155',
+              font: { size: 12, weight: 600 },
+              boxWidth: 12,
+              boxHeight: 12,
+              usePointStyle: true
+            }
+          }
+        },
+        scales: type === 'pie' ? undefined : {
+          x: {
+            ticks: { color: '#64748B', font: { size: 11 } },
+            grid: { color: 'rgba(15, 23, 42, 0.05)' }
+          },
+          y: {
+            ticks: { color: '#64748B', font: { size: 11 } },
+            grid: { color: 'rgba(15, 23, 42, 0.05)' }
+          }
         }
       }
     });
-  }
-
-  private renderLastGraph(): void {
-    const last = this.messages
-      .slice()
-      .reverse()
-      .find(m => m.role === 'assistant' && m.graph);
-    if (last) {
-      this.lastGraphMessage = last;
-      setTimeout(() => this.renderChart(last.graph!), 100);
-    }
   }
 
   private destroyChart(): void {
@@ -247,43 +283,35 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   // ------------------------------------------------------------
-  // HELPERS
+  // COLOR PALETTE — matches brand tokens
   // ------------------------------------------------------------
   private getColors(numDatasets: number, numLabels: number): string[] {
-    const presetColors = [
-      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-      '#FF9F40', '#FF6384', '#C9CBCF', '#FFB1C1', '#9AD0F5'
+    const preset = [
+      '#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED',
+      '#0891B2', '#4F46E5', '#65A30D', '#DB2777', '#0EA5E9'
     ];
-    if (numDatasets === 1 && numLabels > 0) {
-      return presetColors.slice(0, numLabels);
-    }
-    return presetColors.slice(0, numDatasets);
+    const count = numDatasets === 1 && numLabels > 0 ? numLabels : numDatasets;
+    return Array.from({ length: count }, (_, i) => preset[i % preset.length]);
   }
 
-  /**
-   * Show a timestamp only for the first message or when more than
-   * TIMESTAMP_GAP_MS has elapsed since the previous message.
-   */
+  // ------------------------------------------------------------
+  // TEMPLATE HELPERS
+  // ------------------------------------------------------------
   shouldShowTimestamp(index: number): boolean {
     if (index === 0) return true;
 
-    const current = new Date(this.messages[index].timestamp).getTime();
+    const current  = new Date(this.messages[index].timestamp).getTime();
     const previous = new Date(this.messages[index - 1].timestamp).getTime();
-
-    return current - previous > this.TIMESTAMP_GAP_MS;
+    return current - previous > TIMESTAMP_GAP_MS;
   }
 
-  /** Detect RTL scripts (Arabic, Hebrew, etc.) so the bubble can flow correctly. */
   isRtl(text: string): boolean {
     if (!text) return false;
-    const rtlPattern = /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/;
-    return rtlPattern.test(text);
+    return /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
   }
 
   private scrollToBottom(): void {
-    const container = document.querySelector('.chat-messages');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
+    const el = this.chatContainer?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 }
