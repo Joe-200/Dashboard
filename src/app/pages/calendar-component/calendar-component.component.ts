@@ -628,7 +628,24 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return `HTTP ${err.status}: ${message}`;
   }
-
+  // ============================================================
+  // TRACKBY — big perf win on the day-by-day grids
+  // ============================================================
+  trackByDay(_index: number, day: Date): number {
+    return day.getTime();
+  }
+  trackByCategoryId(_index: number, cat: RoomCategory): number {
+    return cat.id;
+  }
+  trackByRoomId(_index: number, room: RoomResponse): number {
+    return room.id;
+  }
+  trackByRequestId(_index: number, req: ReservationRequest): number {
+    return req.id;
+  }
+  trackByHpmsRoomId(_index: number, r: HpmsRoomSummary): string {
+    return r.id;
+  }
   isToday(date: Date): boolean {
     const now = new Date();
     return date.getFullYear() === now.getFullYear()

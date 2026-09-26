@@ -1,9 +1,8 @@
 <div class="calendar-container" [class.bulk-mode]="bulkEditMode">
 
   <!-- ============================================================
-       HEADER — fixed button set, never reflows
+       HEADER
   ============================================================ -->
-
   <div class="glass-header">
 
     <div class="header-title">
@@ -39,7 +38,7 @@
         <button type="button" class="btn-glass today-btn" (click)="today()">Today</button>
       </div>
 
-      <!-- GROUP 3: rate actions (only in rates view) -->
+      <!-- GROUP 3: rate actions -->
       <div class="control-group" *ngIf="viewMode === 'rates'">
         <button type="button" class="btn-glass match-btn" (click)="openRateMatchModal()">
           Match Rates
@@ -60,11 +59,19 @@
   </div>
 
   <!-- ============================================================
-       BULK EDIT MODE BAR — appears only in bulk edit mode
+       BULK EDIT BAR
   ============================================================ -->
-
   <div class="bulk-mode-bar" *ngIf="viewMode === 'rates' && bulkEditMode">
 
+    <div class="bulk-mode-bar__header">
+      <span class="bulk-mode-badge">
+        <span class="bulk-mode-dot"></span>
+        Bulk Edit Mode
+      </span>
+      <span class="bulk-mode-help">
+        Edit prices and inventory directly in the table, or apply a value to a date range.
+      </span>
+    </div>
 
     <div class="bulk-mode-bar__body">
 
@@ -74,7 +81,8 @@
           <label for="rangeCategory">Category</label>
           <select id="rangeCategory" class="form-control" [(ngModel)]="rangeCategoryId">
             <option [value]="null">Choose a category</option>
-            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+            <option *ngFor="let cat of categories; trackBy: trackByCategoryId"
+                    [value]="cat.id">{{ cat.name }}</option>
           </select>
         </div>
         <div class="bulk-range-group">
@@ -130,19 +138,30 @@
   </div>
 
   <!-- ============================================================
-       GLOBAL ERROR & LOADING
+       GLOBAL ERROR / LOADING SKELETON
   ============================================================ -->
-
   <div *ngIf="error" class="error">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Loading...</div>
-  <div *ngIf="!loading && viewMode === 'rates' && categories.length === 0" class="no-data">No categories found.</div>
-  <div *ngIf="staysLoading && viewMode === 'rooms'" class="loading">Loading rooms &amp; reservations...</div>
-  <div *ngIf="!staysLoading && viewMode === 'rooms' && rooms.length === 0" class="no-data">No rooms found.</div>
+
+  <!-- Skeleton while loading rates -->
+  <div *ngIf="loading" class="calendar-skeleton" aria-hidden="true">
+    <div class="skeleton skeleton-header"></div>
+    <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4,5]"></div>
+  </div>
+
+  <div *ngIf="staysLoading && viewMode === 'rooms'" class="loading">
+    Loading rooms &amp; reservations…
+  </div>
+
+  <div *ngIf="!loading && viewMode === 'rates' && categories.length === 0" class="no-data">
+    No categories found.
+  </div>
+  <div *ngIf="!staysLoading && viewMode === 'rooms' && rooms.length === 0" class="no-data">
+    No rooms found.
+  </div>
 
   <!-- ============================================================
        MAIN CALENDAR SCROLL
   ============================================================ -->
-
   <div #calendarScroll class="calendar-scroll"
     *ngIf="
       (!loading && categories.length > 0 && viewMode === 'rates')
@@ -154,10 +173,7 @@
     (mouseup)="stopDrag(calendarScroll)"
     (mouseleave)="stopDrag(calendarScroll)">
 
-    <!-- ==========================================================
-         RATE VIEW
-    ========================================================== -->
-
+    <!-- RATE VIEW -->
     <div *ngIf="viewMode === 'rates'">
 
       <div *ngIf="rateMatchSuccess || rateMatchError" class="rate-match-status">
@@ -165,7 +181,8 @@
         <span *ngIf="rateMatchError" class="match-error">{{ rateMatchError }}</span>
       </div>
 
-      <div class="category-table" *ngFor="let category of categories">
+      <div class="category-table"
+           *ngFor="let category of categories; trackBy: trackByCategoryId">
 
         <div class="category-table-header">
           <div class="category-info">
@@ -180,7 +197,8 @@
 
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Room</div>
-            <div class="day-header" *ngFor="let day of days"
+            <div class="day-header"
+                 *ngFor="let day of days; trackBy: trackByDay"
                  [class.today]="isToday(day)"
                  [class.weekend]="day.getDay() === 0 || day.getDay() === 6">
               <span class="day-number">{{ day.getDate() }}</span>
@@ -193,7 +211,7 @@
           <!-- TOTAL ROOMS -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Total</div>
-            <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="total-rooms">{{ getTotalRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
                 <input type="number" class="bulk-cell-input bulk-inventory-input"
@@ -208,7 +226,7 @@
           <!-- BOOKED -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Booked</div>
-            <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode"
                     class="booked"
                     [class.overbooked]="isOverbooked(category, day)"
@@ -228,7 +246,7 @@
           <!-- AVAILABLE -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Available</div>
-            <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="available">{{ getAvailableRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
                 <input type="number" class="bulk-cell-input bulk-inventory-input"
@@ -243,7 +261,9 @@
           <!-- PRICE -->
           <div class="data-row price-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Price</div>
-            <div class="data-cell price-cell" *ngFor="let day of days" [class.today]="isToday(day)"
+            <div class="data-cell price-cell"
+                 *ngFor="let day of days; trackBy: trackByDay"
+                 [class.today]="isToday(day)"
                  (click)="!bulkEditMode && openEditModal(category.id, day)">
               <span *ngIf="!bulkEditMode" class="price"
                     [class.custom]="isCustomRate(getRate(category.id, day))"
@@ -266,12 +286,9 @@
       </div>
     </div>
 
-    <!-- ==========================================================
-         ROOM OCCUPANCY VIEW
-    ========================================================== -->
-
+    <!-- ROOM OCCUPANCY VIEW -->
     <div *ngIf="viewMode === 'rooms'">
-      <div class="room-table" *ngFor="let room of rooms">
+      <div class="room-table" *ngFor="let room of rooms; trackBy: trackByRoomId">
 
         <div class="room-table-header">
           <button type="button" class="btn-glass primary create-btn"
@@ -291,7 +308,8 @@
         <div class="calendar-table">
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Guest</div>
-            <div class="day-header" *ngFor="let day of days"
+            <div class="day-header"
+                 *ngFor="let day of days; trackBy: trackByDay"
                  [class.today]="isToday(day)"
                  [class.weekend]="day.getDay() === 0 || day.getDay() === 6">
               <span class="day-number">{{ day.getDate() }}</span>
@@ -303,7 +321,7 @@
 
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Reserved</div>
-            <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <ng-container *ngIf="getStayForRoomAndDate(room.id, day) as stay">
                 <div class="stay-block" (click)="openStayDetails(stay)">
                   <span class="stay-guest">{{ stay.guestName }}</span>
@@ -322,12 +340,11 @@
   <!-- ============================================================
        RESET DATA MODAL
   ============================================================ -->
-
   <div *ngIf="showResetModal" class="modal-overlay" (click)="closeResetModal()">
     <div class="modal-content reset-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Reset Data</h3>
-        <button type="button" class="close-btn" (click)="closeResetModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeResetModal()" aria-label="Close">×</button>
       </div>
 
       <div *ngIf="resetError" class="error">{{ resetError }}</div>
@@ -355,7 +372,8 @@
         <label for="resetCategory">Category</label>
         <select id="resetCategory" class="form-control" [(ngModel)]="resetCategoryId">
           <option [value]="null">Choose a category</option>
-          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          <option *ngFor="let cat of categories; trackBy: trackByCategoryId"
+                  [value]="cat.id">{{ cat.name }}</option>
         </select>
       </div>
 
@@ -429,17 +447,17 @@
   <!-- ============================================================
        RATE MATCH MODAL — HPMS
   ============================================================ -->
-
   <div *ngIf="showRateMatchModal" class="modal-overlay" (click)="closeRateMatchModal()">
     <div class="modal-content rate-match-modal" (click)="$event.stopPropagation()">
 
       <div class="modal-header">
         <h3>Rate Match Intelligence</h3>
-        <button type="button" class="close-btn" (click)="closeRateMatchModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeRateMatchModal()" aria-label="Close">×</button>
       </div>
 
       <div class="rate-match-body hpms-panel">
 
+        <!-- CONFIG -->
         <div class="hpms-section">
           <div class="hpms-section-header">
             <h4>Configuration</h4>
@@ -536,6 +554,7 @@
           </div>
         </div>
 
+        <!-- ACTIONS -->
         <div class="hpms-section">
           <div class="hpms-section-header"><h4>Actions</h4></div>
           <p class="hpms-hint">
@@ -550,10 +569,10 @@
               {{ hpmsMatchLoading ? 'Matching...' : 'Match All Rates' }}
             </button>
           </div>
-          <div *ngIf="hpmsPulseError" class="error" style="margin-top: 0.75rem;">{{ hpmsPulseError }}</div>
-          <div *ngIf="hpmsPulseSuccess" class="match-success" style="margin-top: 0.75rem;">{{ hpmsPulseSuccess }}</div>
-          <div *ngIf="hpmsMatchError" class="error" style="margin-top: 0.75rem;">{{ hpmsMatchError }}</div>
-          <div *ngIf="hpmsMatchSuccess" class="match-success" style="margin-top: 0.75rem;">{{ hpmsMatchSuccess }}</div>
+          <div *ngIf="hpmsPulseError" class="error" style="margin-top: 12px;">{{ hpmsPulseError }}</div>
+          <div *ngIf="hpmsPulseSuccess" class="match-success" style="margin-top: 12px;">{{ hpmsPulseSuccess }}</div>
+          <div *ngIf="hpmsMatchError" class="error" style="margin-top: 12px;">{{ hpmsMatchError }}</div>
+          <div *ngIf="hpmsMatchSuccess" class="match-success" style="margin-top: 12px;">{{ hpmsMatchSuccess }}</div>
           <div *ngIf="hpmsProcessUuid" class="hpms-process-card">
             <div class="hpms-process-row">
               <strong>Process UUID</strong>
@@ -562,6 +581,7 @@
           </div>
         </div>
 
+        <!-- SELECTIVE -->
         <div class="hpms-section">
           <div class="hpms-section-header">
             <h4>Selective Match</h4>
@@ -580,7 +600,7 @@
           <div *ngIf="hpmsRoomsError" class="error">{{ hpmsRoomsError }}</div>
           <div *ngIf="hpmsRoomsLoading" class="loading">Loading HPMS categories...</div>
           <div *ngIf="!hpmsRoomsLoading && hpmsRoomsLoaded && hpmsRooms.length === 0"
-               class="no-data" style="padding: 1rem;">
+               class="no-data" style="padding: 16px;">
             No HPMS categories returned. Trigger a Pulse first, then refresh.
           </div>
 
@@ -599,7 +619,7 @@
 
             <div class="hpms-select-list">
               <label class="hpms-select-item"
-                     *ngFor="let r of hpmsRooms"
+                     *ngFor="let r of hpmsRooms; trackBy: trackByHpmsRoomId"
                      [class.selected]="isHpmsRoomSelected(r.id)">
                 <input type="checkbox"
                        [checked]="isHpmsRoomSelected(r.id)"
@@ -622,8 +642,8 @@
               </button>
             </div>
 
-            <div *ngIf="selectiveMatchError" class="error" style="margin-top: 0.75rem;">{{ selectiveMatchError }}</div>
-            <div *ngIf="selectiveMatchSuccess" class="match-success" style="margin-top: 0.75rem;">{{ selectiveMatchSuccess }}</div>
+            <div *ngIf="selectiveMatchError" class="error" style="margin-top: 12px;">{{ selectiveMatchError }}</div>
+            <div *ngIf="selectiveMatchSuccess" class="match-success" style="margin-top: 12px;">{{ selectiveMatchSuccess }}</div>
 
             <div *ngIf="selectiveMatchResult" class="hpms-process-card">
               <div class="hpms-process-row" *ngIf="selectiveMatchResult.targetDate">
@@ -646,6 +666,7 @@
           </ng-container>
         </div>
 
+        <!-- RESULTS -->
         <div class="hpms-section" *ngIf="hpmsMatchResult">
           <div class="hpms-section-header"><h4>Match Results</h4></div>
           <div class="hpms-match-summary">
@@ -663,7 +684,7 @@
               <span class="hpms-room-price">{{ m.newPrice | number:'1.2-2' }}</span>
             </div>
           </div>
-          <div *ngIf="hpmsMatchResult.unmatchedHpmsRooms?.length" class="hpms-hint" style="margin-top:0.5rem;">
+          <div *ngIf="hpmsMatchResult.unmatchedHpmsRooms?.length" class="hpms-hint" style="margin-top:8px;">
             <strong>Unmatched rooms:</strong> {{ hpmsMatchResult.unmatchedHpmsRooms.join(', ') }}
           </div>
         </div>
@@ -675,19 +696,18 @@
   <!-- ============================================================
        NOTIFICATION MODAL
   ============================================================ -->
-
   <div *ngIf="showNotificationModal" class="modal-overlay" (click)="closeNotificationModal()">
     <div class="modal-content notification-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Pending Reservation Requests</h3>
-        <button type="button" class="close-btn" (click)="closeNotificationModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeNotificationModal()" aria-label="Close">×</button>
       </div>
       <div *ngIf="requestsError" class="error">{{ requestsError }}</div>
       <div *ngIf="requestsLoading" class="loading">Loading requests...</div>
       <div *ngIf="!requestsLoading && pendingRequests.length === 0" class="no-data">No pending requests.</div>
 
       <div class="request-list" *ngIf="!requestsLoading && pendingRequests.length > 0">
-        <div class="request-card" *ngFor="let req of pendingRequests">
+        <div class="request-card" *ngFor="let req of pendingRequests; trackBy: trackByRequestId">
           <div class="request-header">
             <span class="guest-name">{{ req.guestName }}</span>
             <span class="request-date">{{ req.createdAt | date:'short' }}</span>
@@ -712,15 +732,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       ACCEPT MODAL
-  ============================================================ -->
-
+  <!-- ACCEPT MODAL -->
   <div *ngIf="showAcceptModal" class="modal-overlay" (click)="closeAcceptModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Accept Request</h3>
-        <button type="button" class="close-btn" (click)="closeAcceptModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeAcceptModal()" aria-label="Close">×</button>
       </div>
       <p>Assign a room to this guest.</p>
       <div *ngIf="acceptLoading" class="loading">Loading rooms...</div>
@@ -728,7 +745,7 @@
         <label for="roomSelect">Select Room</label>
         <select id="roomSelect" class="form-control" [(ngModel)]="selectedRoomId">
           <option [value]="null">Choose a room</option>
-          <option *ngFor="let room of availableRooms" [value]="room.id">
+          <option *ngFor="let room of availableRooms; trackBy: trackByRoomId" [value]="room.id">
             {{ room.roomNumber }} — Floor {{ room.floor }}
           </option>
         </select>
@@ -745,15 +762,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       REJECT MODAL
-  ============================================================ -->
-
+  <!-- REJECT MODAL -->
   <div *ngIf="showRejectModal" class="modal-overlay" (click)="closeRejectModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Reject Request</h3>
-        <button type="button" class="close-btn" (click)="closeRejectModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeRejectModal()" aria-label="Close">×</button>
       </div>
       <p>Please provide a reason for rejection.</p>
       <div class="form-group">
@@ -773,15 +787,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       EDIT PRICE MODAL
-  ============================================================ -->
-
+  <!-- EDIT PRICE MODAL -->
   <div *ngIf="showEditModal" class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Set Custom Price</h3>
-        <button type="button" class="close-btn" (click)="closeModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close">×</button>
       </div>
       <p><strong>Category</strong> {{ getCategoryName(selectedCategoryId) }}</p>
       <p><strong>Date</strong> {{ selectedDate }}</p>
@@ -808,15 +819,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       STAY DETAILS MODAL
-  ============================================================ -->
-
+  <!-- STAY DETAILS MODAL -->
   <div *ngIf="showStayModal" class="modal-overlay" (click)="closeStayModal()">
     <div class="modal-content stay-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Reservation Details</h3>
-        <button type="button" class="close-btn" (click)="closeStayModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeStayModal()" aria-label="Close">×</button>
       </div>
       <div *ngIf="selectedStay" class="stay-details-body">
         <div class="detail-row"><strong>Guest</strong> <span>{{ selectedStay.guestName }}</span></div>
@@ -834,15 +842,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       CREATE STAY MODAL
-  ============================================================ -->
-
+  <!-- CREATE STAY MODAL -->
   <div *ngIf="showCreateStayModal" class="modal-overlay" (click)="closeCreateStayModal()">
     <div class="modal-content create-stay-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Create Reservation</h3>
-        <button type="button" class="close-btn" (click)="closeCreateStayModal()">×</button>
+        <button type="button" class="close-btn" (click)="closeCreateStayModal()" aria-label="Close">×</button>
       </div>
       <div *ngIf="selectedRoomForStay" class="create-stay-body">
         <div class="room-badge">
@@ -909,16 +914,13 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       BELOW BASE PRICE WARNING MODAL
-  ============================================================ -->
-
+  <!-- BELOW BASE WARNING -->
   <div *ngIf="showBelowBaseWarning" class="modal-overlay below-base-overlay"
        (click)="cancelBelowBaseWarning()">
     <div class="modal-content below-base-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>⚠️ Price Below Base Rate</h3>
-        <button type="button" class="close-btn" (click)="cancelBelowBaseWarning()">×</button>
+        <button type="button" class="close-btn" (click)="cancelBelowBaseWarning()" aria-label="Close">×</button>
       </div>
       <div class="info-hint warn">
         <p>

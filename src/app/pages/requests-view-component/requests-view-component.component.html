@@ -168,11 +168,11 @@
         <div class="header-actions">Actions</div>
       </div>
 
-      <div
-        class="request-item"
-        *ngFor="let req of filteredRequests"
-        (click)="openDetails(req)"
-      >
+  <!-- Requests list -->
+<div class="request-item"
+     *ngFor="let req of filteredRequests; trackBy: trackByRequestId"
+     (click)="openDetails(req)">
+
         <div class="request-item-content">
 
           <!-- GUEST -->
@@ -407,11 +407,9 @@
         <div class="header-actions">Actions</div>
       </div>
 
-      <div
-        class="request-item"
-        *ngFor="let stay of filteredStays"
-        (click)="openStaySummary(stay)"
-      >
+  <div class="request-item"
+     *ngFor="let stay of filteredStays; trackBy: trackByStayId"
+     (click)="openStaySummary(stay)">
         <div class="request-item-content">
 
           <!-- GUEST -->

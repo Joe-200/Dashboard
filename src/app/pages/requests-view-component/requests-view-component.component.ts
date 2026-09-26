@@ -213,6 +213,19 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   // ============================================================
   // STAYS — FILTERED GETTER
   // ============================================================
+
+    // ============================================================
+  // TRACKBY — significant perf win on large lists
+  // ============================================================
+  trackByRequestId(_index: number, req: ReservationRequestExt): number {
+    return req.id;
+  }
+  trackByStayId(_index: number, stay: StayDetailsExt): number {
+    return stay.stayId;
+  }
+  trackByIndex(index: number): number {
+    return index;
+  }
   get filteredStays(): StayDetailsExt[] {
     const term = this.staysSearchTerm.trim().toLowerCase();
     if (!term) return this.stays;
