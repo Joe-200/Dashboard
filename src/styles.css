@@ -16,6 +16,10 @@
    13. Shared page patterns
    14. Menu / dropdown
    15. Responsive — shared page patterns
+   16. Semantic inventory tokens
+   17. Badges
+   18. Tooltips
+   19. Nav tabs
 ========================================================= */
 
 
@@ -37,7 +41,8 @@
   /* Text */
   --c-text:           #111827;
   --c-text-2:         #4B5563;
-  --c-text-muted:     #9CA3AF;
+  --c-text-muted:     #6B7280;   /* darkened for better a11y */
+  --c-text-subtle:    #9CA3AF;   /* placeholders / disabled only */
 
   /* Borders */
   --c-border:         #E5E7EB;
@@ -63,6 +68,13 @@
   --st-cleaning-fg:    #1E40AF;
   --st-maintenance-bg: #FEF3C7;
   --st-maintenance-fg: #92400E;
+
+  /* Inventory semantics (booked is informational, not danger) */
+  --c-booked:         #374151;
+  --c-booked-bg:      #F3F4F6;
+  --c-overbooked:     #DC2626;
+  --c-overbooked-bg:  #FEF2F2;
+  --c-available:      #059669;
 
   /* Radius */
   --r-sm: 6px;
@@ -196,6 +208,17 @@ body {
   background: var(--c-danger-hover);
 }
 
+/* Less-prominent destructive action (recommended for header-level resets) */
+.btn-outline-danger {
+  background: var(--c-surface);
+  color: var(--c-danger);
+  border-color: var(--c-danger-border);
+}
+.btn-outline-danger:hover:not(:disabled) {
+  background: var(--c-danger-bg);
+  border-color: var(--c-danger);
+}
+
 .btn-sm {
   height: 32px;
   padding: 0 var(--sp-2);
@@ -219,6 +242,8 @@ body {
   color: var(--c-text);
   background: rgba(0, 0, 0, 0.04);
 }
+.btn-text.danger { color: var(--c-danger); }
+.btn-text.danger:hover { background: var(--c-danger-bg); }
 .btn-text:focus-visible {
   outline: 2px solid var(--c-primary);
   outline-offset: 2px;
@@ -284,7 +309,7 @@ textarea.form-control {
 }
 
 .form-control::placeholder {
-  color: var(--c-text-muted);
+  color: var(--c-text-subtle);
 }
 
 .form-control:hover:not(:disabled):not(.readonly) {
@@ -818,7 +843,6 @@ textarea.form-control {
 
 /* =========================================================
    13. SHARED PAGE PATTERNS
-   Reusable across every list/manager page.
 ========================================================= */
 
 /* ---------- Page header ---------- */
@@ -881,7 +905,7 @@ textarea.form-control {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--c-text-muted);
+  color: var(--c-text-subtle);
   pointer-events: none;
 }
 .search-input {
@@ -904,7 +928,7 @@ textarea.form-control {
   border: none;
   border-radius: var(--r-sm);
 
-  color: var(--c-text-muted);
+  color: var(--c-text-subtle);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -941,6 +965,7 @@ textarea.form-control {
   color: var(--c-text-muted);
   font-size: 13px;
 }
+
 /* ---------- Pagination ---------- */
 .pagination-container {
   display: flex;
@@ -1048,7 +1073,7 @@ textarea.form-control {
   margin-bottom: var(--sp-2);
   border-radius: 50%;
   background: var(--c-surface-alt);
-  color: var(--c-text-muted);
+  color: var(--c-text-subtle);
 }
 .empty-state h3 {
   margin: 0;
@@ -1160,4 +1185,107 @@ textarea.form-control {
     flex-direction: column;
     gap: var(--sp-2);
   }
+}
+
+
+/* =========================================================
+   16. SEMANTIC INVENTORY TOKENS
+   Booked = informational (neutral). Overbooked = error (red).
+========================================================= */
+.text-booked      { color: var(--c-booked);     font-weight: 600; }
+.text-overbooked  { color: var(--c-overbooked); font-weight: 700; }
+.text-available   { color: var(--c-available);  font-weight: 600; }
+
+
+/* =========================================================
+   17. BADGES
+========================================================= */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+.badge-beta {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+.badge-new {
+  background: #D1FAE5;
+  color: #065F46;
+}
+.badge-soon {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+
+/* =========================================================
+   18. TOOLTIPS  (attach via [data-tooltip])
+========================================================= */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
+
+/* =========================================================
+   19. NAV TABS
+========================================================= */
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: var(--c-text-2);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav-tab:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--c-text);
+}
+.nav-tab.active {
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+}
+.nav-tab:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
 }

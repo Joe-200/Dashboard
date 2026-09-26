@@ -1,7 +1,7 @@
-<div class="calendar-container">
+<div class="calendar-container" [class.bulk-mode]="bulkEditMode">
 
   <!-- ============================================================
-       HEADER
+       HEADER — fixed button set, never reflows
   ============================================================ -->
 
   <div class="glass-header">
@@ -11,64 +11,120 @@
       <h2>Room Availability &amp; Rates</h2>
     </div>
 
-    <div class="nav-controls">
+    <div class="header-actions">
 
-      <!-- VIEW TOGGLE -->
-      <div class="view-toggle">
-        <button type="button" class="toggle-btn"
-                [class.active]="viewMode === 'rates'"
-                (click)="switchView('rates')">
-          Rate View
+      <!-- GROUP 1: view toggle -->
+      <div class="control-group">
+        <div class="view-toggle">
+          <button type="button" class="toggle-btn"
+                  [class.active]="viewMode === 'rates'"
+                  (click)="switchView('rates')">
+            Rate View
+          </button>
+          <button type="button" class="toggle-btn"
+                  [class.active]="viewMode === 'rooms'"
+                  (click)="switchView('rooms')">
+            Rooms
+          </button>
+        </div>
+      </div>
+
+      <!-- GROUP 2: month navigation -->
+      <div class="control-group nav-group">
+        <button type="button" class="btn-glass nav-arrow" (click)="previousMonth()"
+                aria-label="Previous month">‹</button>
+        <span class="month-label">{{ monthName }}</span>
+        <button type="button" class="btn-glass nav-arrow" (click)="nextMonth()"
+                aria-label="Next month">›</button>
+        <button type="button" class="btn-glass today-btn" (click)="today()">Today</button>
+      </div>
+
+      <!-- GROUP 3: rate actions (only in rates view) -->
+      <div class="control-group" *ngIf="viewMode === 'rates'">
+        <button type="button" class="btn-glass match-btn" (click)="openRateMatchModal()">
+          Match Rates
         </button>
-        <button type="button" class="toggle-btn"
-                [class.active]="viewMode === 'rooms'"
-                (click)="switchView('rooms')">
-          Rooms
+        <button type="button" class="btn-glass outline-danger"
+                (click)="openResetModal()"
+                data-tooltip="Reset custom rates and inventory">
+          Reset Data
+        </button>
+        <button type="button" class="btn-glass bulk-toggle-btn"
+                [class.active]="bulkEditMode"
+                (click)="toggleBulkEdit()">
+          {{ bulkEditMode ? 'Exit Bulk Edit' : 'Bulk Edit' }}
         </button>
       </div>
 
-      <!-- MATCH RATES -->
-      <button *ngIf="viewMode === 'rates'" type="button"
-              class="btn-glass match-btn"
-              (click)="openRateMatchModal()">
-        Match Rates
-      </button>
+    </div>
+  </div>
 
-      <!-- RESET DATA -->
-      <button *ngIf="viewMode === 'rates'" type="button"
-              class="btn-glass danger"
-              (click)="openResetModal()">
-        Reset Data
-      </button>
+  <!-- ============================================================
+       BULK EDIT MODE BAR — appears only in bulk edit mode
+  ============================================================ -->
 
-      <!-- PREVIOUS MONTH -->
-      <button type="button" class="btn-glass nav-arrow" (click)="previousMonth()">‹</button>
+  <div class="bulk-mode-bar" *ngIf="viewMode === 'rates' && bulkEditMode">
 
-      <!-- MONTH -->
-      <span class="month-label">{{ monthName }}</span>
 
-      <!-- NEXT MONTH -->
-      <button type="button" class="btn-glass nav-arrow" (click)="nextMonth()">›</button>
+    <div class="bulk-mode-bar__body">
 
-      <!-- TODAY -->
-      <button type="button" class="btn-glass today-btn" (click)="today()">Today</button>
+      <!-- RANGE TOOL -->
+      <div class="bulk-range">
+        <div class="bulk-range-group">
+          <label for="rangeCategory">Category</label>
+          <select id="rangeCategory" class="form-control" [(ngModel)]="rangeCategoryId">
+            <option [value]="null">Choose a category</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+        <div class="bulk-range-group">
+          <label for="rangeField">Field</label>
+          <select id="rangeField" class="form-control" [(ngModel)]="rangeField">
+            <option value="price">Price</option>
+            <option value="totalRooms">Total Rooms</option>
+            <option value="bookedRooms">Booked Rooms</option>
+            <option value="availableRooms">Available Rooms</option>
+          </select>
+        </div>
+        <div class="bulk-range-group">
+          <label for="rangeStart">From</label>
+          <input id="rangeStart" type="date" class="form-control" [(ngModel)]="rangeStart" />
+        </div>
+        <div class="bulk-range-group">
+          <label for="rangeEnd">To</label>
+          <input id="rangeEnd" type="date" class="form-control" [(ngModel)]="rangeEnd" />
+        </div>
+        <div class="bulk-range-group">
+          <label for="rangeValue">{{ rangeField === 'price' ? 'Price' : 'Value' }}</label>
+          <input id="rangeValue" type="number" class="form-control"
+                 [(ngModel)]="rangeValue"
+                 [step]="rangeField === 'price' ? 0.01 : 1"
+                 min="0" />
+        </div>
+        <div class="bulk-range-group bulk-range-action">
+          <button type="button"
+                  class="btn-glass"
+                  [class.success]="bulkRangeValid"
+                  [disabled]="!bulkRangeValid"
+                  (click)="applyRangeToBulk()">
+            Apply Range
+          </button>
+        </div>
+      </div>
 
-      <!-- BULK EDIT -->
-      <button *ngIf="viewMode === 'rates'" type="button"
-              class="btn-glass"
-              [class.active]="bulkEditMode"
-              (click)="toggleBulkEdit()">
-        {{ bulkEditMode ? 'Exit Bulk Edit' : 'Bulk Edit' }}
-      </button>
-
-      <!-- SAVE ALL -->
-      <button *ngIf="viewMode === 'rates' && bulkEditMode"
-              type="button"
-              class="btn-glass primary"
-              [disabled]="bulkSaving"
-              (click)="saveAllBulkChanges()">
-        {{ bulkSaving ? 'Saving...' : 'Save All Changes' }}
-      </button>
+      <!-- SAVE / UNDO -->
+      <div class="bulk-mode-actions">
+        <button type="button" class="btn-glass warning-outline"
+                (click)="undoBulkChanges()"
+                data-tooltip="Revert all unsaved edits">
+          Undo
+        </button>
+        <button type="button" class="btn-glass success"
+                [disabled]="bulkSaving"
+                (click)="saveAllBulkChanges()">
+          {{ bulkSaving ? 'Saving...' : 'Save All Changes' }}
+        </button>
+      </div>
 
     </div>
   </div>
@@ -82,52 +138,6 @@
   <div *ngIf="!loading && viewMode === 'rates' && categories.length === 0" class="no-data">No categories found.</div>
   <div *ngIf="staysLoading && viewMode === 'rooms'" class="loading">Loading rooms &amp; reservations...</div>
   <div *ngIf="!staysLoading && viewMode === 'rooms' && rooms.length === 0" class="no-data">No rooms found.</div>
-
-  <!-- ============================================================
-       BULK EDIT RANGE TOOL
-  ============================================================ -->
-
-  <div *ngIf="viewMode === 'rates' && bulkEditMode" class="bulk-range-tool">
-    <div class="bulk-range-row">
-      <div class="bulk-range-group">
-        <label for="rangeCategory">Category</label>
-        <select id="rangeCategory" class="form-control" [(ngModel)]="rangeCategoryId">
-          <option [value]="null">Choose a category</option>
-          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-        </select>
-      </div>
-      <div class="bulk-range-group">
-        <label for="rangeField">Field</label>
-        <select id="rangeField" class="form-control" [(ngModel)]="rangeField">
-          <option value="price">Price</option>
-          <option value="totalRooms">Total Rooms</option>
-          <option value="bookedRooms">Booked Rooms</option>
-          <option value="availableRooms">Available Rooms</option>
-        </select>
-      </div>
-      <div class="bulk-range-group">
-        <label for="rangeStart">From</label>
-        <input id="rangeStart" type="date" class="form-control" [(ngModel)]="rangeStart" />
-      </div>
-      <div class="bulk-range-group">
-        <label for="rangeEnd">To</label>
-        <input id="rangeEnd" type="date" class="form-control" [(ngModel)]="rangeEnd" />
-      </div>
-      <div class="bulk-range-group">
-        <label for="rangeValue">{{ rangeField === 'price' ? 'Price' : 'Value' }}</label>
-        <input id="rangeValue" type="number" class="form-control"
-               [(ngModel)]="rangeValue"
-               [step]="rangeField === 'price' ? 0.01 : 1"
-               min="0" />
-      </div>
-      <div class="bulk-range-group bulk-range-action">
-        <button type="button" class="btn-glass primary" (click)="applyRangeToBulk()"
-                [disabled]="!rangeCategoryId || !rangeStart || !rangeEnd || rangeValue < 0">
-          Apply Range
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ============================================================
        MAIN CALENDAR SCROLL
@@ -157,33 +167,37 @@
 
       <div class="category-table" *ngFor="let category of categories">
 
-        <!-- CATEGORY HEADER (sticky left) -->
         <div class="category-table-header">
           <div class="category-info">
-            <div class="category-name">{{ category.name }}</div>
-            <div class="category-base-price">Base: {{ category.price | number:'1.0-0' }}</div>
+            <div class="category-name" [attr.data-tooltip]="category.name">{{ category.name }}</div>
+            <div class="category-base-price">
+              Base: {{ category.price | number:'1.2-2' }}
+            </div>
           </div>
         </div>
 
-        <!-- CALENDAR -->
         <div class="calendar-table">
 
-          <!-- HEADER -->
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Room</div>
-            <div class="day-header" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="day-header" *ngFor="let day of days"
+                 [class.today]="isToday(day)"
+                 [class.weekend]="day.getDay() === 0 || day.getDay() === 6">
               <span class="day-number">{{ day.getDate() }}</span>
-              <span class="weekday">{{ day.toLocaleString('default', { weekday: 'short' }) }}</span>
+              <span class="weekday">
+                {{ day.toLocaleString('default', { weekday: 'short' }) | uppercase }}
+              </span>
             </div>
           </div>
 
           <!-- TOTAL ROOMS -->
-          <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
+          <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Total</div>
             <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="total-rooms">{{ getTotalRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
-                <input type="number" class="bulk-price-input bulk-inventory-input"
+                <input type="number" class="bulk-cell-input bulk-inventory-input"
+                       [class.changed]="isBulkInventoryChanged(category, day, 'totalRooms')"
                        [ngModel]="getBulkInventoryValue(category, day, 'totalRooms')"
                        (ngModelChange)="onBulkInventoryChange(category.id, day, 'totalRooms', $event)"
                        step="1" min="0" />
@@ -192,12 +206,18 @@
           </div>
 
           <!-- BOOKED -->
-          <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
+          <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Booked</div>
             <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
-              <span *ngIf="!bulkEditMode" class="booked">{{ getBookedRooms(category, day) }}</span>
+              <span *ngIf="!bulkEditMode"
+                    class="booked"
+                    [class.overbooked]="isOverbooked(category, day)"
+                    [attr.data-tooltip]="isOverbooked(category, day) ? 'Overbooked' : null">
+                {{ getBookedRooms(category, day) }}
+              </span>
               <ng-container *ngIf="bulkEditMode">
-                <input type="number" class="bulk-price-input bulk-inventory-input"
+                <input type="number" class="bulk-cell-input bulk-inventory-input"
+                       [class.changed]="isBulkInventoryChanged(category, day, 'bookedRooms')"
                        [ngModel]="getBulkInventoryValue(category, day, 'bookedRooms')"
                        (ngModelChange)="onBulkInventoryChange(category.id, day, 'bookedRooms', $event)"
                        step="1" min="0" />
@@ -206,12 +226,13 @@
           </div>
 
           <!-- AVAILABLE -->
-          <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
+          <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
             <div class="row-label">Available</div>
             <div class="data-cell" *ngFor="let day of days" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="available">{{ getAvailableRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
-                <input type="number" class="bulk-price-input bulk-inventory-input"
+                <input type="number" class="bulk-cell-input bulk-inventory-input"
+                       [class.changed]="isBulkInventoryChanged(category, day, 'availableRooms')"
                        [ngModel]="getBulkInventoryValue(category, day, 'availableRooms')"
                        (ngModelChange)="onBulkInventoryChange(category.id, day, 'availableRooms', $event)"
                        step="1" min="0" />
@@ -226,11 +247,13 @@
                  (click)="!bulkEditMode && openEditModal(category.id, day)">
               <span *ngIf="!bulkEditMode" class="price"
                     [class.custom]="isCustomRate(getRate(category.id, day))"
-                    [class.below-base]="isCellPriceBelowBase(category, day)">
-                {{ getRate(category.id, day)?.price ?? getDefaultPrice(category.id) | number:'1.0-2' }}
+                    [class.below-base]="isCellPriceBelowBase(category, day)"
+                    [attr.data-tooltip]="isCellPriceBelowBase(category, day) ? 'Below base rate' : null">
+                {{ (getRate(category.id, day)?.price ?? getDefaultPrice(category.id)) | number:'1.2-2' }}
               </span>
               <ng-container *ngIf="bulkEditMode">
-                <input type="number" class="bulk-price-input"
+                <input type="number" class="bulk-cell-input bulk-price-input"
+                       [class.changed]="isBulkPriceChanged(category, day)"
                        [class.below-base]="isBulkPriceBelowBase(category, day)"
                        [ngModel]="getBulkPriceValue(category, day)"
                        (ngModelChange)="onBulkPriceChange(category.id, day, $event)"
@@ -268,9 +291,13 @@
         <div class="calendar-table">
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
             <div class="header-label">Guest</div>
-            <div class="day-header" *ngFor="let day of days" [class.today]="isToday(day)">
+            <div class="day-header" *ngFor="let day of days"
+                 [class.today]="isToday(day)"
+                 [class.weekend]="day.getDay() === 0 || day.getDay() === 6">
               <span class="day-number">{{ day.getDate() }}</span>
-              <span class="weekday">{{ day.toLocaleString('default', { weekday: 'short' }) }}</span>
+              <span class="weekday">
+                {{ day.toLocaleString('default', { weekday: 'short' }) | uppercase }}
+              </span>
             </div>
           </div>
 
@@ -350,6 +377,15 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Quick Range</label>
+        <div class="quick-range-row">
+          <button type="button" class="btn-glass btn-sm" (click)="setResetRange('week')">This Week</button>
+          <button type="button" class="btn-glass btn-sm" (click)="setResetRange('month')">This Month</button>
+          <button type="button" class="btn-glass btn-sm" (click)="setResetRange('all')">All Time</button>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label for="resetFrom">From</label>
@@ -369,10 +405,20 @@
         </small>
       </div>
 
+      <div class="form-group confirm-group">
+        <label for="resetConfirm">
+          Type <strong>RESET</strong> to confirm <span class="required">*</span>
+        </label>
+        <input id="resetConfirm" type="text" class="form-control"
+               [(ngModel)]="resetConfirmText"
+               placeholder="RESET"
+               autocomplete="off" />
+      </div>
+
       <div class="modal-actions">
         <button type="button" class="btn-glass" (click)="closeResetModal()">Cancel</button>
         <button type="button" class="btn-glass danger"
-                [disabled]="resetLoading"
+                [disabled]="resetLoading || !resetConfirmed"
                 (click)="executeReset()">
           {{ resetLoading ? 'Resetting...' : 'Reset' }}
         </button>
@@ -381,7 +427,7 @@
   </div>
 
   <!-- ============================================================
-       RATE MATCH MODAL — HPMS (Swagger dashboard endpoints only)
+       RATE MATCH MODAL — HPMS
   ============================================================ -->
 
   <div *ngIf="showRateMatchModal" class="modal-overlay" (click)="closeRateMatchModal()">
@@ -394,7 +440,6 @@
 
       <div class="rate-match-body hpms-panel">
 
-        <!-- ================== CONFIG ================== -->
         <div class="hpms-section">
           <div class="hpms-section-header">
             <h4>Configuration</h4>
@@ -423,16 +468,12 @@
           <div *ngIf="hpmsConfigError" class="error">{{ hpmsConfigError }}</div>
           <div *ngIf="hpmsConfigSuccess" class="match-success">{{ hpmsConfigSuccess }}</div>
 
-          <!-- READ-ONLY VIEW -->
           <div *ngIf="hpmsConfig && !hpmsConfigEditing" class="hpms-config-grid">
             <div class="hpms-config-item"><span class="label">Enabled</span><span class="value">{{ hpmsConfig.enabled ? 'On' : 'Off' }}</span></div>
             <div class="hpms-config-item"><span class="label">Reduction</span><span class="value">{{ hpmsConfig.reduction }} ({{ hpmsConfig.reductionType }})</span></div>
-
             <div class="hpms-config-item"><span class="label">Interval</span><span class="value">{{ hpmsConfig.interval }} min</span></div>
-            
           </div>
 
-          <!-- EDIT FORM -->
           <div *ngIf="hpmsConfigEditing" class="hpms-config-form">
             <div class="form-row">
               <div class="form-group">
@@ -495,32 +536,24 @@
           </div>
         </div>
 
-        <!-- ================== ACTIONS ================== -->
         <div class="hpms-section">
-          <div class="hpms-section-header">
-            <h4>Actions</h4>
-          </div>
-
+          <div class="hpms-section-header"><h4>Actions</h4></div>
           <p class="hpms-hint">
             <strong>1.</strong> Trigger a Pulse to start a background scrape.
             <strong>2.</strong> When the webhook pushes data back, click <em>Match Rates</em>
             — the backend matches HPMS rooms to your categories automatically.
           </p>
-
           <div class="hpms-pulse-actions">
-
             <button type="button" class="btn-glass primary"
                     (click)="matchRates()"
                     [disabled]="hpmsMatchLoading">
               {{ hpmsMatchLoading ? 'Matching...' : 'Match All Rates' }}
             </button>
           </div>
-
           <div *ngIf="hpmsPulseError" class="error" style="margin-top: 0.75rem;">{{ hpmsPulseError }}</div>
           <div *ngIf="hpmsPulseSuccess" class="match-success" style="margin-top: 0.75rem;">{{ hpmsPulseSuccess }}</div>
           <div *ngIf="hpmsMatchError" class="error" style="margin-top: 0.75rem;">{{ hpmsMatchError }}</div>
           <div *ngIf="hpmsMatchSuccess" class="match-success" style="margin-top: 0.75rem;">{{ hpmsMatchSuccess }}</div>
-
           <div *ngIf="hpmsProcessUuid" class="hpms-process-card">
             <div class="hpms-process-row">
               <strong>Process UUID</strong>
@@ -529,7 +562,6 @@
           </div>
         </div>
 
-        <!-- ================== SELECTIVE MATCH ================== -->
         <div class="hpms-section">
           <div class="hpms-section-header">
             <h4>Selective Match</h4>
@@ -541,24 +573,18 @@
               </button>
             </div>
           </div>
-
           <p class="hpms-hint">
             Pick which <strong>HPMS categories</strong> you want to re-match.
-            Only categories returned by HPMS can be selected — the list below is
-            the live HPMS catalogue, not your local room categories.
+            Only categories returned by HPMS can be selected.
           </p>
-
           <div *ngIf="hpmsRoomsError" class="error">{{ hpmsRoomsError }}</div>
-
           <div *ngIf="hpmsRoomsLoading" class="loading">Loading HPMS categories...</div>
-
           <div *ngIf="!hpmsRoomsLoading && hpmsRoomsLoaded && hpmsRooms.length === 0"
                class="no-data" style="padding: 1rem;">
             No HPMS categories returned. Trigger a Pulse first, then refresh.
           </div>
 
           <ng-container *ngIf="!hpmsRoomsLoading && hpmsRooms.length > 0">
-
             <div class="hpms-select-toolbar">
               <button type="button" class="btn-glass btn-sm"
                       (click)="selectAllHpmsRooms()"
@@ -599,61 +625,50 @@
             <div *ngIf="selectiveMatchError" class="error" style="margin-top: 0.75rem;">{{ selectiveMatchError }}</div>
             <div *ngIf="selectiveMatchSuccess" class="match-success" style="margin-top: 0.75rem;">{{ selectiveMatchSuccess }}</div>
 
-     <div *ngIf="selectiveMatchResult" class="hpms-process-card">
-  <div class="hpms-process-row" *ngIf="selectiveMatchResult.targetDate">
-    <strong>Target date</strong>
-    <code>{{ selectiveMatchResult.targetDate }}</code>
-  </div>
-  <div class="hpms-process-row" *ngIf="selectiveMatchResult.matchedCategories?.length">
-    <strong>Matched</strong>
-    <span class="hpms-process-value">
-      {{ (selectiveMatchResult.matchedCategories || []).join(', ') }}
-    </span>
-  </div>
-  <div class="hpms-process-row" *ngIf="selectiveMatchResult.unmatchedCategoryIds?.length">
-    <strong>Unmatched</strong>
-    <span class="hpms-process-value">
-      {{ (selectiveMatchResult.unmatchedCategoryIds || []).join(', ') }}
-    </span>
-  </div>
-</div>
+            <div *ngIf="selectiveMatchResult" class="hpms-process-card">
+              <div class="hpms-process-row" *ngIf="selectiveMatchResult.targetDate">
+                <strong>Target date</strong>
+                <code>{{ selectiveMatchResult.targetDate }}</code>
+              </div>
+              <div class="hpms-process-row" *ngIf="selectiveMatchResult.matchedCategories?.length">
+                <strong>Matched</strong>
+                <span class="hpms-process-value">
+                  {{ (selectiveMatchResult.matchedCategories || []).join(', ') }}
+                </span>
+              </div>
+              <div class="hpms-process-row" *ngIf="selectiveMatchResult.unmatchedCategoryIds?.length">
+                <strong>Unmatched</strong>
+                <span class="hpms-process-value">
+                  {{ (selectiveMatchResult.unmatchedCategoryIds || []).join(', ') }}
+                </span>
+              </div>
+            </div>
           </ng-container>
         </div>
 
-        <!-- ================== MATCH RESULTS ================== -->
         <div class="hpms-section" *ngIf="hpmsMatchResult">
-          <div class="hpms-section-header">
-            <h4>Match Results</h4>
-          </div>
-
+          <div class="hpms-section-header"><h4>Match Results</h4></div>
           <div class="hpms-match-summary">
             <span><strong>Date</strong> {{ hpmsMatchResult.date }}</span>
             <span><strong>Updated</strong> {{ hpmsMatchResult.updatedCount }}</span>
             <span><strong>Unmatched</strong> {{ hpmsMatchResult.unmatchedCount }}</span>
           </div>
-
           <div class="hpms-rooms-list" *ngIf="hpmsMatchResult.matchedRates?.length">
             <div class="hpms-rooms-header">
-              <span>Category</span>
-              <span>Previous</span>
-              <span>New</span>
+              <span>Category</span><span>Previous</span><span>New</span>
             </div>
             <div class="hpms-room-row" *ngFor="let m of hpmsMatchResult.matchedRates">
               <span class="hpms-room-name">{{ m.categoryName }}</span>
-              <span class="hpms-room-price">{{ m.previousPrice | number:'1.0-2' }}</span>
-              <span class="hpms-room-price">{{ m.newPrice | number:'1.0-2' }}</span>
+              <span class="hpms-room-price">{{ m.previousPrice | number:'1.2-2' }}</span>
+              <span class="hpms-room-price">{{ m.newPrice | number:'1.2-2' }}</span>
             </div>
           </div>
-
           <div *ngIf="hpmsMatchResult.unmatchedHpmsRooms?.length" class="hpms-hint" style="margin-top:0.5rem;">
             <strong>Unmatched rooms:</strong> {{ hpmsMatchResult.unmatchedHpmsRooms.join(', ') }}
           </div>
         </div>
 
-    
-
       </div>
-
     </div>
   </div>
 
@@ -667,7 +682,6 @@
         <h3>Pending Reservation Requests</h3>
         <button type="button" class="close-btn" (click)="closeNotificationModal()">×</button>
       </div>
-
       <div *ngIf="requestsError" class="error">{{ requestsError }}</div>
       <div *ngIf="requestsLoading" class="loading">Loading requests...</div>
       <div *ngIf="!requestsLoading && pendingRequests.length === 0" class="no-data">No pending requests.</div>
@@ -686,7 +700,7 @@
             <div><strong>Category</strong> {{ req.categoryName }}</div>
             <div><strong>Stay</strong> {{ req.checkInDate }} → {{ req.checkOutDate }}</div>
             <div><strong>Guests</strong> {{ req.numAdults }} adults, {{ req.numKids }} kids</div>
-            <div><strong>Quoted total</strong> {{ req.quotedTotalCharge | number:'1.0-2' }}</div>
+            <div><strong>Quoted total</strong> {{ req.quotedTotalCharge | number:'1.2-2' }}</div>
             <div *ngIf="req.notes" class="notes"><strong>Notes</strong> {{ req.notes }}</div>
           </div>
           <div class="request-actions">
@@ -722,7 +736,7 @@
       <div *ngIf="availableRooms.length === 0 && !acceptLoading" class="no-rooms">No available rooms for this category.</div>
       <div class="modal-actions">
         <button type="button" class="btn-glass" (click)="closeAcceptModal()">Cancel</button>
-        <button type="button" class="btn-glass primary"
+        <button type="button" class="btn-glass success"
                 [disabled]="!selectedRoomId || acceptLoading"
                 (click)="confirmAccept()">
           {{ acceptLoading ? 'Accepting...' : 'Accept' }}
@@ -775,13 +789,11 @@
         <div class="form-group">
           <label for="price">Price per night</label>
           <input id="price" type="number" class="form-control" formControlName="price" step="0.01" min="0" />
-
           <div class="form-warning" *ngIf="editPriceBelowBase">
             ⚠️ This price is below the base rate of
-            <strong>{{ getBasePriceForCategory(selectedCategoryId) | number:'1.0-2' }}</strong>.
+            <strong>{{ getBasePriceForCategory(selectedCategoryId) | number:'1.2-2' }}</strong>.
             You will be asked to confirm before saving.
           </div>
-
           <div class="form-error" *ngIf="editForm.get('price')?.invalid && editForm.get('price')?.touched">
             Please enter a valid price.
           </div>
@@ -814,7 +826,10 @@
         <div class="detail-row"><strong>Check-out</strong> <span>{{ selectedStay.expectedCheckOutDate | date:'mediumDate' }}</span></div>
         <div class="detail-row"><strong>Guests</strong> <span>{{ selectedStay.numAdults }} Adults, {{ selectedStay.numKids }} Kids</span></div>
         <div class="detail-row"><strong>Contact</strong> <span>{{ selectedStay.guestPhone }} <span class="separator">•</span> {{ selectedStay.email }}</span></div>
-        <div class="detail-row total-charge"><strong>Total Charge</strong> <span>{{ selectedStay.totalCharge | number:'1.0-2' }}</span></div>
+        <div class="detail-row total-charge">
+          <strong>Total Charge</strong>
+          <span>{{ selectedStay.totalCharge | number:'1.2-2' }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -901,45 +916,35 @@
   <div *ngIf="showBelowBaseWarning" class="modal-overlay below-base-overlay"
        (click)="cancelBelowBaseWarning()">
     <div class="modal-content below-base-modal" (click)="$event.stopPropagation()">
-
       <div class="modal-header">
         <h3>⚠️ Price Below Base Rate</h3>
         <button type="button" class="close-btn" (click)="cancelBelowBaseWarning()">×</button>
       </div>
-
       <div class="info-hint warn">
         <p>
-          You are about to set
-          <strong>{{ belowBaseWarningItems.length }}</strong>
+          You are about to set <strong>{{ belowBaseWarningItems.length }}</strong>
           price{{ belowBaseWarningItems.length === 1 ? '' : 's' }}
           <strong>below the base rate</strong> of
           {{ belowBaseWarningItems.length === 1 ? 'the category' : 'their categories' }}.
           Selling below the base rate reduces your revenue margin.
         </p>
       </div>
-
       <div class="below-base-list">
         <div class="below-base-header">
-          <span>Category</span>
-          <span>Date</span>
-          <span>Base</span>
-          <span>New</span>
+          <span>Category</span><span>Date</span><span>Base</span><span>New</span>
         </div>
         <div class="below-base-row" *ngFor="let item of belowBaseWarningItems">
           <span class="bba-category">{{ item.categoryName }}</span>
           <span class="bba-date">{{ item.date }}</span>
-          <span class="bba-base">{{ item.basePrice | number:'1.0-2' }}</span>
-          <span class="bba-new">{{ item.newPrice | number:'1.0-2' }}</span>
+          <span class="bba-base">{{ item.basePrice | number:'1.2-2' }}</span>
+          <span class="bba-new">{{ item.newPrice | number:'1.2-2' }}</span>
         </div>
       </div>
-
-      <p class="below-base-note">Dos you want to proceed anyway?</p>
-
+      <p class="below-base-note">Do you want to proceed anyway?</p>
       <div class="modal-actions">
         <button type="button" class="btn-glass" (click)="cancelBelowBaseWarning()">Cancel</button>
         <button type="button" class="btn-glass danger" (click)="confirmBelowBaseWarning()">Proceed Anyway</button>
       </div>
-
     </div>
   </div>
 

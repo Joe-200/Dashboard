@@ -1,10 +1,20 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+// ai-component.component.ts
+import {
+  Component,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  OnDestroy,
+  HostListener
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
-import { AiService,AgentResponse, GraphData } from '../../ai-service.service';
+import { AiService, AgentResponse, GraphData } from '../../ai-service.service';
+
 // Register all Chart.js components
 Chart.register(...registerables);
+
 // ✅ Define ChatMessage interface here
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -12,8 +22,6 @@ export interface ChatMessage {
   timestamp: Date;
   graph?: GraphData;
 }
-
-
 
 @Component({
   selector: 'app-ai',
@@ -34,6 +42,20 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   private chartInstance: Chart | null = null;
   private lastGraphMessage: ChatMessage | null = null;
 
+  // Suggested prompts (empty state)
+  suggestedPrompts: string[] = [
+    'What is the occupancy rate today?',
+    'Show me revenue for last month',
+    'List unverified guests',
+    'Which rooms need maintenance?'
+  ];
+
+  // Clear-history confirmation modal
+  showClearConfirm = false;
+
+  /** Only show a timestamp when >5 min have passed since the previous message. */
+  private readonly TIMESTAMP_GAP_MS = 5 * 60 * 1000;
+
   constructor(private aiService: AiService) {}
 
   ngAfterViewInit(): void {
@@ -44,6 +66,14 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroyChart();
     this.saveHistory();
+  }
+
+  /** Close the confirmation modal with Escape. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showClearConfirm) {
+      this.showClearConfirm = false;
+    }
   }
 
   // ------------------------------------------------------------
@@ -73,6 +103,22 @@ export class AiComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // ------------------------------------------------------------
+  // CLEAR HISTORY (with confirmation)
+  // ------------------------------------------------------------
+  requestClearHistory(): void {
+    this.showClearConfirm = true;
+  }
+
+  cancelClearHistory(): void {
+    this.showClearConfirm = false;
+  }
+
+  confirmClearHistory(): void {
+    this.clearHistory();
+    this.showClearConfirm = false;
+  }
+
   clearHistory(): void {
     this.messages = [];
     this.destroyChart();
@@ -81,9 +127,19 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   // ------------------------------------------------------------
+  // SUGGESTED PROMPTS
+  // ------------------------------------------------------------
+  usePrompt(prompt: string): void {
+    if (this.loading) return;
+    this.query = prompt;
+    this.ask();
+  }
+
+  // ------------------------------------------------------------
   // SEND QUERY
   // ------------------------------------------------------------
   ask(): void {
+    if (this.loading) return;
     if (!this.query.trim()) return;
 
     const userMessage: ChatMessage = {
@@ -173,7 +229,10 @@ export class AiComponent implements AfterViewInit, OnDestroy {
   }
 
   private renderLastGraph(): void {
-    const last = this.messages.slice().reverse().find(m => m.role === 'assistant' && m.graph);
+    const last = this.messages
+      .slice()
+      .reverse()
+      .find(m => m.role === 'assistant' && m.graph);
     if (last) {
       this.lastGraphMessage = last;
       setTimeout(() => this.renderChart(last.graph!), 100);
@@ -199,6 +258,26 @@ export class AiComponent implements AfterViewInit, OnDestroy {
       return presetColors.slice(0, numLabels);
     }
     return presetColors.slice(0, numDatasets);
+  }
+
+  /**
+   * Show a timestamp only for the first message or when more than
+   * TIMESTAMP_GAP_MS has elapsed since the previous message.
+   */
+  shouldShowTimestamp(index: number): boolean {
+    if (index === 0) return true;
+
+    const current = new Date(this.messages[index].timestamp).getTime();
+    const previous = new Date(this.messages[index - 1].timestamp).getTime();
+
+    return current - previous > this.TIMESTAMP_GAP_MS;
+  }
+
+  /** Detect RTL scripts (Arabic, Hebrew, etc.) so the bubble can flow correctly. */
+  isRtl(text: string): boolean {
+    if (!text) return false;
+    const rtlPattern = /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/;
+    return rtlPattern.test(text);
   }
 
   private scrollToBottom(): void {

@@ -1,28 +1,41 @@
 <div class="offers-container">
 
-  <!-- HEADER -->
-  <div class="page-header">
-    <div>
+  <!-- =========================================================
+       PAGE HEADER
+  ========================================================= -->
+  <header class="page-header">
+
+    <div class="page-title">
       <span class="eyebrow">FRONT DESK</span>
       <h1>Special Offers</h1>
-      <p>Manage promotional offers and special packages.</p>
+      <p class="page-subtitle">
+        Manage promotional offers and special packages.
+      </p>
     </div>
 
-    <div class="header-actions">
+    <div class="page-actions">
       <button
         type="button"
         class="btn btn-primary"
         (click)="openCreateModal()"
       >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
         Add Special Offer
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- ERROR -->
   <div
     *ngIf="error"
     class="alert alert-danger"
+    role="alert"
   >
     {{ error }}
   </div>
@@ -33,7 +46,7 @@
     class="loading-state"
   >
     <div class="loading-spinner"></div>
-    <span>Loading special offers...</span>
+    <span>Loading special offers…</span>
   </div>
 
   <!-- EMPTY -->
@@ -41,12 +54,16 @@
     *ngIf="!loading && offers.length === 0"
     class="empty-state"
   >
+    <div class="empty-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+    </div>
     <h3>No special offers found</h3>
-
-    <p>
-      Create your first special offer to display it here.
-    </p>
-
+    <p>Create your first special offer to display it here.</p>
     <button
       type="button"
       class="btn btn-primary"
@@ -56,7 +73,9 @@
     </button>
   </div>
 
-  <!-- OFFER GRID -->
+  <!-- =========================================================
+       OFFER GRID
+  ========================================================= -->
   <div
     *ngIf="!loading && offers.length > 0"
     class="offers-grid"
@@ -74,12 +93,21 @@
           *ngIf="offer.imageUrl"
           [src]="getImageUrl(offer.imageUrl)"
           [alt]="offer.title"
+          loading="lazy"
         />
 
         <div
           *ngIf="!offer.imageUrl"
           class="image-placeholder"
+          aria-hidden="true"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
           <span>NO IMAGE</span>
         </div>
 
@@ -93,11 +121,11 @@
       <div class="offer-body">
 
         <div class="offer-heading">
-          <h3>
+          <h3 class="offer-title">
             {{ offer.title }}
           </h3>
 
-          <span class="offer-id">
+          <span class="offer-id-chip">
             #{{ offer.id }}
           </span>
         </div>
@@ -106,41 +134,37 @@
           {{ offer.description || 'No description available.' }}
         </p>
 
-        <!-- DETAILS -->
-        <div class="offer-tags">
+        <!-- TAGS -->
+        <ul class="offer-tags" aria-label="Offer metadata">
+          <li class="offer-tag">
+            <span class="tag-dot"></span>
+            Active
+          </li>
 
-          <span class="offer-tag">
-            Special Offer
-          </span>
+          <li class="offer-tag" *ngIf="offer.imageUrl">
+            With image
+          </li>
 
-          <span class="offer-tag">
-            ID #{{ offer.id }}
-          </span>
-
-          <span
-            class="offer-tag"
-            *ngIf="offer.imageUrl"
-          >
-            Image Available
-          </span>
-
-          <span
-            class="offer-tag"
-            *ngIf="!offer.imageUrl"
-          >
-            No Image
-          </span>
-
-        </div>
+          <li class="offer-tag muted" *ngIf="!offer.imageUrl">
+            No image
+          </li>
+        </ul>
 
         <!-- ACTION -->
         <div class="offer-actions">
 
           <button
             type="button"
-            class="btn btn-edit"
+            class="btn-edit"
             (click)="openEditModal(offer)"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
             Edit Offer
           </button>
 
@@ -155,16 +179,14 @@
 </div>
 
 
-<!-- =========================
+<!-- =========================================================
      OFFER MODAL
-========================= -->
-
+========================================================= -->
 <div
   *ngIf="showModal"
   class="custom-modal-overlay"
   (click)="closeModal()"
 >
-
   <div
     class="custom-modal"
     (click)="$event.stopPropagation()"
@@ -187,9 +209,8 @@
         type="button"
         class="close-btn"
         (click)="closeModal()"
-      >
-        ×
-      </button>
+        aria-label="Close"
+      >×</button>
 
     </div>
 
@@ -203,9 +224,8 @@
 
         <!-- TITLE -->
         <div class="form-group">
-
           <label for="title">
-            Title
+            Title <span class="required">*</span>
           </label>
 
           <input
@@ -225,13 +245,10 @@
           >
             Title is required.
           </div>
-
         </div>
-
 
         <!-- DESCRIPTION -->
         <div class="form-group">
-
           <label for="description">
             Description
           </label>
@@ -243,36 +260,55 @@
             rows="4"
             placeholder="Describe the special offer..."
           ></textarea>
-
         </div>
-
 
         <!-- IMAGE -->
         <div class="form-group">
+          <label>Offer Image</label>
 
-          <label for="imageUpload">
-            Offer Image
+          <p class="helper-text">
+            Images are automatically resized, compressed and converted to WebP.
+          </p>
+
+          <label
+            class="file-drop-zone"
+            [class.has-file]="!!imageFile"
+          >
+            <input
+              id="imageUpload"
+              type="file"
+              class="file-input-hidden"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              (change)="onFileSelected($event)"
+            />
+
+            <span class="drop-icon-wrap" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   width="26" height="26" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <path d="M16 16l-4-4-4 4"/>
+                <path d="M12 12v9"/>
+                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+              </svg>
+            </span>
+
+            <span class="drop-title">
+              {{ imageFile ? 'Replace image' : 'Drag and drop an image here or click to browse' }}
+            </span>
+
+            <span class="drop-hint">
+              PNG, JPG, WebP up to 5MB
+            </span>
           </label>
-
-          <input
-            id="imageUpload"
-            type="file"
-            class="form-control file-input"
-            accept="image/png,image/jpeg,image/jpg,image/webp"
-            (change)="onFileSelected($event)"
-          />
-
-          <small>
-            Images are automatically resized, compressed and converted
-            to WebP before upload.
-          </small>
 
           <!-- PROCESSING -->
           <div
             *ngIf="imageProcessing"
             class="image-processing"
           >
-            Processing image...
+            <span class="mini-spinner"></span>
+            Processing image…
           </div>
 
           <!-- SELECTED FILE -->
@@ -280,13 +316,8 @@
             *ngIf="imageFile && !imageProcessing"
             class="selected-file"
           >
-            <strong>
-              {{ imageFile.name }}
-            </strong>
-
-            <span>
-              {{ getFileSize(imageFile.size) }}
-            </span>
+            <strong>{{ imageFile.name }}</strong>
+            <span>{{ getFileSize(imageFile.size) }}</span>
           </div>
 
           <!-- PREVIEW -->
@@ -294,28 +325,19 @@
             *ngIf="imagePreview"
             class="image-preview"
           >
-
             <img
               [src]="imagePreview"
               alt="Offer image preview"
             />
 
             <div class="image-preview-info">
-
-              <strong>
-                WebP Preview
-              </strong>
-
+              <strong>WebP Preview</strong>
               <span>
                 {{ imageFile ? getFileSize(imageFile.size) : '' }}
               </span>
-
             </div>
-
           </div>
-
         </div>
-
 
         <!-- FOOTER -->
         <div class="custom-modal-footer">
@@ -338,19 +360,17 @@
               imageProcessing
             "
           >
-
             {{
               imageProcessing
-                ? 'Processing Image...'
+                ? 'Processing Image…'
                 : imageUploading
-                  ? 'Uploading Image...'
+                  ? 'Uploading Image…'
                   : loading
-                    ? 'Saving...'
+                    ? 'Saving…'
                     : isEdit
                       ? 'Save Changes'
                       : 'Create Offer'
             }}
-
           </button>
 
         </div>
@@ -360,5 +380,4 @@
     </div>
 
   </div>
-
 </div>

@@ -4,38 +4,55 @@
 <div class="requests-container">
 
   <!-- ==========================================================
-       TAB TOGGLE
+       PAGE HEADER
   ========================================================== -->
-  <div class="view-tabs" role="tablist">
-    <button
-      type="button"
-      class="view-tab"
-      role="tab"
-      [class.active]="activeTab === 'requests'"
-      (click)="setTab('requests')"
-    >
-      Reservation Requests
-    </button>
-    <button
-      type="button"
-      class="view-tab"
-      role="tab"
-      [class.active]="activeTab === 'stays'"
-      (click)="setTab('stays')"
-    >
-      Stays
-    </button>
-  </div>
+  <header class="page-header">
+
+    <div class="page-title">
+      <span class="eyebrow">FRONT DESK</span>
+      <h1>Reservations &amp; Stays</h1>
+      <p class="page-subtitle">
+        Review incoming reservation requests and manage active guest stays.
+      </p>
+    </div>
+
+    <div class="page-actions">
+      <div class="view-tabs" role="tablist">
+        <button
+          type="button"
+          class="view-tab"
+          role="tab"
+          [class.active]="activeTab === 'requests'"
+          (click)="setTab('requests')"
+        >
+          <span>Requests</span>
+          <span class="tab-count" *ngIf="totalRequests > 0">{{ totalRequests }}</span>
+        </button>
+        <button
+          type="button"
+          class="view-tab"
+          role="tab"
+          [class.active]="activeTab === 'stays'"
+          (click)="setTab('stays')"
+        >
+          <span>Stays</span>
+          <span class="tab-count" *ngIf="staysTotalElements > 0">{{ staysTotalElements }}</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
   <!-- ==========================================================
        REQUESTS TAB
   ========================================================== -->
   <ng-container *ngIf="activeTab === 'requests'">
 
+    <!-- TOOLBAR -->
     <div class="toolbar">
-      <div class="search-group">
+
+      <div class="toolbar-group search-group">
         <div class="search-wrapper">
-          <span class="search-icon">⌕</span>
+          <span class="search-icon" aria-hidden="true">⌕</span>
           <input
             type="text"
             class="form-control search-input"
@@ -55,62 +72,61 @@
         </div>
       </div>
 
-      <div class="filter-group">
-        <label for="statusFilter">Status</label>
-        <select
-          id="statusFilter"
-          class="form-control"
-          [(ngModel)]="statusFilter"
-          (change)="onFilterChange()"
-        >
-          <option value="">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="EXPIRED">Expired</option>
-          <option value="DATE_CHANGE_PENDING">Date Change Pending</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+      <div class="toolbar-group filters-group">
+        <div class="filter-group">
+          <label for="statusFilter">Status</label>
+          <select
+            id="statusFilter"
+            class="form-control"
+            [(ngModel)]="statusFilter"
+            (change)="onFilterChange()"
+          >
+            <option value="">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="DATE_CHANGE_PENDING">Date Change Pending</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="dateFrom">Check‑in from</label>
+          <input
+            type="date"
+            id="dateFrom"
+            class="form-control"
+            [(ngModel)]="dateFrom"
+            (change)="onFilterChange()"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="dateTo">Check‑in to</label>
+          <input
+            type="date"
+            id="dateTo"
+            class="form-control"
+            [(ngModel)]="dateTo"
+            (change)="onFilterChange()"
+          />
+        </div>
       </div>
 
-      <div class="filter-group">
-        <label for="dateFrom">Check‑in from</label>
-        <input
-          type="date"
-          id="dateFrom"
-          class="form-control"
-          [(ngModel)]="dateFrom"
-          (change)="onFilterChange()"
-        />
-      </div>
-
-      <div class="filter-group">
-        <label for="dateTo">Check‑in to</label>
-        <input
-          type="date"
-          id="dateTo"
-          class="form-control"
-          [(ngModel)]="dateTo"
-          (change)="onFilterChange()"
-        />
-      </div>
-
-      <div class="toolbar-actions">
+      <div class="toolbar-group toolbar-actions">
         <button
           type="button"
           class="btn-glass icon-btn"
           [disabled]="loading"
           (click)="loadRequests()"
           title="Refresh"
+          aria-label="Refresh"
         >
           ⟳
         </button>
 
-        <button
-          type="button"
-          class="btn-glass"
-          (click)="clearFilters()"
-        >
+        <button type="button" class="btn-glass" (click)="clearFilters()">
           Clear
         </button>
 
@@ -126,14 +142,24 @@
       </div>
     </div>
 
+    <!-- STATE -->
     <div *ngIf="error" class="error">{{ error }}</div>
-    <div *ngIf="loading" class="loading">Loading requests...</div>
-    <div *ngIf="!loading && filteredRequests.length === 0" class="no-data">
-      <span class="no-data-icon">∅</span>
-      <span>No requests found.</span>
+
+    <div *ngIf="loading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading requests…</span>
     </div>
 
-    <div class="request-compact-list" *ngIf="!loading && filteredRequests.length > 0">
+    <div *ngIf="!loading && filteredRequests.length === 0" class="state-empty">
+      <div class="state-empty__icon">
+        <span>∅</span>
+      </div>
+      <h3>No requests found</h3>
+      <p>Try adjusting your filters or clearing the search.</p>
+    </div>
+
+    <!-- LIST -->
+    <div class="list-card" *ngIf="!loading && filteredRequests.length > 0">
       <div class="request-list-header">
         <div>Guest</div>
         <div>Stay Dates</div>
@@ -148,14 +174,25 @@
         (click)="openDetails(req)"
       >
         <div class="request-item-content">
+
+          <!-- GUEST -->
           <div class="request-item-main">
-            <span class="guest-name">{{ req.guestName }}</span>
-            <span class="guest-email">{{ req.guestEmail }}</span>
-            <span class="ref-code" *ngIf="req.referenceCode">
-              Reservation ID: <strong>{{ req.referenceCode }}</strong>
-            </span>
+            <div class="avatar" aria-hidden="true">
+              {{ (req.guestName || '?').charAt(0).toUpperCase() }}{{
+                (req.guestName || '').split(' ')[1]?.charAt(0)?.toUpperCase() || ''
+              }}
+            </div>
+            <div class="guest-info">
+              <span class="guest-name">{{ req.guestName }}</span>
+              <span class="guest-email">{{ req.guestEmail }}</span>
+              <span class="ref-code" *ngIf="req.referenceCode">
+                <span class="ref-code__label">ID</span>
+                <strong>{{ req.referenceCode }}</strong>
+              </span>
+            </div>
           </div>
 
+          <!-- DATES -->
           <div class="request-item-dates">
             <div class="date-row">
               <span class="date-label">From</span>
@@ -174,18 +211,21 @@
             </div>
           </div>
 
+          <!-- META -->
           <div class="request-item-meta">
-            <span>{{ req.numAdults }} adult{{ req.numAdults > 1 ? 's' : '' }}</span>
-            <span class="meta-sep">•</span>
-            <span>{{ req.numKids }} kid{{ req.numKids !== 1 ? 's' : '' }}</span>
+            <span class="meta-count">{{ req.numAdults }}A</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-count">{{ req.numKids }}K</span>
           </div>
 
+          <!-- STATUS -->
           <div class="request-status">
             <span class="status-badge" [class]="req.status.toLowerCase()">
               {{ req.status }}
             </span>
           </div>
 
+          <!-- ACTIONS -->
           <div class="request-item-actions" (click)="$event.stopPropagation()">
             <ng-container *ngIf="req.status === 'PENDING'">
               <button
@@ -233,21 +273,26 @@
       </div>
     </div>
 
+    <!-- PAGINATION -->
     <div class="pagination-controls" *ngIf="totalRequests > 0">
       <button
         type="button"
         class="btn-glass pagination-btn"
         (click)="changePage(currentPage - 1)"
         [disabled]="currentPage === 0"
+        aria-label="Previous page"
       >
         ‹
       </button>
-      <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+      <span class="pagination-label">
+        Page <strong>{{ currentPage + 1 }}</strong> of <strong>{{ totalPages }}</strong>
+      </span>
       <button
         type="button"
         class="btn-glass pagination-btn"
         (click)="changePage(currentPage + 1)"
         [disabled]="currentPage >= totalPages - 1"
+        aria-label="Next page"
       >
         ›
       </button>
@@ -259,10 +304,12 @@
   ========================================================== -->
   <ng-container *ngIf="activeTab === 'stays'">
 
+    <!-- TOOLBAR -->
     <div class="toolbar">
-      <div class="search-group">
+
+      <div class="toolbar-group search-group">
         <div class="search-wrapper">
-          <span class="search-icon">⌕</span>
+          <span class="search-icon" aria-hidden="true">⌕</span>
           <input
             type="text"
             class="form-control search-input"
@@ -282,67 +329,76 @@
         </div>
       </div>
 
-      <div class="filter-group">
-        <label for="stayStatusFilter">Status</label>
-        <select
-          id="stayStatusFilter"
-          class="form-control"
-          [(ngModel)]="stayStatusFilter"
-          (change)="onStayStatusFilterChange()"
-        >
-          <option value="">All Statuses</option>
-          <option value="RESERVED">Reserved</option>
-          <option value="ACTIVE">Active</option>
-          <option value="CLOSED">Closed</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="NO_SHOW">No Show</option>
-          <option value="DATE_CHANGE_PENDING">Date Change Pending</option>
-        </select>
+      <div class="toolbar-group filters-group">
+        <div class="filter-group">
+          <label for="stayStatusFilter">Status</label>
+          <select
+            id="stayStatusFilter"
+            class="form-control"
+            [(ngModel)]="stayStatusFilter"
+            (change)="onStayStatusFilterChange()"
+          >
+            <option value="">All Statuses</option>
+            <option value="RESERVED">Reserved</option>
+            <option value="ACTIVE">Active</option>
+            <option value="CLOSED">Closed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="NO_SHOW">No Show</option>
+            <option value="DATE_CHANGE_PENDING">Date Change Pending</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="stayQuickFilter">Quick Filter</label>
+          <select
+            id="stayQuickFilter"
+            class="form-control"
+            [(ngModel)]="stayQuickFilter"
+            (change)="onStayQuickFilterChange()"
+          >
+            <option value="ALL">All Stays</option>
+            <option value="CHECKIN_TODAY">Check-in Today</option>
+            <option value="CHECKOUT_TODAY">Check-out Today</option>
+          </select>
+        </div>
       </div>
 
-      <div class="filter-group">
-        <label for="stayQuickFilter">Quick Filter</label>
-        <select
-          id="stayQuickFilter"
-          class="form-control"
-          [(ngModel)]="stayQuickFilter"
-          (change)="onStayQuickFilterChange()"
-        >
-          <option value="ALL">All Stays</option>
-          <option value="CHECKIN_TODAY">Check-in Today</option>
-          <option value="CHECKOUT_TODAY">Check-out Today</option>
-        </select>
-      </div>
-
-      <div class="toolbar-actions">
+      <div class="toolbar-group toolbar-actions">
         <button
           type="button"
           class="btn-glass icon-btn"
           [disabled]="staysLoading"
           (click)="loadStays()"
           title="Refresh"
+          aria-label="Refresh"
         >
           ⟳
         </button>
 
-        <button
-          type="button"
-          class="btn-glass"
-          (click)="clearStaysFilters()"
-        >
+        <button type="button" class="btn-glass" (click)="clearStaysFilters()">
           Clear
         </button>
       </div>
     </div>
 
+    <!-- STATE -->
     <div *ngIf="staysError" class="error">{{ staysError }}</div>
-    <div *ngIf="staysLoading" class="loading">Loading stays...</div>
-    <div *ngIf="!staysLoading && filteredStays.length === 0" class="no-data">
-      <span class="no-data-icon">∅</span>
-      <span>No stays found.</span>
+
+    <div *ngIf="staysLoading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading stays…</span>
     </div>
 
-    <div class="request-compact-list" *ngIf="!staysLoading && filteredStays.length > 0">
+    <div *ngIf="!staysLoading && filteredStays.length === 0" class="state-empty">
+      <div class="state-empty__icon">
+        <span>∅</span>
+      </div>
+      <h3>No stays found</h3>
+      <p>Try adjusting your filters or clearing the search.</p>
+    </div>
+
+    <!-- LIST -->
+    <div class="list-card" *ngIf="!staysLoading && filteredStays.length > 0">
       <div class="request-list-header">
         <div>Guest</div>
         <div>Stay Dates</div>
@@ -357,14 +413,25 @@
         (click)="openStaySummary(stay)"
       >
         <div class="request-item-content">
+
+          <!-- GUEST -->
           <div class="request-item-main">
-            <span class="guest-name">{{ stay.guestName }}</span>
-            <span class="guest-email">{{ stay.email }}</span>
-            <span class="ref-code" *ngIf="stay.referenceCode">
-              Reservation ID: <strong>{{ stay.referenceCode }}</strong>
-            </span>
+            <div class="avatar" aria-hidden="true">
+              {{ (stay.guestName || '?').charAt(0).toUpperCase() }}{{
+                (stay.guestName || '').split(' ')[1]?.charAt(0)?.toUpperCase() || ''
+              }}
+            </div>
+            <div class="guest-info">
+              <span class="guest-name">{{ stay.guestName }}</span>
+              <span class="guest-email">{{ stay.email }}</span>
+              <span class="ref-code" *ngIf="stay.referenceCode">
+                <span class="ref-code__label">ID</span>
+                <strong>{{ stay.referenceCode }}</strong>
+              </span>
+            </div>
           </div>
 
+          <!-- DATES -->
           <div class="request-item-dates">
             <div class="date-row">
               <span class="date-label">From</span>
@@ -380,23 +447,26 @@
             </div>
           </div>
 
+          <!-- ROOM -->
           <div class="request-item-meta">
             <span class="room-chip">#{{ stay.roomNumber }}</span>
-            <span class="meta-sep">•</span>
-            <span>Fl. {{ stay.floor }}</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-floor">Fl. {{ stay.floor }}</span>
           </div>
 
+          <!-- STATUS -->
           <div class="request-status">
             <span class="status-badge" [class]="stay.status.toLowerCase()">
               {{ stay.status }}
             </span>
           </div>
 
+          <!-- ACTIONS -->
           <div class="request-item-actions" (click)="$event.stopPropagation()">
             <button
               *ngIf="canCheckIn(stay)"
               type="button"
-              class="btn-glass accept stay-action"
+              class="btn-glass success stay-action"
               [disabled]="stayActionBusy[stay.stayId]"
               (click)="checkInStay(stay)"
             >
@@ -439,28 +509,31 @@
             >
               Receipt
             </button>
-
-     
           </div>
         </div>
       </div>
     </div>
 
+    <!-- PAGINATION -->
     <div class="pagination-controls" *ngIf="staysTotalElements > 0">
       <button
         type="button"
         class="btn-glass pagination-btn"
         (click)="changeStaysPage(staysPage - 1)"
         [disabled]="staysPage === 0"
+        aria-label="Previous page"
       >
         ‹
       </button>
-      <span>Page {{ staysPage + 1 }} of {{ staysTotalPages }}</span>
+      <span class="pagination-label">
+        Page <strong>{{ staysPage + 1 }}</strong> of <strong>{{ staysTotalPages }}</strong>
+      </span>
       <button
         type="button"
         class="btn-glass pagination-btn"
         (click)="changeStaysPage(staysPage + 1)"
         [disabled]="staysPage >= staysTotalPages - 1"
+        aria-label="Next page"
       >
         ›
       </button>
@@ -479,10 +552,8 @@
   <div class="modal-content request-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Reservation Request</span>
         <h3>Request Details</h3>
-        <p class="modal-eyebrow">
-          Reservation ID {{ selectedRequest.referenceCode || '—' }}
-        </p>
       </div>
       <button type="button" class="close-btn" (click)="closeDetails()" aria-label="Close">✕</button>
     </div>
@@ -491,7 +562,7 @@
       <div class="detail-grid">
         <div>
           <strong>Reservation ID</strong>
-          <span>{{ selectedRequest.referenceCode || '—' }}</span>
+          <span class="ref-code__value">{{ selectedRequest.referenceCode || '—' }}</span>
         </div>
         <div>
           <strong>System ID</strong>
@@ -517,7 +588,10 @@
 
         <div><strong>Adults</strong><span>{{ selectedRequest.numAdults }}</span></div>
         <div><strong>Kids</strong><span>{{ selectedRequest.numKids }}</span></div>
-        <div><strong>Quoted total</strong><span>{{ selectedRequest.quotedTotalCharge | number:'1.0-2' }}</span></div>
+        <div>
+          <strong>Quoted total</strong>
+          <span class="money">{{ selectedRequest.quotedTotalCharge | number:'1.2-2' }}</span>
+        </div>
         <div>
           <strong>Status</strong>
           <span>
@@ -536,13 +610,19 @@
           <span>{{ selectedRequest.canCancel ? 'Yes' : 'No' }}</span>
         </div>
 
-        <div *ngIf="selectedRequest.notes" class="full-width"><strong>Notes</strong><span>{{ selectedRequest.notes }}</span></div>
-        <div *ngIf="selectedRequest.rejectionReason" class="full-width"><strong>Rejection reason</strong><span>{{ selectedRequest.rejectionReason }}</span></div>
+        <div *ngIf="selectedRequest.notes" class="full-width">
+          <strong>Notes</strong><span>{{ selectedRequest.notes }}</span>
+        </div>
+        <div *ngIf="selectedRequest.rejectionReason" class="full-width">
+          <strong>Rejection reason</strong><span>{{ selectedRequest.rejectionReason }}</span>
+        </div>
         <div *ngIf="selectedRequest.processedByUserId" class="full-width">
           <strong>Processed by</strong>
           <span>User #{{ selectedRequest.processedByUserId }} at {{ selectedRequest.processedAt | date:'short' }}</span>
         </div>
-        <div class="full-width"><strong>Created</strong><span>{{ selectedRequest.createdAt | date:'short' }}</span></div>
+        <div class="full-width">
+          <strong>Created</strong><span>{{ selectedRequest.createdAt | date:'short' }}</span>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -592,13 +672,18 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Reservation Request</span>
         <h3>Accept Request</h3>
-        <p class="modal-eyebrow">Assign a room to this guest</p>
       </div>
       <button type="button" class="close-btn" (click)="closeAccept()" aria-label="Close">✕</button>
     </div>
 
-    <div *ngIf="acceptLoading" class="loading">Loading rooms...</div>
+    <p class="modal-subtitle">Assign a room to this guest to complete the reservation.</p>
+
+    <div *ngIf="acceptLoading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading rooms…</span>
+    </div>
 
     <div class="form-group" *ngIf="!acceptLoading">
       <label for="roomSelect">Select Room</label>
@@ -618,7 +703,7 @@
       <button type="button" class="btn-glass" (click)="closeAccept()">Cancel</button>
       <button
         type="button"
-        class="btn-glass primary"
+        class="btn-glass accept"
         [disabled]="!selectedRoomId || acceptLoading"
         (click)="confirmAccept()"
       >
@@ -635,11 +720,15 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Reservation Request</span>
         <h3>Reject Request</h3>
-        <p class="modal-eyebrow">Provide a reason for rejection</p>
       </div>
       <button type="button" class="close-btn" (click)="closeReject()" aria-label="Close">✕</button>
     </div>
+
+    <p class="modal-subtitle">
+      Provide a reason for the rejection. The guest will be notified.
+    </p>
 
     <div class="form-group">
       <label for="rejectReason">Reason</label>
@@ -673,14 +762,15 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Reservation Request</span>
         <h3>Propose Date Change</h3>
-        <p class="modal-eyebrow">The guest will be asked to accept or decline</p>
       </div>
       <button type="button" class="close-btn" (click)="closeDateChange()" aria-label="Close">✕</button>
     </div>
 
     <p class="modal-subtitle">
       Propose new stay dates for <strong>{{ dateChangeGuestName }}</strong>.
+      The guest will be asked to accept or decline.
     </p>
 
     <div class="date-change-grid">
@@ -717,8 +807,8 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Destructive Action</span>
         <h3>Cancel Reservation</h3>
-        <p class="modal-eyebrow">This action cannot be undone</p>
       </div>
       <button type="button" class="close-btn" (click)="closeCancel()" aria-label="Close">✕</button>
     </div>
@@ -753,22 +843,23 @@
   <div class="modal-content request-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Stay</span>
         <h3>Stay Summary</h3>
-        <p class="modal-eyebrow">
-          Reservation ID {{ $any(staySummary?.stayDetails)?.referenceCode || '—' }}
-        </p>
       </div>
       <button type="button" class="close-btn" (click)="closeStaySummary()" aria-label="Close">✕</button>
     </div>
 
-    <div *ngIf="staySummaryLoading" class="loading">Loading summary...</div>
+    <div *ngIf="staySummaryLoading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading summary…</span>
+    </div>
     <div *ngIf="staySummaryError" class="error">{{ staySummaryError }}</div>
 
     <div class="request-detail-body" *ngIf="!staySummaryLoading && staySummary">
       <div class="detail-grid">
         <div>
           <strong>Reservation ID</strong>
-          <span>{{ $any(staySummary.stayDetails).referenceCode || '—' }}</span>
+          <span class="ref-code__value">{{ $any(staySummary.stayDetails).referenceCode || '—' }}</span>
         </div>
         <div>
           <strong>System ID</strong>
@@ -779,7 +870,10 @@
         <div><strong>Phone</strong><span>{{ staySummary.stayDetails.guestPhone }}</span></div>
         <div><strong>Nationality</strong><span>{{ staySummary.stayDetails.nationality }}</span></div>
         <div><strong>Identification</strong><span>{{ staySummary.stayDetails.identification }}</span></div>
-        <div><strong>Room</strong><span>#{{ staySummary.stayDetails.roomNumber }} — {{ staySummary.stayDetails.categoryName }}</span></div>
+        <div>
+          <strong>Room</strong>
+          <span>#{{ staySummary.stayDetails.roomNumber }} — {{ staySummary.stayDetails.categoryName }}</span>
+        </div>
         <div><strong>Floor</strong><span>{{ staySummary.stayDetails.floor }}</span></div>
         <div>
           <strong>Status</strong>
@@ -807,7 +901,9 @@
       <div class="financial-cards">
         <div class="financial-card">
           <span class="financial-label">Room charge</span>
-          <span class="financial-value">{{ staySummary.financialSummary.roomCharge | number:'1.0-2' }}</span>
+          <span class="financial-value">
+            {{ staySummary.financialSummary.roomCharge | number:'1.2-2' }}
+          </span>
         </div>
       </div>
     </div>
@@ -821,13 +917,16 @@
   <div class="modal-content request-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Stay</span>
         <h3>Receipt</h3>
-        <p class="modal-eyebrow">Stay #{{ receipt?.stayId ?? '' }}</p>
       </div>
       <button type="button" class="close-btn" (click)="closeReceipt()" aria-label="Close">✕</button>
     </div>
 
-    <div *ngIf="receiptLoading" class="loading">Loading receipt...</div>
+    <div *ngIf="receiptLoading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading receipt…</span>
+    </div>
     <div *ngIf="receiptError" class="error">{{ receiptError }}</div>
 
     <div class="request-detail-body" *ngIf="!receiptLoading && receipt">
@@ -836,14 +935,17 @@
         <div><strong>Room</strong><span>#{{ receipt.roomNumber }}</span></div>
         <div><strong>Check-in</strong><span>{{ receipt.checkInTime | date:'short' }}</span></div>
         <div><strong>Check-out</strong><span>{{ receipt.checkOutTime | date:'short' }}</span></div>
-        <div><strong>Room charge</strong><span>{{ receipt.roomCharge | number:'1.0-2' }}</span></div>
+        <div>
+          <strong>Room charge</strong>
+          <span class="money">{{ receipt.roomCharge | number:'1.2-2' }}</span>
+        </div>
       </div>
 
       <h4 class="section-title" *ngIf="receipt.menuOrders?.length">Menu Orders</h4>
       <div class="receipt-list" *ngIf="receipt.menuOrders?.length">
         <div class="receipt-row" *ngFor="let item of receipt.menuOrders">
           <span class="receipt-desc">{{ item.description }}</span>
-          <span class="receipt-amt">{{ item.amount | number:'1.0-2' }}</span>
+          <span class="receipt-amt">{{ item.amount | number:'1.2-2' }}</span>
         </div>
       </div>
 
@@ -851,13 +953,13 @@
       <div class="receipt-list" *ngIf="receipt.specialOrders?.length">
         <div class="receipt-row" *ngFor="let item of receipt.specialOrders">
           <span class="receipt-desc">{{ item.description }}</span>
-          <span class="receipt-amt">{{ item.amount | number:'1.0-2' }}</span>
+          <span class="receipt-amt">{{ item.amount | number:'1.2-2' }}</span>
         </div>
       </div>
 
       <div class="receipt-total">
         <span>Total</span>
-        <span>{{ receipt.totalCharge | number:'1.0-2' }}</span>
+        <span class="money">{{ receipt.totalCharge | number:'1.2-2' }}</span>
       </div>
     </div>
   </div>
@@ -870,11 +972,15 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Stay</span>
         <h3>Extend Stay</h3>
-        <p class="modal-eyebrow">Extend stay for {{ extendGuestName }}</p>
       </div>
       <button type="button" class="close-btn" (click)="closeExtend()" aria-label="Close">✕</button>
     </div>
+
+    <p class="modal-subtitle">
+      Extending stay for <strong>{{ extendGuestName }}</strong>.
+    </p>
 
     <div class="form-group">
       <label for="newCheckOutDate">New check-out date</label>
@@ -909,14 +1015,15 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Stay</span>
         <h3>Propose Date Change</h3>
-        <p class="modal-eyebrow">The guest will be asked to accept or decline</p>
       </div>
       <button type="button" class="close-btn" (click)="closeStayDateChange()" aria-label="Close">✕</button>
     </div>
 
     <p class="modal-subtitle">
       Propose new dates for <strong>{{ stayDateChangeGuestName }}</strong>.
+      The guest will be asked to accept or decline.
     </p>
 
     <div class="date-change-grid">
@@ -953,11 +1060,15 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
+        <span class="modal-eyebrow">Stay</span>
         <h3>Update Stay Status</h3>
-        <p class="modal-eyebrow">Update status for {{ stayStatusGuestName }}</p>
       </div>
       <button type="button" class="close-btn" (click)="closeStayStatus()" aria-label="Close">✕</button>
     </div>
+
+    <p class="modal-subtitle">
+      Update status for <strong>{{ stayStatusGuestName }}</strong>.
+    </p>
 
     <div class="form-group">
       <label for="newStayStatus">New status</label>

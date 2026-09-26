@@ -36,7 +36,6 @@ export type ReservationRequestExt = ReservationRequest & {
   cancellationDeadline?: string;
 };
 
-/** StayDetailsResponse with fields that exist in the API but are missing from the local type. */
 export type StayDetailsExt = StayDetailsResponse & {
   referenceCode?: string;
 };
@@ -178,19 +177,16 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
 
   private staysSearchSubject = new Subject<string>();
 
-  // Stays — summary modal
   showStaySummaryModal = false;
   staySummaryLoading = false;
   staySummary: FullStaySummaryResponse | null = null;
   staySummaryError = '';
 
-  // Stays — receipt modal
   showReceiptModal = false;
   receiptLoading = false;
   receipt: ReceiptResponse | null = null;
   receiptError = '';
 
-  // Stays — extend modal
   showExtendModal = false;
   extendStayId: number | null = null;
   extendGuestName = '';
@@ -198,7 +194,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   extendLoading = false;
   extendError = '';
 
-  // Stays — propose date change modal
   showStayDateChangeModal = false;
   stayDateChangeId: number | null = null;
   stayDateChangeGuestName = '';
@@ -207,18 +202,16 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   stayDateChangeLoading = false;
   stayDateChangeError = '';
 
-  // Stays — update status modal
   showStayStatusModal = false;
   stayStatusId: number | null = null;
   stayStatusGuestName = '';
   newStayStatus = '';
   stayStatusLoading = false;
 
-  // Stays — per-row busy flag
   stayActionBusy: Record<number, boolean> = {};
 
   // ============================================================
-  // STAYS — FILTERED GETTER (client-side search only)
+  // STAYS — FILTERED GETTER
   // ============================================================
   get filteredStays(): StayDetailsExt[] {
     const term = this.staysSearchTerm.trim().toLowerCase();
@@ -459,7 +452,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     if (this.sseReloadTimer) clearTimeout(this.sseReloadTimer);
     this.sseReloadTimer = setTimeout(() => {
       this.sseReloadTimer = null;
-      // Refresh whichever tab is visible.
       if (this.activeTab === 'stays') {
         this.loadStays(true);
       } else {

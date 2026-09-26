@@ -31,83 +31,92 @@
   ========================================================= -->
   <div class="control-bar">
 
-    <div class="search-wrap">
-      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
-           width="18" height="18" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <input
-        id="room-search"
-        type="text"
-        class="form-control search-input"
-        placeholder="Search rooms, categories, floor…"
-        aria-label="Search rooms"
-        [(ngModel)]="searchTerm"
-        (input)="onSearchChange()"
-      />
+    <!-- GROUP 1: SEARCH -->
+    <div class="control-group search-group">
+      <div class="search-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
+             width="18" height="18" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="room-search"
+          type="text"
+          class="form-control search-input"
+          placeholder="Search rooms, categories, floor…"
+          aria-label="Search rooms"
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+        />
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          class="search-clear"
+          (click)="clearSearch()"
+          aria-label="Clear search"
+        >×</button>
+      </div>
+    </div>
+
+    <!-- GROUP 2: FILTERS -->
+    <div class="control-group filters-group">
+      <div class="select-wrap">
+        <label for="status-filter" class="control-label">Status</label>
+        <select
+          id="status-filter"
+          class="form-control"
+          [(ngModel)]="filterStatus"
+          (change)="onFilterChange()"
+        >
+          <option value="">All statuses</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="OCCUPIED">Occupied</option>
+          <option value="CLEANING">Cleaning</option>
+          <option value="MAINTENANCE">Maintenance</option>
+        </select>
+      </div>
+
+      <div class="select-wrap">
+        <label for="floor-filter" class="control-label">Floor</label>
+        <input
+          id="floor-filter"
+          type="number"
+          class="form-control"
+          placeholder="All floors"
+          [(ngModel)]="filterFloor"
+          (input)="onFilterChange()"
+        />
+      </div>
+    </div>
+
+    <!-- GROUP 3: ACTIONS -->
+    <div class="control-group actions-group">
       <button
-        *ngIf="searchTerm"
+        *ngIf="searchTerm || filterStatus || filterFloor"
         type="button"
-        class="search-clear"
-        (click)="clearSearch()"
-        aria-label="Clear search"
-      >×</button>
-    </div>
-
-    <div class="select-wrap">
-      <label for="status-filter" class="visually-hidden">Status</label>
-      <select
-        id="status-filter"
-        class="form-control"
-        [(ngModel)]="filterStatus"
-        (change)="onFilterChange()"
+        class="btn btn-text clear-filters"
+        (click)="clearFilters()"
       >
-        <option value="">All statuses</option>
-        <option value="AVAILABLE">Available</option>
-        <option value="OCCUPIED">Occupied</option>
-        <option value="CLEANING">Cleaning</option>
-        <option value="MAINTENANCE">Maintenance</option>
-      </select>
+        Clear Filters
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary add-room-btn"
+        (click)="openCreateRoomModal()"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Room
+      </button>
     </div>
-
-    <div class="select-wrap">
-      <label for="floor-filter" class="visually-hidden">Floor</label>
-      <input
-        id="floor-filter"
-        type="number"
-        class="form-control"
-        placeholder="All floors"
-        [(ngModel)]="filterFloor"
-        (input)="onFilterChange()"
-      />
-    </div>
-
-    <button
-      *ngIf="searchTerm || filterStatus || filterFloor"
-      type="button"
-      class="btn-text clear-filters"
-      (click)="clearFilters()"
-    >
-      Clear Filters
-    </button>
-
-    <button
-      type="button"
-      class="btn btn-primary add-room-btn"
-      (click)="openCreateRoomModal()"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      Add Room
-    </button>
   </div>
 
   <!-- LOADING -->
@@ -167,7 +176,7 @@
           loading="lazy"
         />
         <div *ngIf="!room.imageUrl" class="image-placeholder" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"
                viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
@@ -183,7 +192,7 @@
 
         <div class="card-title-row">
           <div class="card-title-left">
-            <h3 class="card-title">Room {{ room.roomNumber }}</h3>
+            <span class="room-chip">#{{ room.roomNumber }}</span>
             <span
               class="status-pill"
               [ngClass]="'status-' + room.status.toLowerCase()"
@@ -246,7 +255,7 @@
 
         <ul class="card-amenities" aria-label="Amenities">
           <li class="amenity" [attr.title]="room.numBeds + ' ' + (room.numBeds === 1 ? 'Bed' : 'Beds')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true">
@@ -260,7 +269,7 @@
 
           <li class="amenity"
               [attr.title]="room.maxAdults + ' Adults' + (room.maxKids > 0 ? ', ' + room.maxKids + ' Kids' : '')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true">
@@ -273,7 +282,7 @@
           </li>
 
           <li class="amenity" *ngIf="room.hasWifi" title="Wi-Fi">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true">
@@ -287,7 +296,7 @@
 
           <li class="amenity" *ngIf="room.numTvs > 0"
               [attr.title]="room.numTvs + ' ' + (room.numTvs === 1 ? 'TV' : 'TVs')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true">
@@ -299,7 +308,7 @@
 
           <li class="amenity" *ngIf="getViewLabel(room.viewType)"
               [attr.title]="getViewLabel(room.viewType) + ' View'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true">
@@ -326,14 +335,17 @@
     *ngIf="!loading && totalPages > 1"
     class="pagination-container"
   >
-    <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+    <span class="pagination-label">
+      Page <strong>{{ currentPage + 1 }}</strong> of <strong>{{ totalPages }}</strong>
+    </span>
     <div class="pagination">
       <button
         type="button"
         [disabled]="currentPage === 0"
         (click)="onPageChange(currentPage - 1)"
+        aria-label="Previous page"
       >
-        Previous
+        ‹
       </button>
 
       <button
@@ -349,8 +361,9 @@
         type="button"
         [disabled]="currentPage === totalPages - 1"
         (click)="onPageChange(currentPage + 1)"
+        aria-label="Next page"
       >
-        Next
+        ›
       </button>
     </div>
   </div>
@@ -388,7 +401,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="room-number">Room Number</label>
+            <label for="room-number">Room Number <span class="required">*</span></label>
             <input
               id="room-number"
               type="text"
@@ -406,7 +419,7 @@
           </div>
 
           <div class="form-group">
-            <label for="room-category">Category</label>
+            <label for="room-category">Category <span class="required">*</span></label>
             <select
               id="room-category"
               class="form-control"
@@ -432,7 +445,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="room-floor">Floor</label>
+            <label for="room-floor">Floor <span class="required">*</span></label>
             <input
               id="room-floor"
               type="number"
@@ -441,7 +454,6 @@
               min="1"
             />
           </div>
-
         </div>
 
         <div class="form-group">

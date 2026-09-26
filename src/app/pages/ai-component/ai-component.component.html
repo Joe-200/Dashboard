@@ -1,42 +1,71 @@
+<!-- ai-component.component.html -->
 <div class="ai-container">
 
-  <!-- HEADER -->
-  <div class="page-header">
-    <div>
+  <!-- =========================================================
+       PAGE HEADER
+  ========================================================= -->
+  <header class="page-header">
+
+    <div class="page-title">
       <span class="eyebrow">HOTEL INTELLIGENCE</span>
       <h1>AI Assistant</h1>
-      <p>Ask questions and analyze your hotel's data.</p>
+      <p class="page-subtitle">
+        Ask questions and analyze your hotel's data.
+      </p>
     </div>
 
-    <div class="header-actions">
+    <div class="page-actions">
       <button
         *ngIf="messages.length > 0"
         type="button"
-        class="btn btn-secondary"
-        (click)="clearHistory()"
+        class="btn btn-danger-outline"
+        (click)="requestClearHistory()"
       >
-        Clear History
+        <svg
+          class="btn-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 6h18" />
+          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+          <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+        </svg>
+        <span>Clear History</span>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- ERROR -->
-  <div *ngIf="error" class="alert alert-danger">
+  <!-- =========================================================
+       ERROR
+  ========================================================= -->
+  <div *ngIf="error" class="alert alert-danger" role="alert">
     {{ error }}
   </div>
 
-  <!-- CHAT CARD -->
+  <!-- =========================================================
+       CHAT CARD
+  ========================================================= -->
   <div class="chat-card">
 
     <!-- CHAT HEADER -->
     <div class="chat-header">
-      <div>
-        <span class="chat-eyebrow">AI CONVERSATION</span>
-        <h2>Hotel Assistant</h2>
+      <div class="chat-identity">
+        <div class="chat-avatar" aria-hidden="true">✦</div>
+        <div>
+          <h2>Luxury Hotel AI</h2>
+          <span class="chat-subtitle">Data &amp; analytics assistant</span>
+        </div>
       </div>
 
       <div class="status-indicator">
-        <span class="status-dot"></span>
+        <span class="status-dot" aria-hidden="true"></span>
         <span>Online</span>
       </div>
     </div>
@@ -45,6 +74,9 @@
     <div
       class="chat-messages"
       #chatContainer
+      role="log"
+      aria-live="polite"
+      aria-label="Conversation with Luxury Hotel AI"
     >
 
       <!-- EMPTY STATE -->
@@ -52,7 +84,7 @@
         *ngIf="messages.length === 0 && !loading"
         class="chat-empty"
       >
-        <div class="empty-icon">
+        <div class="empty-icon" aria-hidden="true">
           ✦
         </div>
 
@@ -62,11 +94,23 @@
           Ask about rooms, bookings, occupancy,
           revenue, guests or hotel performance.
         </p>
+
+        <!-- SUGGESTED PROMPTS -->
+        <div class="quick-actions" role="group" aria-label="Suggested questions">
+          <button
+            *ngFor="let prompt of suggestedPrompts"
+            type="button"
+            class="chip"
+            (click)="usePrompt(prompt)"
+          >
+            {{ prompt }}
+          </button>
+        </div>
       </div>
 
       <!-- MESSAGES -->
       <div
-        *ngFor="let msg of messages"
+        *ngFor="let msg of messages; let i = index"
         class="message-wrapper"
         [class.user-message-wrapper]="msg.role === 'user'"
         [class.assistant-message-wrapper]="msg.role === 'assistant'"
@@ -78,25 +122,33 @@
           [class.assistant]="msg.role === 'assistant'"
         >
 
-          <div class="message-avatar">
-            <span *ngIf="msg.role === 'assistant'">✦</span>
-            <span *ngIf="msg.role === 'user'">You</span>
+          <!-- Avatar: assistant only -->
+          <div class="message-avatar" *ngIf="msg.role === 'assistant'" aria-hidden="true">
+            ✦
           </div>
 
-          <div class="message-content">
+          <div class="message-stack">
 
-            <div class="message-header">
-              <span class="message-role">
-                {{ msg.role === 'assistant' ? 'AI Assistant' : 'You' }}
-              </span>
+            <div class="message-content">
 
-              <span class="message-time">
-                {{ msg.timestamp | date:'short' }}
-              </span>
+              <div class="message-role" *ngIf="msg.role === 'assistant'">
+                Luxury Hotel AI
+              </div>
+
+              <div
+                class="message-text"
+                [attr.dir]="isRtl(msg.content) ? 'rtl' : 'ltr'"
+              >
+                {{ msg.content }}
+              </div>
+
             </div>
 
-            <div class="message-text">
-              {{ msg.content }}
+            <!-- Timestamp lives OUTSIDE the bubble -->
+            <div class="message-meta" *ngIf="shouldShowTimestamp(i)">
+              <span class="message-time">
+                {{ msg.timestamp | date:'h:mm a' }}
+              </span>
             </div>
 
           </div>
@@ -113,7 +165,7 @@
           class="chart-wrapper"
         >
           <div class="chart-header">
-            <span>ANALYTICS</span>
+            <span class="chart-eyebrow">ANALYTICS</span>
           </div>
 
           <canvas #chartCanvas></canvas>
@@ -121,7 +173,7 @@
 
       </div>
 
-      <!-- LOADING -->
+      <!-- LOADING / TYPING INDICATOR -->
       <div
         *ngIf="loading"
         class="message-wrapper assistant-message-wrapper"
@@ -129,22 +181,24 @@
 
         <div class="message assistant">
 
-          <div class="message-avatar">
+          <div class="message-avatar" aria-hidden="true">
             ✦
           </div>
 
-          <div class="message-content">
+          <div class="message-stack">
 
-            <div class="message-header">
-              <span class="message-role">
-                AI Assistant
-              </span>
-            </div>
+            <div class="message-content">
 
-            <div class="thinking">
-              <span></span>
-              <span></span>
-              <span></span>
+              <div class="message-role">
+                Luxury Hotel AI
+              </div>
+
+              <div class="thinking" role="status" aria-label="Assistant is typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+
             </div>
 
           </div>
@@ -166,6 +220,7 @@
           placeholder="Ask something about the hotel..."
           (keyup.enter)="ask()"
           [disabled]="loading"
+          aria-label="Message Luxury Hotel AI"
         />
 
         <button
@@ -175,17 +230,90 @@
           [disabled]="loading || !query.trim()"
         >
           <span *ngIf="!loading">Send</span>
-          <span *ngIf="loading">Thinking...</span>
+          <span *ngIf="loading">Thinking…</span>
         </button>
 
       </div>
 
       <span class="input-hint">
-        Press Enter to send
+        Press <kbd>Enter</kbd> to send
       </span>
 
     </div>
 
+  </div>
+
+  <!-- =========================================================
+       CLEAR HISTORY CONFIRMATION
+  ========================================================= -->
+  <div
+    class="modal-backdrop"
+    *ngIf="showClearConfirm"
+    (click)="cancelClearHistory()"
+  >
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="clear-history-title"
+      aria-describedby="clear-history-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <div>
+          <span class="modal-eyebrow">DESTRUCTIVE ACTION</span>
+          <h3 id="clear-history-title">Clear chat history?</h3>
+        </div>
+        <button
+          type="button"
+          class="close-btn"
+          (click)="cancelClearHistory()"
+          aria-label="Close"
+        >×</button>
+      </div>
+
+      <div class="modal-icon-row">
+        <div class="modal-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+            <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+        </div>
+
+        <p id="clear-history-desc">
+          This permanently deletes all messages and charts in this conversation.
+          This action cannot be undone.
+        </p>
+      </div>
+
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancelClearHistory()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="confirmClearHistory()"
+        >
+          Clear History
+        </button>
+      </div>
+    </div>
   </div>
 
 </div>
