@@ -144,12 +144,38 @@
 
     <!-- STATE -->
     <div *ngIf="error" class="error">{{ error }}</div>
-
-    <div *ngIf="loading" class="state-loading">
-      <span class="spinner"></span>
-      <span>Loading requests…</span>
+<!-- LOADING — skeleton list -->
+<div *ngIf="loading" class="skeleton-list">
+  <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
+    <!-- Guest -->
+    <div class="skeleton-cell skeleton-guest">
+      <div class="skeleton skeleton-avatar"></div>
+      <div class="skeleton-guest-lines">
+        <div class="skeleton skeleton-line" style="width: 65%"></div>
+        <div class="skeleton skeleton-line" style="width: 90%"></div>
+      </div>
     </div>
-
+    <!-- Dates -->
+    <div class="skeleton-cell skeleton-dates">
+      <div class="skeleton skeleton-line" style="width: 90%"></div>
+      <div class="skeleton skeleton-line" style="width: 55%"></div>
+    </div>
+    <!-- Guests count -->
+    <div class="skeleton-cell">
+      <div class="skeleton skeleton-chip"></div>
+    </div>
+    <!-- Status -->
+    <div class="skeleton-cell">
+      <div class="skeleton skeleton-pill"></div>
+    </div>
+    <!-- Actions -->
+    <div class="skeleton-cell skeleton-actions">
+      <div class="skeleton skeleton-btn"></div>
+      <div class="skeleton skeleton-btn"></div>
+    </div>
+  </div>
+  <span class="visually-hidden" role="status" aria-live="polite">Loading requests…</span>
+</div>
     <div *ngIf="!loading && filteredRequests.length === 0" class="state-empty">
       <div class="state-empty__icon">
         <span>∅</span>
@@ -384,10 +410,38 @@
     <!-- STATE -->
     <div *ngIf="staysError" class="error">{{ staysError }}</div>
 
-    <div *ngIf="staysLoading" class="state-loading">
-      <span class="spinner"></span>
-      <span>Loading stays…</span>
+<!-- LOADING — skeleton list -->
+<div *ngIf="staysLoading" class="skeleton-list">
+  <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
+    <!-- Guest -->
+    <div class="skeleton-cell skeleton-guest">
+      <div class="skeleton skeleton-avatar"></div>
+      <div class="skeleton-guest-lines">
+        <div class="skeleton skeleton-line" style="width: 65%"></div>
+        <div class="skeleton skeleton-line" style="width: 90%"></div>
+      </div>
     </div>
+    <!-- Dates -->
+    <div class="skeleton-cell skeleton-dates">
+      <div class="skeleton skeleton-line" style="width: 90%"></div>
+      <div class="skeleton skeleton-line" style="width: 55%"></div>
+    </div>
+    <!-- Room -->
+    <div class="skeleton-cell">
+      <div class="skeleton skeleton-chip"></div>
+    </div>
+    <!-- Status -->
+    <div class="skeleton-cell">
+      <div class="skeleton skeleton-pill"></div>
+    </div>
+    <!-- Actions -->
+    <div class="skeleton-cell skeleton-actions">
+      <div class="skeleton skeleton-btn"></div>
+      <div class="skeleton skeleton-btn"></div>
+    </div>
+  </div>
+  <span class="visually-hidden" role="status" aria-live="polite">Loading stays…</span>
+</div>
 
     <div *ngIf="!staysLoading && filteredStays.length === 0" class="state-empty">
       <div class="state-empty__icon">
