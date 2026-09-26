@@ -1144,4 +1144,18 @@ export class RoomsComponent implements OnInit {
 
     return '';
   }
+
+
+    // =========================================================
+  // TRACKBY — perf helpers for large lists
+  // =========================================================
+  trackByRoomId(_index: number, room: RoomResponse): number {
+    return room.id;
+  }
+  trackByCategoryId(_index: number, category: RoomCategory): number {
+    return category.id;
+  }
+  trackByIndex(index: number): number {
+    return index;
+  }
 }

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SpecialOffersComponentComponent } from './special-offers-component.component';
+import { SpecialOffersComponent } from './special-offers-component.component';
 
 describe('SpecialOffersComponentComponent', () => {
-  let component: SpecialOffersComponentComponent;
-  let fixture: ComponentFixture<SpecialOffersComponentComponent>;
+  let component: SpecialOffersComponent;
+  let fixture: ComponentFixture<SpecialOffersComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SpecialOffersComponentComponent]
+      imports: [SpecialOffersComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SpecialOffersComponentComponent);
+    fixture = TestBed.createComponent(SpecialOffersComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

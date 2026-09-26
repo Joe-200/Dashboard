@@ -40,14 +40,18 @@
     {{ error }}
   </div>
 
-  <!-- LOADING -->
-  <div
-    *ngIf="loading"
-    class="loading-state"
-  >
-    <div class="loading-spinner"></div>
-    <span>Loading special offers…</span>
+<!-- LOADING — skeleton grid -->
+<div *ngIf="loading" class="offers-grid" aria-hidden="true">
+  <div class="offer-skeleton" *ngFor="let i of [1,2,3]">
+    <div class="skeleton skeleton-image"></div>
+    <div class="skeleton-body">
+      <div class="skeleton skeleton-line short"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line medium"></div>
+      <div class="skeleton skeleton-line tall"></div>
+    </div>
   </div>
+</div>
 
   <!-- EMPTY -->
   <div

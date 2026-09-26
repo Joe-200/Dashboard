@@ -119,11 +119,18 @@
     </div>
   </div>
 
-  <!-- LOADING -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="loading-spinner"></div>
-    <span>Loading rooms…</span>
+<!-- LOADING — skeleton grid instead of a spinner -->
+<div *ngIf="loading" class="rooms-grid" aria-hidden="true">
+  <div class="room-skeleton" *ngFor="let i of [1,2,3,4,5,6]">
+    <div class="skeleton skeleton-image"></div>
+    <div class="skeleton-body">
+      <div class="skeleton skeleton-line short"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line medium"></div>
+      <div class="skeleton skeleton-line tall"></div>
+    </div>
   </div>
+</div>
 
   <!-- EMPTY -->
   <div
@@ -165,8 +172,7 @@
     *ngIf="!loading && filteredRooms.length > 0"
     class="rooms-grid"
   >
-    <article class="room-card" *ngFor="let room of filteredRooms">
-
+<article class="room-card" *ngFor="let room of filteredRooms; trackBy: trackByRoomId">
       <!-- IMAGE -->
       <div class="card-image" [class.empty]="!room.imageUrl">
         <img
