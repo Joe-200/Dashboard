@@ -270,10 +270,21 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     element.classList.remove('dragging');
   }
 
+  // ------------------------------------------------------------
+  // VIEW SWITCHING
+  // ------------------------------------------------------------
   switchView(mode: 'rates' | 'rooms'): void {
     this.viewMode = mode;
-    if (mode === 'rooms' && this.rooms.length === 0) this.loadRoomsAndStays();
-    setTimeout(() => this.scrollToToday(), 0);
+
+    if (mode === 'rooms' && this.rooms.length === 0) {
+      // Rooms data hasn't loaded yet — `#calendarScroll` will be created
+      // once `staysLoading` becomes false, and `loadRoomsAndStays` will
+      // trigger the scroll then.
+      this.loadRoomsAndStays();
+    } else {
+      // View is already rendered — just scroll once Angular finishes CD.
+      setTimeout(() => this.scrollToToday(), 50);
+    }
   }
 
   loadRoomsAndStays(): void {
@@ -284,11 +295,23 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (roomData) => {
         this.rooms = roomData.content;
         this.reservationService.getStays(['RESERVED', 'ACTIVE'], 0, 100).subscribe({
-          next: (stayData) => { this.stays = stayData.content; this.staysLoading = false; },
-          error: (err) => { console.error('Failed to load stays:', err); this.staysLoading = false; }
+          next: (stayData) => {
+            this.stays = stayData.content;
+            this.staysLoading = false;
+            // DOM now exists — scroll to today
+            this.scrollToTodayAfterRender();
+          },
+          error: (err) => {
+            console.error('Failed to load stays:', err);
+            this.staysLoading = false;
+            this.scrollToTodayAfterRender();
+          }
         });
       },
-      error: (err) => { console.error('Failed to load rooms:', err); this.staysLoading = false; }
+      error: (err) => {
+        console.error('Failed to load rooms:', err);
+        this.staysLoading = false;
+      }
     });
   }
 
@@ -628,9 +651,13 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return `HTTP ${err.status}: ${message}`;
   }
+
   // ============================================================
-  // TRACKBY — big perf win on the day-by-day grids
+  // TRACKBY — perf helpers
   // ============================================================
+  trackByIndex(index: number): number {
+    return index;
+  }
   trackByDay(_index: number, day: Date): number {
     return day.getTime();
   }
@@ -646,6 +673,7 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   trackByHpmsRoomId(_index: number, r: HpmsRoomSummary): string {
     return r.id;
   }
+
   isToday(date: Date): boolean {
     const now = new Date();
     return date.getFullYear() === now.getFullYear()
@@ -1147,6 +1175,34 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
         this.error = 'Failed to load categories: ' + (err?.error?.message || err?.message || 'Unknown error');
         this.loading = false;
       }
+    });
+  }
+
+  // ============================================================
+  // SCROLL TO TODAY
+  // ============================================================
+
+  /**
+   * Waits for Angular to render the newly created room tables before
+   * scrolling — with a couple of retries in case layout takes an extra
+   * frame (large lists, images, fonts).
+   */
+  private scrollToTodayAfterRender(attempt: number = 0): void {
+    // Let Angular finish CD + browser layout
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = this.calendarScroll?.nativeElement;
+        const hasContent = !!el && el.scrollWidth > 0;
+
+        if (hasContent) {
+          this.scrollToToday();
+          return;
+        }
+        // Retry up to 5 times, 60ms apart (max ~300ms)
+        if (attempt < 5) {
+          this.scrollToTodayAfterRender(attempt + 1);
+        }
+      }, 30);
     });
   }
 

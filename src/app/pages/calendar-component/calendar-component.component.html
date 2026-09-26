@@ -188,7 +188,8 @@
           <div class="category-info">
             <div class="category-name" [attr.data-tooltip]="category.name">{{ category.name }}</div>
             <div class="category-base-price">
-              Base: {{ category.price | number:'1.2-2' }}
+              <span class="category-price-label">BASE</span>
+              <span class="category-price-value">{{ category.price | number:'1.2-2' }}</span>
             </div>
           </div>
         </div>
@@ -196,7 +197,7 @@
         <div class="calendar-table">
 
           <div class="table-header" [style.grid-template-columns]="calendarGridColumns">
-            <div class="header-label">Room</div>
+            <div class="header-label">Metric</div>
             <div class="day-header"
                  *ngFor="let day of days; trackBy: trackByDay"
                  [class.today]="isToday(day)"
@@ -210,7 +211,9 @@
 
           <!-- TOTAL ROOMS -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
-            <div class="row-label">Total</div>
+            <div class="row-label">
+              <span class="row-label-text">Total</span>
+            </div>
             <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="total-rooms">{{ getTotalRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
@@ -225,7 +228,9 @@
 
           <!-- BOOKED -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
-            <div class="row-label">Booked</div>
+            <div class="row-label">
+              <span class="row-label-text">Booked</span>
+            </div>
             <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode"
                     class="booked"
@@ -245,7 +250,9 @@
 
           <!-- AVAILABLE -->
           <div class="data-row inventory-row" [style.grid-template-columns]="calendarGridColumns">
-            <div class="row-label">Available</div>
+            <div class="row-label">
+              <span class="row-label-text">Available</span>
+            </div>
             <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <span *ngIf="!bulkEditMode" class="available">{{ getAvailableRooms(category, day) }}</span>
               <ng-container *ngIf="bulkEditMode">
@@ -260,7 +267,9 @@
 
           <!-- PRICE -->
           <div class="data-row price-row" [style.grid-template-columns]="calendarGridColumns">
-            <div class="row-label">Price</div>
+            <div class="row-label">
+              <span class="row-label-text">Price</span>
+            </div>
             <div class="data-cell price-cell"
                  *ngFor="let day of days; trackBy: trackByDay"
                  [class.today]="isToday(day)"
@@ -291,16 +300,24 @@
       <div class="room-table" *ngFor="let room of rooms; trackBy: trackByRoomId">
 
         <div class="room-table-header">
-          <button type="button" class="btn-glass primary create-btn"
-                  (click)="openCreateStayModal(room)">
-            Book Room
-          </button>
-          <div class="room-info">
-            <div class="room-name">Room {{ room.roomNumber }}</div>
-            <div class="room-details">
-              Floor {{ room.floor }}
-              <span class="separator">•</span>
-              {{ room.status }}
+          <div class="room-header-content">
+            <button type="button" class="btn-glass primary create-btn"
+                    (click)="openCreateStayModal(room)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.4"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Book Room
+            </button>
+            <div class="room-info">
+              <div class="room-name">Room {{ room.roomNumber }}</div>
+              <div class="room-details">
+                Floor {{ room.floor }}
+                <span class="separator">•</span>
+                {{ room.status }}
+              </div>
             </div>
           </div>
         </div>
@@ -320,7 +337,9 @@
           </div>
 
           <div class="data-row" [style.grid-template-columns]="calendarGridColumns">
-            <div class="row-label">Reserved</div>
+            <div class="row-label">
+              <span class="row-label-text">Reserved</span>
+            </div>
             <div class="data-cell" *ngFor="let day of days; trackBy: trackByDay" [class.today]="isToday(day)">
               <ng-container *ngIf="getStayForRoomAndDate(room.id, day) as stay">
                 <div class="stay-block" (click)="openStayDetails(stay)">
