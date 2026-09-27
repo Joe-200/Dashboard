@@ -1639,3 +1639,25 @@ textarea.form-control {
   .hpms-select-id { display: none; }
   .quick-range-row .btn-glass { flex: 1; }
 }
+/* ============================================================
+   ROOM VIEW SKELETON
+   Mimics the stacked room tables (header bar + one data row).
+============================================================ */
+.room-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.room-skeleton .calendar-skeleton {
+  margin-bottom: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.room-skeleton .skeleton-header {
+  margin-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.room-skeleton .skeleton-row {
+  margin-top: 0;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}

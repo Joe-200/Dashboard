@@ -1216,4 +1216,4 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
       el.scrollTo({ left: target, behavior: 'auto' });
     }, 0);
   }
-}Hotel ID
+}

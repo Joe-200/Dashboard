@@ -1,13 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
-import { StayServiceService } from './stay-service.service';
-
+import { SpecialOfferService } from './special-offer-service.service';
 describe('StayServiceService', () => {
-  let service: StayServiceService;
+  let service: SpecialOfferService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(StayServiceService);
+    service = TestBed.inject(SpecialOfferService);
   });
 
   it('should be created', () => {

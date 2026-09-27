@@ -40,18 +40,18 @@
     {{ error }}
   </div>
 
-<!-- LOADING — skeleton grid -->
-<div *ngIf="loading" class="offers-grid" aria-hidden="true">
-  <div class="offer-skeleton" *ngFor="let i of [1,2,3]">
-    <div class="skeleton skeleton-image"></div>
-    <div class="skeleton-body">
-      <div class="skeleton skeleton-line short"></div>
-      <div class="skeleton skeleton-line"></div>
-      <div class="skeleton skeleton-line medium"></div>
-      <div class="skeleton skeleton-line tall"></div>
+  <!-- LOADING — skeleton grid -->
+  <div *ngIf="loading" class="offers-grid" aria-hidden="true">
+    <div class="offer-skeleton" *ngFor="let i of [1,2,3]">
+      <div class="skeleton skeleton-image"></div>
+      <div class="skeleton-body">
+        <div class="skeleton skeleton-line short"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line medium"></div>
+        <div class="skeleton skeleton-line tall"></div>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- EMPTY -->
   <div
@@ -94,14 +94,14 @@
       <div class="offer-image">
 
         <img
-          *ngIf="offer.imageUrl"
-          [src]="getImageUrl(offer.imageUrl)"
+          *ngIf="hasImage(offer)"
+          [src]="getOfferImageUrl(offer)"
           [alt]="offer.title"
           loading="lazy"
         />
 
         <div
-          *ngIf="!offer.imageUrl"
+          *ngIf="!hasImage(offer)"
           class="image-placeholder"
           aria-hidden="true"
         >
@@ -145,11 +145,11 @@
             Active
           </li>
 
-          <li class="offer-tag" *ngIf="offer.imageUrl">
+          <li class="offer-tag" *ngIf="hasImage(offer)">
             With image
           </li>
 
-          <li class="offer-tag muted" *ngIf="!offer.imageUrl">
+          <li class="offer-tag muted" *ngIf="!hasImage(offer)">
             No image
           </li>
         </ul>
@@ -384,4 +384,4 @@
     </div>
 
   </div>
-</div>
+</div> 
