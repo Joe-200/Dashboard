@@ -1,290 +1,191 @@
-<div class="guests-container">
+<div class="guests-page">
 
   <!-- =========================================================
-       PAGE HEADER
+       PAGE HEADER (universal pattern — Part 6.1)
   ========================================================= -->
-  <header class="page-header">
-
-    <div class="page-title">
-      <span class="eyebrow">MANAGER · GUESTS</span>
+  <header class="page-header-block">
+    <div class="page-header-block__main">
+      <span class="eyebrow">Guests</span>
       <h1>Guests</h1>
       <p class="page-subtitle">
         Browse, search and manage every guest registered in your hotel.
       </p>
     </div>
 
-    <div class="page-actions">
-      <div class="stat-card">
-        <span class="stat-label">Registered</span>
-        <span class="stat-value">{{ totalElements | number }}</span>
-      </div>
+    <div class="page-header-block__actions">
+      <span class="count-chip">
+        <span class="count-chip__value">{{ totalElements | number }}</span>
+        <span class="count-chip__label">Total</span>
+      </span>
     </div>
   </header>
 
   <!-- =========================================================
-       UNIFIED CONTROL BAR
+       TOOLBAR (flush — no card wrapper)
   ========================================================= -->
-  <div class="control-bar">
-
-    <!-- GROUP 1: SEARCH -->
-    <div class="control-group search-group">
-      <div class="search-wrap">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
-             width="18" height="18" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          id="guest-search"
-          type="text"
-          class="form-control search-input"
-          placeholder="Search by name, email, phone…"
-          aria-label="Search guests"
-          autocomplete="off"
-          [ngModel]="searchQuery"
-          (ngModelChange)="onSearchInput($event)"
-        />
-        <button
-          *ngIf="searchQuery"
-          type="button"
-          class="search-clear"
-          (click)="clearSearch()"
-          aria-label="Clear search"
-        >×</button>
-      </div>
+  <div class="toolbar">
+    <div class="toolbar__search">
+      <svg class="toolbar__search-icon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.75"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="guest-search" type="text" class="input input--search"
+             placeholder="Search by name, email, phone…"
+             aria-label="Search guests" autocomplete="off"
+             [ngModel]="searchQuery" (ngModelChange)="onSearchInput($event)" />
+      <button *ngIf="searchQuery" type="button" class="input-clear"
+              (click)="clearSearch()" aria-label="Clear search">×</button>
     </div>
 
-    <!-- GROUP 2: FILTERS -->
-    <div class="control-group filters-group">
-      <div class="select-wrap">
-        <label for="page-size" class="control-label">Per page</label>
-        <select
-          id="page-size"
-          class="form-control"
-          [ngModel]="size"
-          (ngModelChange)="changeSize($event)"
-        >
-          <option *ngFor="let opt of pageSizeOptions" [value]="opt">
-            {{ opt }} per page
-          </option>
-        </select>
-      </div>
-    </div>
+    <div class="toolbar__controls">
+      <label for="page-size" class="control-label">Per page</label>
+      <select id="page-size" class="select"
+              [ngModel]="size" (ngModelChange)="changeSize($event)">
+        <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+      </select>
 
-    <!-- GROUP 3: ACTIONS -->
-    <div class="control-group actions-group">
-      <button
-        *ngIf="searchQuery"
-        type="button"
-        class="btn-text clear-filters"
-        (click)="clearAllFilters()"
-      >
-        Clear Search
-      </button>
-
-      <button
-        type="button"
-        class="icon-btn refresh-btn"
-        (click)="refresh()"
-        [disabled]="loading"
-        aria-label="Refresh"
-        title="Refresh"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      <button type="button" class="icon-btn" (click)="refresh()"
+              [disabled]="loading" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" width="16" height="16">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
       </button>
     </div>
   </div>
 
-  <!-- =========================================================
-       ERROR
-  ========================================================= -->
-  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="alert alert--danger" role="alert">
     {{ errorMessage }}
   </div>
 
-  <!-- LOADING — skeleton rows -->
-  <div *ngIf="loading" class="guest-skeleton-list" aria-hidden="true">
-    <div class="guest-skeleton-row" *ngFor="let i of [1,2,3,4,5]">
-      <div class="skeleton skeleton-line" style="width: 70%"></div>
-      <div class="skeleton skeleton-line" style="width: 80%"></div>
-      <div class="skeleton skeleton-line" style="width: 60%"></div>
-      <div class="skeleton skeleton-line" style="width: 50%"></div>
-      <div class="skeleton skeleton-line" style="width: 40%"></div>
-      <div class="skeleton skeleton-line" style="width: 60%"></div>
-    </div>
-  </div>
-
   <!-- =========================================================
-       EMPTY
+       TABLE (skeleton + rows)
   ========================================================= -->
-  <div
-    *ngIf="!loading && !errorMessage && guests.length === 0"
-    class="empty-state"
-  >
-    <div class="empty-icon" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
+  <div class="table" role="table">
+
+    <!-- Header -->
+    <div class="table__head" role="row">
+      <span role="columnheader">Guest</span>
+      <span role="columnheader">Email</span>
+      <span role="columnheader">Phone</span>
+      <span role="columnheader">Nationality</span>
+      <span role="columnheader" class="col--num">Stays</span>
+      <span role="columnheader">Joined</span>
     </div>
-    <h3>{{ searchQuery ? 'No matching guests' : 'No guests yet' }}</h3>
-    <p *ngIf="searchQuery">Try a different keyword.</p>
-    <p *ngIf="!searchQuery">There are no guests registered yet.</p>
-    <button
-      *ngIf="searchQuery"
-      type="button"
-      class="btn btn-primary"
-      (click)="clearAllFilters()"
-    >
-      Clear search
-    </button>
-  </div>
 
-  <!-- =========================================================
-       GUEST TABLE
-  ========================================================= -->
-  <div class="guest-list" *ngIf="!loading && guests.length > 0">
+    <!-- Loading skeleton — mirrors final geometry -->
+    <ng-container *ngIf="loading">
+      <div class="table__row table__row--skeleton" *ngFor="let i of [1,2,3,4,5]">
+        <div class="cell-name">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="cell-name__text">
+            <div class="skeleton skeleton-line" style="width: 60%"></div>
+            <div class="skeleton skeleton-line" style="width: 40%"></div>
+          </div>
+        </div>
+        <div class="skeleton skeleton-line" style="width: 70%"></div>
+        <div class="skeleton skeleton-line" style="width: 55%"></div>
+        <div class="skeleton skeleton-line" style="width: 60%"></div>
+        <div class="skeleton skeleton-line" style="width: 30%; margin-left: auto;"></div>
+        <div class="skeleton skeleton-line" style="width: 65%"></div>
+      </div>
+    </ng-container>
 
-    <!-- Header (desktop only) -->
-    <div class="guest-list-header" aria-hidden="true">
-      <span class="col col-guest">Guest</span>
-      <span class="col col-email">Email</span>
-      <span class="col col-phone">Phone</span>
-      <span class="col col-nationality">Nationality</span>
-      <span class="col col-stays col-center">Stays</span>
-      <span class="col col-joined">Joined</span>
+    <!-- Empty -->
+    <div *ngIf="!loading && !errorMessage && guests.length === 0" class="table__empty">
+      <div class="empty">
+        <svg class="empty__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <h3 class="empty__title">
+          {{ searchQuery ? 'No matching guests' : 'No guests yet' }}
+        </h3>
+        <p class="empty__lead">
+          {{ searchQuery ? 'Try a different keyword.' : 'There are no guests registered yet.' }}
+        </p>
+        <button *ngIf="searchQuery" type="button" class="btn btn-secondary"
+                (click)="clearAllFilters()">Clear search</button>
+      </div>
     </div>
 
     <!-- Rows -->
-    <article
-      class="guest-row"
-      *ngFor="let guest of guests; trackBy: trackByGuestId"
-    >
-      <!-- Guest -->
-      <div class="col col-guest">
-        <div class="guest-avatar-sm" aria-hidden="true">
-          {{ initials(guest) }}
+    <ng-container *ngIf="!loading && guests.length > 0">
+      <div class="table__row" role="row"
+           *ngFor="let guest of guests; trackBy: trackByGuestId">
+
+        <div class="cell-name" role="cell">
+          <div class="cell-name__avatar" aria-hidden="true">{{ initials(guest) }}</div>
+          <div class="cell-name__text">
+            <span class="cell-name__main">{{ fullName(guest) }}</span>
+            <span class="cell-name__meta mono">#{{ guest.id }}</span>
+          </div>
         </div>
-        <div class="guest-main">
-          <span class="guest-name">{{ fullName(guest) }}</span>
-          <span class="guest-meta">ID #{{ guest.id }}</span>
+
+        <div class="cell" role="cell" data-label="Email">
+          <span class="cell__value">{{ guest.email || '—' }}</span>
+        </div>
+
+        <div class="cell" role="cell" data-label="Phone">
+          <span class="cell__value">{{ guest.phone || '—' }}</span>
+        </div>
+
+        <div class="cell" role="cell" data-label="Nationality">
+          <span *ngIf="hasValue(guest.nationality); else noNat" class="tag">
+            {{ guest.nationality }}
+          </span>
+          <ng-template #noNat><span class="cell__value cell__value--muted">—</span></ng-template>
+        </div>
+
+        <div class="cell cell--num" role="cell" data-label="Stays">
+          <span class="num">{{ guest.totalStays }}</span>
+        </div>
+
+        <div class="cell" role="cell" data-label="Joined">
+          <span class="cell__value num">{{ guest.createdAt | date: 'mediumDate' }}</span>
         </div>
       </div>
-
-      <!-- Email -->
-      <div class="col col-email" data-label="Email">
-        <span class="cell-with-icon" [title]="guest.email || 'No email'">
-          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg"
-               width="14" height="14" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-          </svg>
-          <span class="cell-value">{{ guest.email || '—' }}</span>
-        </span>
-      </div>
-
-      <!-- Phone -->
-      <div class="col col-phone" data-label="Phone">
-        <span class="cell-with-icon" [title]="guest.phone || 'No phone'">
-          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg"
-               width="14" height="14" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path>
-          </svg>
-          <span class="cell-value">{{ guest.phone || '—' }}</span>
-        </span>
-      </div>
-
-      <!-- Nationality -->
-      <div class="col col-nationality" data-label="Nationality">
-        <span
-          class="nationality-chip"
-          *ngIf="hasValue(guest.nationality); else noNationality"
-        >
-          {{ guest.nationality }}
-        </span>
-        <ng-template #noNationality>
-          <span class="cell-value muted">—</span>
-        </ng-template>
-      </div>
-
-      <!-- Stays -->
-      <div class="col col-stays col-center" data-label="Stays">
-        <span class="stays-count">{{ guest.totalStays }}</span>
-      </div>
-
-      <!-- Joined -->
-      <div class="col col-joined" data-label="Joined">
-        <span class="cell-value">{{ guest.createdAt | date: 'mediumDate' }}</span>
-      </div>
-    </article>
+    </ng-container>
   </div>
 
   <!-- =========================================================
        PAGINATION
   ========================================================= -->
-  <div
-    class="pagination-container"
-    *ngIf="!loading && totalElements > 0"
-  >
-    <span class="pagination-label">
-      Showing <strong>{{ rangeStart }}–{{ rangeEnd }}</strong>
-      of <strong>{{ totalElements }}</strong> guests
+  <div class="pagination-bar" *ngIf="!loading && totalElements > 0">
+    <span class="pagination-bar__info">
+      Showing <strong class="num">{{ rangeStart }}–{{ rangeEnd }}</strong>
+      of <strong class="num">{{ totalElements }}</strong> guests
     </span>
 
-    <div class="pagination">
-      <button
-        type="button"
-        class="pagination-arrow"
-        (click)="previousPage()"
-        [disabled]="page === 0"
-        aria-label="Previous page"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"></polyline>
+    <nav class="pager" aria-label="Pagination">
+      <button type="button" class="pager__btn" (click)="previousPage()"
+              [disabled]="page === 0" aria-label="Previous page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             width="14" height="14" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-
-      <button
-        type="button"
-        *ngFor="let p of visiblePages"
-        [class.active]="p === page"
-        (click)="goToPage(p)"
-      >
-        {{ p + 1 }}
-      </button>
-
-      <button
-        type="button"
-        class="pagination-arrow"
-        (click)="nextPage()"
-        [disabled]="page >= totalPages - 1"
-        aria-label="Next page"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
-          <polyline points="9 18 15 12 9 6"></polyline>
+      <button type="button" *ngFor="let p of visiblePages"
+              class="pager__btn" [class.is-active]="p === page"
+              (click)="goToPage(p)">{{ p + 1 }}</button>
+      <button type="button" class="pager__btn" (click)="nextPage()"
+              [disabled]="page >= totalPages - 1" aria-label="Next page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             width="14" height="14" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
         </svg>
       </button>
-    </div>
+    </nav>
   </div>
+
 </div>

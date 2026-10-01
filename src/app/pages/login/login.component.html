@@ -1,117 +1,83 @@
-<div class="login-container">
+<div class="login-page">
   <div class="login-card">
 
-    <!-- Brand -->
-    <div class="brand">
+    <div class="login-card__brand">
       <div class="brand-mark" aria-hidden="true">H</div>
-      <div class="brand-name">Hotel Management</div>
     </div>
 
-    <!-- Header -->
-    <div class="login-header">
-      <h2>Welcome back</h2>
-      <p>Sign in to access your hotel dashboard.</p>
-    </div>
+    <header class="login-card__header">
+      <h1>Sign in to your workspace</h1>
+      <p>Access the hotel management platform.</p>
+    </header>
 
-    <!-- Form -->
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
 
-      <!-- Username -->
-      <div class="form-group">
+      <div class="field">
         <label for="username">Username</label>
-        <input
-          id="username"
-          type="text"
-          formControlName="username"
-          placeholder="Enter your username"
-          class="form-control"
-          autocomplete="username"
-          spellcheck="false"
-        />
-        <div
-          *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
-          class="error"
-        >
+        <input id="username" type="text" formControlName="username"
+               class="input" placeholder="Enter your username"
+               autocomplete="username" spellcheck="false" />
+        <p class="field__error"
+           *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
           Username is required.
-        </div>
+        </p>
       </div>
 
-      <!-- Password -->
-      <div class="form-group">
+      <div class="field">
         <label for="password">Password</label>
-
-        <div class="password-wrapper">
-          <input
-            id="password"
-            [type]="showPassword ? 'text' : 'password'"
-            formControlName="password"
-            placeholder="Enter your password"
-            class="form-control"
-            autocomplete="current-password"
-          />
-
-          <button
-            type="button"
-            class="toggle-password-btn"
-            (click)="togglePasswordVisibility()"
-            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            [attr.aria-pressed]="showPassword"
-          >
-            <svg *ngIf="!showPassword" width="18" height="18" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2"
+        <div class="input-wrap">
+          <input id="password"
+                 [type]="showPassword ? 'text' : 'password'"
+                 formControlName="password" class="input"
+                 placeholder="Enter your password"
+                 autocomplete="current-password" />
+          <button type="button" class="input-toggle"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="showPassword">
+            <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.75"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
-            <svg *ngIf="showPassword" width="18" height="18" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2"
+            <svg *ngIf="showPassword" width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.75"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68189 3.96914 7.65661 6.06 6.06M9.9 4.24C10.5883 4.0789 11.293 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2048 20.84 15.19M14.12 14.12C13.8454 14.4147 13.5141 14.6512 13.1462 14.8151C12.7782 14.9791 12.3809 15.0673 11.9781 15.0744C11.5753 15.0815 11.1752 15.0074 10.8016 14.8565C10.4281 14.7056 10.0887 14.481 9.80385 14.1962C9.51897 13.9113 9.29439 13.5719 9.14351 13.1984C8.99262 12.8248 8.91853 12.4247 8.92563 12.0219C8.93274 11.6191 9.02091 11.2218 9.18488 10.8538C9.34884 10.4859 9.58525 10.1546 9.88 9.88M1 1L23 23"/>
+              <path d="M17.94 17.94C16.23 19.243 14.15 19.965 12 20C5 20 1 12 1 12C2.24 9.68 3.97 7.66 6.06 6.06M9.9 4.24C10.59 4.08 11.29 4 12 4C19 4 23 12 23 12C22.39 13.14 21.67 14.2 20.84 15.19M14.12 14.12C13.85 14.41 13.51 14.65 13.15 14.82C12.78 14.98 12.38 15.07 11.98 15.07C11.58 15.08 11.18 15.01 10.8 14.86C10.43 14.71 10.09 14.48 9.8 14.2C9.52 13.91 9.29 13.57 9.14 13.2C8.99 12.82 8.92 12.42 8.93 12.02C8.93 11.62 9.02 11.22 9.18 10.85C9.35 10.49 9.59 10.15 9.88 9.88M1 1L23 23"/>
             </svg>
           </button>
         </div>
-
-        <div
-          *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-          class="error"
-        >
+        <p class="field__error"
+           *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
           Password is required.
-        </div>
+        </p>
       </div>
 
-      <!-- Hotel ID -->
-      <div class="form-group">
+      <div class="field">
         <label for="hotelId">Hotel ID</label>
-        <input
-          id="hotelId"
-          type="text"
-          formControlName="hotelId"
-          placeholder="e.g. grand-hotel"
-          class="form-control"
-          autocomplete="organization"
-          spellcheck="false"
-        />
-        <div
-          *ngIf="loginForm.get('hotelId')?.invalid && loginForm.get('hotelId')?.touched"
-          class="error"
-        >
+        <input id="hotelId" type="text" formControlName="hotelId"
+               class="input" placeholder="e.g. grand-hotel"
+               autocomplete="organization" spellcheck="false" />
+        <p class="field__error"
+           *ngIf="loginForm.get('hotelId')?.invalid && loginForm.get('hotelId')?.touched">
           Hotel ID is required.
-        </div>
+        </p>
       </div>
 
-      <!-- Submit -->
-      <button type="submit" [disabled]="loginForm.invalid || isLoading">
+      <button type="submit" class="submit" [disabled]="loginForm.invalid || isLoading">
         {{ isLoading ? 'Signing in…' : 'Sign in' }}
       </button>
 
-      <!-- Server error -->
-      <div *ngIf="errorMessage" class="error-message" role="alert">
+      <div *ngIf="errorMessage" class="error-banner" role="alert">
         {{ errorMessage }}
       </div>
 
     </form>
 
-    <div class="login-footer">Secure hotel management platform</div>
+    <footer class="login-card__footer">
+      Secure hotel management platform
+    </footer>
 
   </div>
 </div>
