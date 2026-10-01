@@ -1,4 +1,12 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -46,13 +54,15 @@ export interface PagedModelGuestSummaryResponse {
   templateUrl: './guests.component.html',
   styleUrl: './guests.component.css'
 })
-export class GuestsComponent implements OnInit, OnDestroy {
+export class GuestsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly apiUrl =
     `${environment.apiUrl}/api/dashboard/manager/guests`;
 
   private readonly destroy$ = new Subject<void>();
   private readonly search$ = new Subject<string>();
+
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
 
   /* ---------- state ---------- */
   guests: GuestSummaryResponse[] = [];
@@ -89,9 +99,40 @@ export class GuestsComponent implements OnInit, OnDestroy {
     this.loadGuests();
   }
 
+  /** Focus the search box as soon as the page opens so the user can type immediately. */
+  ngAfterViewInit(): void {
+    // setTimeout lets the router finish its own focus handling (e.g. the clicked nav link)
+    setTimeout(() => this.focusSearch());
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /* =========================================================
+     TYPE-ANYWHERE
+     If nothing is focused (e.g. after clicking the page background
+     or the Refresh button) and the user starts typing, send the
+     keystroke to the search box.
+  ========================================================= */
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.length !== 1) return;          // printable characters only
+
+    const active = document.activeElement as HTMLElement | null;
+    const tag = active?.tagName;
+    const isEditable =
+      tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+      !!active?.isContentEditable;
+    if (isEditable) return;
+
+    this.focusSearch();                           // the character then lands in the input
+  }
+
+  private focusSearch(): void {
+    this.searchInput?.nativeElement.focus();
   }
 
   /* =========================================================
@@ -150,6 +191,7 @@ export class GuestsComponent implements OnInit, OnDestroy {
     if (!this.searchQuery) return;
     this.searchQuery = '';
     this.search$.next('');
+    this.focusSearch();
   }
 
   clearAllFilters(): void {
@@ -167,6 +209,7 @@ export class GuestsComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     this.loadGuests();
+    this.focusSearch();
   }
 
   /* =========================================================

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Router,
@@ -7,6 +7,8 @@ import {
   RouterLinkActive
 } from '@angular/router';
 import { AuthService } from '../../auth-service.service';
+
+const SIDEBAR_STORAGE_KEY = 'lytc.sidebar.collapsed';
 
 @Component({
   selector: 'app-home',
@@ -17,6 +19,9 @@ import { AuthService } from '../../auth-service.service';
 })
 export class HomeComponent {
 
+  /** true = icons only, false = full sidebar */
+  collapsed = this.loadCollapsedState();
+
   get user() {
     return this.auth.getUser();
   }
@@ -26,8 +31,43 @@ export class HomeComponent {
     private readonly router: Router
   ) {}
 
+  toggleSidebar(): void {
+    this.collapsed = !this.collapsed;
+    this.saveCollapsedState();
+  }
+
+  /** Ctrl/⌘ + B toggles the sidebar */
+  @HostListener('window:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+      event.preventDefault();
+      this.toggleSidebar();
+    }
+  }
+
   logout(): void {
     this.auth.logout();
     this.router.navigate(['/login']);
+  }
+
+  private loadCollapsedState(): boolean {
+    try {
+      const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      /* storage unavailable — fall through to default */
+    }
+    // No saved preference: start collapsed on narrower screens
+    return typeof window !== 'undefined' && window.innerWidth <= 1024;
+  }
+
+  private saveCollapsedState(): void {
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(this.collapsed));
+    } catch {
+      /* ignore */
+    }
   }
 }

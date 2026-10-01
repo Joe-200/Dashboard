@@ -31,10 +31,11 @@
         <circle cx="11" cy="11" r="8"/>
         <line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input id="guest-search" type="text" class="input input--search"
+      <input #searchInput id="guest-search" type="text" class="input input--search"
              placeholder="Search by name, email, phone…"
              aria-label="Search guests" autocomplete="off"
-             [ngModel]="searchQuery" (ngModelChange)="onSearchInput($event)" />
+             [ngModel]="searchQuery" (ngModelChange)="onSearchInput($event)"
+             (keydown.escape)="clearSearch()" />
       <button *ngIf="searchQuery" type="button" class="input-clear"
               (click)="clearSearch()" aria-label="Clear search">×</button>
     </div>
@@ -74,9 +75,9 @@
       <span role="columnheader">Guest</span>
       <span role="columnheader">Email</span>
       <span role="columnheader">Phone</span>
-      <span role="columnheader">Nationality</span>
-      <span role="columnheader" class="col--num">Stays</span>
-      <span role="columnheader">Joined</span>
+      <span role="columnheader" class="col--center">Nationality</span>
+      <span role="columnheader" class="col--center">Stays</span>
+      <span role="columnheader" class="col--end">Joined</span>
     </div>
 
     <!-- Loading skeleton — mirrors final geometry -->
@@ -91,9 +92,9 @@
         </div>
         <div class="skeleton skeleton-line" style="width: 70%"></div>
         <div class="skeleton skeleton-line" style="width: 55%"></div>
-        <div class="skeleton skeleton-line" style="width: 60%"></div>
-        <div class="skeleton skeleton-line" style="width: 30%; margin-left: auto;"></div>
-        <div class="skeleton skeleton-line" style="width: 65%"></div>
+        <div class="skeleton skeleton-line" style="width: 60%; margin: 0 auto;"></div>
+        <div class="skeleton skeleton-line" style="width: 30%; margin: 0 auto;"></div>
+        <div class="skeleton skeleton-line" style="width: 65%; margin-left: auto;"></div>
       </div>
     </ng-container>
 
@@ -138,18 +139,18 @@
           <span class="cell__value">{{ guest.phone || '—' }}</span>
         </div>
 
-        <div class="cell" role="cell" data-label="Nationality">
+        <div class="cell cell--center" role="cell" data-label="Nationality">
           <span *ngIf="hasValue(guest.nationality); else noNat" class="tag">
             {{ guest.nationality }}
           </span>
           <ng-template #noNat><span class="cell__value cell__value--muted">—</span></ng-template>
         </div>
 
-        <div class="cell cell--num" role="cell" data-label="Stays">
+        <div class="cell cell--center" role="cell" data-label="Stays">
           <span class="num">{{ guest.totalStays }}</span>
         </div>
 
-        <div class="cell" role="cell" data-label="Joined">
+        <div class="cell cell--end" role="cell" data-label="Joined">
           <span class="cell__value num">{{ guest.createdAt | date: 'mediumDate' }}</span>
         </div>
       </div>
