@@ -1661,3 +1661,207 @@ textarea.form-control {
   margin-top: 0;
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
+
+/* ============================================================
+   LIQUID GLASS OVERRIDES
+   (append-only — sits on top of existing calendar styles)
+============================================================ */
+
+/* Header bar → frosted glass */
+.glass-header {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(255, 255, 255, 0.40) 100%
+  );
+  border-color: var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow:
+    0 8px 32px -12px rgba(31, 38, 135, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Buttons → glass */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.btn-glass:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 6px 16px -6px rgba(59, 130, 246, 0.35);
+}
+.btn-glass.primary,
+.today-btn,
+.btn-glass.success,
+.btn-glass.danger {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px -4px rgba(59, 130, 246, 0.55);
+}
+.btn-glass.primary { background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%); border-color: transparent; }
+.btn-glass.success { background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-color: transparent; }
+.btn-glass.danger { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); border-color: transparent; }
+.today-btn { background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%); border-color: transparent; }
+.match-btn { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); border-color: transparent; }
+.match-btn:hover:not(:disabled) { filter: brightness(1.05); }
+
+/* View toggle → glass segmented control */
+.view-toggle {
+  background: rgba(255, 255, 255, 0.42);
+  border-color: var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.toggle-btn.active {
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px -4px rgba(59, 130, 246, 0.55);
+}
+
+/* Category table container → glass card */
+.category-table,
+.room-table {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(255, 255, 255, 0.42) 100%
+  );
+  border-color: var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow:
+    0 12px 44px -12px rgba(31, 38, 135, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Sticky headers → frosted panel */
+.category-table-header,
+.category-info,
+.room-table-header,
+.room-header-content {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.category-info::before {
+  background: linear-gradient(180deg, #3B82F6 0%, #8B5CF6 100%);
+}
+
+/* Table header */
+.table-header,
+.header-label,
+.day-header {
+  background: rgba(255, 255, 255, 0.45);
+}
+.day-header.weekend {
+  background: rgba(148, 163, 184, 0.18);
+}
+.day-header.today {
+  background: linear-gradient(180deg, #3B82F6 0%, #6366F1 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Data cells */
+.data-cell {
+  background: rgba(255, 255, 255, 0.4);
+  border-right-color: rgba(255, 255, 255, 0.55);
+}
+.data-cell:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+.data-cell.today {
+  background: rgba(59, 130, 246, 0.10);
+}
+.data-cell.today:hover {
+  background: rgba(59, 130, 246, 0.16);
+}
+.row-label {
+  background: rgba(255, 255, 255, 0.55);
+  border-right-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.price-row .row-label,
+.price-row .data-cell {
+  background: rgba(255, 255, 255, 0.5);
+}
+.price-row .data-cell.today {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Price pill */
+.price.custom {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.20) 0%,
+    rgba(139, 92, 246, 0.16) 100%);
+  color: var(--primary-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Modals → frosted glass */
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.modal-content {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.65) 100%
+  );
+  border: 1px solid var(--glass-border-strong);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  box-shadow:
+    0 32px 80px -16px rgba(31, 38, 135, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+.form-control {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.form-control:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(59, 130, 246, 0.7);
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Stay block (occupancy) → glass chip */
+.stay-block {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.20) 0%,
+    rgba(139, 92, 246, 0.16) 100%);
+  border-left: 3px solid #3B82F6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Bulk edit bar */
+.bulk-mode-bar {
+  background: linear-gradient(135deg,
+    rgba(245, 158, 11, 0.18) 0%,
+    rgba(245, 158, 11, 0.10) 100%);
+  border-color: rgba(245, 158, 11, 0.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 8px 24px -10px rgba(217, 119, 6, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}

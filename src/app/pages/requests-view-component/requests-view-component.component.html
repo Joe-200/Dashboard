@@ -52,7 +52,6 @@
 
       <div class="toolbar-group search-group">
         <div class="search-wrapper">
-          <span class="search-icon" aria-hidden="true">⌕</span>
           <input
             type="text"
             class="form-control search-input"
@@ -130,6 +129,10 @@
           Clear
         </button>
 
+        <button type="button" class="btn-glass" (click)="openCancelConfig()">
+          Cancel Policy
+        </button>
+
         <div
           class="live-status"
           [class.connected]="liveConnected"
@@ -144,38 +147,40 @@
 
     <!-- STATE -->
     <div *ngIf="error" class="error">{{ error }}</div>
-<!-- LOADING — skeleton list -->
-<div *ngIf="loading" class="skeleton-list">
-  <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
-    <!-- Guest -->
-    <div class="skeleton-cell skeleton-guest">
-      <div class="skeleton skeleton-avatar"></div>
-      <div class="skeleton-guest-lines">
-        <div class="skeleton skeleton-line" style="width: 65%"></div>
-        <div class="skeleton skeleton-line" style="width: 90%"></div>
+    
+    <!-- LOADING — skeleton list -->
+    <div *ngIf="loading" class="skeleton-list">
+      <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
+        <!-- Guest -->
+        <div class="skeleton-cell skeleton-guest">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton-guest-lines">
+            <div class="skeleton skeleton-line" style="width: 65%"></div>
+            <div class="skeleton skeleton-line" style="width: 90%"></div>
+          </div>
+        </div>
+        <!-- Dates -->
+        <div class="skeleton-cell skeleton-dates">
+          <div class="skeleton skeleton-line" style="width: 90%"></div>
+          <div class="skeleton skeleton-line" style="width: 55%"></div>
+        </div>
+        <!-- Guests count -->
+        <div class="skeleton-cell">
+          <div class="skeleton skeleton-chip"></div>
+        </div>
+        <!-- Status -->
+        <div class="skeleton-cell">
+          <div class="skeleton skeleton-pill"></div>
+        </div>
+        <!-- Actions -->
+        <div class="skeleton-cell skeleton-actions">
+          <div class="skeleton skeleton-btn"></div>
+          <div class="skeleton skeleton-btn"></div>
+        </div>
       </div>
+      <span class="visually-hidden" role="status" aria-live="polite">Loading requests…</span>
     </div>
-    <!-- Dates -->
-    <div class="skeleton-cell skeleton-dates">
-      <div class="skeleton skeleton-line" style="width: 90%"></div>
-      <div class="skeleton skeleton-line" style="width: 55%"></div>
-    </div>
-    <!-- Guests count -->
-    <div class="skeleton-cell">
-      <div class="skeleton skeleton-chip"></div>
-    </div>
-    <!-- Status -->
-    <div class="skeleton-cell">
-      <div class="skeleton skeleton-pill"></div>
-    </div>
-    <!-- Actions -->
-    <div class="skeleton-cell skeleton-actions">
-      <div class="skeleton skeleton-btn"></div>
-      <div class="skeleton skeleton-btn"></div>
-    </div>
-  </div>
-  <span class="visually-hidden" role="status" aria-live="polite">Loading requests…</span>
-</div>
+    
     <div *ngIf="!loading && filteredRequests.length === 0" class="state-empty">
       <div class="state-empty__icon">
         <span>∅</span>
@@ -194,10 +199,10 @@
         <div class="header-actions">Actions</div>
       </div>
 
-  <!-- Requests list -->
-<div class="request-item"
-     *ngFor="let req of filteredRequests; trackBy: trackByRequestId"
-     (click)="openDetails(req)">
+      <!-- Requests list -->
+      <div class="request-item"
+           *ngFor="let req of filteredRequests; trackBy: trackByRequestId"
+           (click)="openDetails(req)">
 
         <div class="request-item-content">
 
@@ -410,38 +415,38 @@
     <!-- STATE -->
     <div *ngIf="staysError" class="error">{{ staysError }}</div>
 
-<!-- LOADING — skeleton list -->
-<div *ngIf="staysLoading" class="skeleton-list">
-  <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
-    <!-- Guest -->
-    <div class="skeleton-cell skeleton-guest">
-      <div class="skeleton skeleton-avatar"></div>
-      <div class="skeleton-guest-lines">
-        <div class="skeleton skeleton-line" style="width: 65%"></div>
-        <div class="skeleton skeleton-line" style="width: 90%"></div>
+    <!-- LOADING — skeleton list -->
+    <div *ngIf="staysLoading" class="skeleton-list">
+      <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]" aria-hidden="true">
+        <!-- Guest -->
+        <div class="skeleton-cell skeleton-guest">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton-guest-lines">
+            <div class="skeleton skeleton-line" style="width: 65%"></div>
+            <div class="skeleton skeleton-line" style="width: 90%"></div>
+          </div>
+        </div>
+        <!-- Dates -->
+        <div class="skeleton-cell skeleton-dates">
+          <div class="skeleton skeleton-line" style="width: 90%"></div>
+          <div class="skeleton skeleton-line" style="width: 55%"></div>
+        </div>
+        <!-- Room -->
+        <div class="skeleton-cell">
+          <div class="skeleton skeleton-chip"></div>
+        </div>
+        <!-- Status -->
+        <div class="skeleton-cell">
+          <div class="skeleton skeleton-pill"></div>
+        </div>
+        <!-- Actions -->
+        <div class="skeleton-cell skeleton-actions">
+          <div class="skeleton skeleton-btn"></div>
+          <div class="skeleton skeleton-btn"></div>
+        </div>
       </div>
+      <span class="visually-hidden" role="status" aria-live="polite">Loading stays…</span>
     </div>
-    <!-- Dates -->
-    <div class="skeleton-cell skeleton-dates">
-      <div class="skeleton skeleton-line" style="width: 90%"></div>
-      <div class="skeleton skeleton-line" style="width: 55%"></div>
-    </div>
-    <!-- Room -->
-    <div class="skeleton-cell">
-      <div class="skeleton skeleton-chip"></div>
-    </div>
-    <!-- Status -->
-    <div class="skeleton-cell">
-      <div class="skeleton skeleton-pill"></div>
-    </div>
-    <!-- Actions -->
-    <div class="skeleton-cell skeleton-actions">
-      <div class="skeleton skeleton-btn"></div>
-      <div class="skeleton skeleton-btn"></div>
-    </div>
-  </div>
-  <span class="visually-hidden" role="status" aria-live="polite">Loading stays…</span>
-</div>
 
     <div *ngIf="!staysLoading && filteredStays.length === 0" class="state-empty">
       <div class="state-empty__icon">
@@ -461,9 +466,9 @@
         <div class="header-actions">Actions</div>
       </div>
 
-  <div class="request-item"
-     *ngFor="let stay of filteredStays; trackBy: trackByStayId"
-     (click)="openStaySummary(stay)">
+      <div class="request-item"
+           *ngFor="let stay of filteredStays; trackBy: trackByStayId"
+           (click)="openStaySummary(stay)">
         <div class="request-item-content">
 
           <!-- GUEST -->
@@ -1143,6 +1148,59 @@
         (click)="confirmStayStatus()"
       >
         {{ stayStatusLoading ? 'Updating…' : 'Update' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CANCEL CONFIGURATION MODAL
+============================================================ -->
+<div *ngIf="showCancelConfigModal" class="modal-overlay" (click)="closeCancelConfig()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <span class="modal-eyebrow">Settings</span>
+        <h3>Cancellation Policy</h3>
+      </div>
+      <button type="button" class="close-btn" (click)="closeCancelConfig()" aria-label="Close">✕</button>
+    </div>
+
+    <p class="modal-subtitle">
+      Configure the cancellation window for reservation requests. Guests can cancel for free up to this many hours before check-in.
+    </p>
+
+    <div *ngIf="cancelConfigLoading" class="state-loading">
+      <span class="spinner"></span>
+      <span>Loading policy…</span>
+    </div>
+
+    <div *ngIf="cancelConfigError" class="error">{{ cancelConfigError }}</div>
+
+    <div class="form-group" *ngIf="!cancelConfigLoading">
+      <label for="cancellationWindowHours">Cancellation Window (Hours)</label>
+      <input
+        type="number"
+        id="cancellationWindowHours"
+        class="form-control"
+        [(ngModel)]="cancellationWindowHours"
+        min="0"
+        placeholder="e.g., 24"
+      />
+      <small class="form-helper">
+        Minimum value is 0 hours.
+      </small>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-glass" (click)="closeCancelConfig()">Cancel</button>
+      <button
+        type="button"
+        class="btn-glass primary"
+        [disabled]="cancelConfigLoading || cancellationWindowHours === null || cancellationWindowHours < 0"
+        (click)="saveCancelConfig()"
+      >
+        {{ cancelConfigLoading ? 'Saving…' : 'Save Policy' }}
       </button>
     </div>
   </div>

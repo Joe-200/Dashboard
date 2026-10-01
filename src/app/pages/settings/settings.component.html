@@ -1,0 +1,545 @@
+<div class="settings-container">
+
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <header class="glass-header">
+    <div class="header-title">
+      <span class="eyebrow">SYSTEM</span>
+      <h2>Settings</h2>
+    </div>
+
+    <div class="header-actions">
+      @if (isAdmin()) {
+        <span class="role-badge" data-role="ADMIN">
+          <span class="role-dot"></span> ADMIN
+        </span>
+      }
+    </div>
+  </header>
+
+  <!-- ============================================================
+       TABS
+  ============================================================ -->
+  <nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+
+    <!-- Users tab is only shown for non-ADMIN users -->
+    @if (!isAdmin()) {
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="activeTab() === 'users'"
+        [attr.aria-selected]="activeTab() === 'users'"
+        (click)="setTab('users')">
+        Users
+      </button>
+    }
+
+    @if (isAdmin()) {
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="activeTab() === 'tenants'"
+        [attr.aria-selected]="activeTab() === 'tenants'"
+        (click)="setTab('tenants')">
+        Hotels
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="activeTab() === 'system-users'"
+        [attr.aria-selected]="activeTab() === 'system-users'"
+        (click)="setTab('system-users')">
+        System Users
+      </button>
+    }
+  </nav>
+
+  <!-- ============================================================
+       USERS TAB  (non-ADMIN only)
+  ============================================================ -->
+  @if (activeTab() === 'users' && !isAdmin()) {
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h3>Staff Users</h3>
+          <p class="section-subtitle">Create and manage hotel staff accounts.</p>
+        </div>
+        <button type="button" class="btn-glass primary" (click)="openCreateUser()">
+          + Add User
+        </button>
+      </div>
+
+      @if (usersLoading()) {
+        <div class="loading">Loading users…</div>
+      } @else if (usersError()) {
+        <div class="error">{{ usersError() }}</div>
+      } @else if (users().length === 0) {
+        <div class="no-data">No users yet. Add your first one above.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of users(); track u.id) {
+                <tr>
+                  <td class="username-cell">{{ u.username }}</td>
+                  <td>
+                    <span class="role-badge" [attr.data-role]="u.role">{{ u.role }}</span>
+                  </td>
+                  <td class="actions-col">
+                    <button type="button" class="btn-sm" (click)="openEditUser(u)">Edit</button>
+                    <button type="button" class="btn-sm danger" (click)="askDeleteUser(u)">Delete</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (usersTotal() > usersSize()) {
+          <div class="pagination">
+            <button class="btn-sm" type="button"
+                    [disabled]="usersPage() === 0" (click)="prevUsersPage()">← Prev</button>
+            <span class="page-info">
+              Page {{ usersPage() + 1 }} of {{ totalPages(usersTotal(), usersSize()) }}
+            </span>
+            <button class="btn-sm" type="button"
+                    [disabled]="(usersPage() + 1) * usersSize() >= usersTotal()"
+                    (click)="nextUsersPage()">Next →</button>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  <!-- ============================================================
+       HOTELS / TENANTS TAB (ADMIN)
+  ============================================================ -->
+  @if (activeTab() === 'tenants' && isAdmin()) {
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h3>Hotels</h3>
+          <p class="section-subtitle">Provision and manage tenants (hotels).</p>
+        </div>
+        <button type="button" class="btn-glass primary" (click)="openCreateTenant()">
+          + Add Hotel
+        </button>
+      </div>
+
+      @if (tenantsLoading()) {
+        <div class="loading">Loading hotels…</div>
+      } @else if (tenantsError()) {
+        <div class="error">{{ tenantsError() }}</div>
+      } @else if (tenants().length === 0) {
+        <div class="no-data">No hotels provisioned yet.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>HPMS Account</th>
+                <th>Status</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of tenants(); track t.id) {
+                <tr>
+                  <td class="mono">{{ t.id }}</td>
+                  <td class="username-cell">{{ t.name }}</td>
+                  <td class="mono muted">{{ t.email || '—' }}</td>
+                  <td class="mono muted">{{ t.hpmsAccountUuid || '—' }}</td>
+                  <td>
+                    <span class="status-badge" [attr.data-status]="t.status">
+                      {{ t.status }}
+                    </span>
+                  </td>
+                  <td class="actions-col">
+                    <button type="button" class="btn-sm" (click)="openEditTenant(t)">Edit</button>
+                    <button type="button" class="btn-sm" (click)="toggleTenantStatus(t)">
+                      {{ t.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button type="button" class="btn-sm danger" (click)="askDeleteTenant(t)">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (tenantsTotal() > tenantsSize()) {
+          <div class="pagination">
+            <button class="btn-sm" type="button"
+                    [disabled]="tenantsPage() === 0" (click)="prevTenantsPage()">← Prev</button>
+            <span class="page-info">
+              Page {{ tenantsPage() + 1 }} of {{ totalPages(tenantsTotal(), tenantsSize()) }}
+            </span>
+            <button class="btn-sm" type="button"
+                    [disabled]="(tenantsPage() + 1) * tenantsSize() >= tenantsTotal()"
+                    (click)="nextTenantsPage()">Next →</button>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  <!-- ============================================================
+       SYSTEM USERS TAB (ADMIN)
+  ============================================================ -->
+  @if (activeTab() === 'system-users' && isAdmin()) {
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h3>System Users</h3>
+          <p class="section-subtitle">Platform-level ADMIN and MONITOR accounts.</p>
+        </div>
+        <button type="button" class="btn-glass primary" (click)="openCreateSystemUser()">
+          + Add System User
+        </button>
+      </div>
+
+      @if (systemUsersLoading()) {
+        <div class="loading">Loading system users…</div>
+      } @else if (systemUsersError()) {
+        <div class="error">{{ systemUsersError() }}</div>
+      } @else if (systemUsers().length === 0) {
+        <div class="no-data">No system users found.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of systemUsers(); track u.id) {
+                <tr>
+                  <td class="username-cell">{{ u.username }}</td>
+                  <td>
+                    <span class="role-badge" [attr.data-role]="u.role">{{ u.role }}</span>
+                  </td>
+                  <td class="actions-col">
+                    <button type="button" class="btn-sm danger" (click)="askDeleteSystemUser(u)">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+
+</div>
+
+<!-- ============================================================
+     USER MODAL  (non-ADMIN)
+============================================================ -->
+@if (userModalOpen()) {
+  <div class="modal-overlay" (click)="closeUserModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingUserId() ? 'Edit User' : 'Create User' }}</h3>
+        <button class="close-btn" type="button" (click)="closeUserModal()" aria-label="Close">×</button>
+      </div>
+
+      <div class="form-group">
+        <label>Username <span class="required">*</span></label>
+        <input class="form-control" type="text"
+               [ngModel]="userForm().username"
+               (ngModelChange)="updateUserForm('username', $event)"
+               placeholder="e.g. john.doe" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label>
+          Password
+          @if (!editingUserId()) { <span class="required">*</span> }
+        </label>
+        <input class="form-control" type="password"
+               [ngModel]="userForm().password"
+               (ngModelChange)="updateUserForm('password', $event)"
+               [placeholder]="editingUserId() ? 'Leave empty to keep current' : 'Min. 6 characters'"
+               autocomplete="new-password" />
+      </div>
+
+      <div class="form-group">
+        <label>Role <span class="required">*</span></label>
+        <select class="form-control"
+                [ngModel]="userForm().role"
+                (ngModelChange)="updateUserForm('role', $event)">
+          @for (r of staffRoles; track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+      </div>
+
+      @if (userFormError()) {
+        <div class="error">{{ userFormError() }}</div>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-glass" type="button" (click)="closeUserModal()"
+                [disabled]="userFormSubmitting()">Cancel</button>
+        <button class="btn-glass primary" type="button" (click)="submitUserForm()"
+                [disabled]="userFormSubmitting()">
+          {{ userFormSubmitting() ? 'Saving…' : (editingUserId() ? 'Update' : 'Create') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================================================
+     CREATE TENANT MODAL
+============================================================ -->
+@if (tenantModalOpen()) {
+  <div class="modal-overlay" (click)="closeTenantModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Hotel</h3>
+        <button class="close-btn" type="button" (click)="closeTenantModal()" aria-label="Close">×</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Hotel ID <span class="required">*</span></label>
+          <input class="form-control" type="text"
+                 [ngModel]="tenantForm().id"
+                 (ngModelChange)="updateTenantForm('id', $event)"
+                 placeholder="e.g. grand_cairo" />
+        </div>
+        <div class="form-group">
+          <label>Schema Name <span class="required">*</span></label>
+          <input class="form-control" type="text"
+                 [ngModel]="tenantForm().schemaName"
+                 (ngModelChange)="updateTenantForm('schemaName', $event)"
+                 placeholder="e.g. grand_cairo_schema" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Display Name <span class="required">*</span></label>
+        <input class="form-control" type="text"
+               [ngModel]="tenantForm().name"
+               (ngModelChange)="updateTenantForm('name', $event)"
+               placeholder="Grand Cairo Hotel" />
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input class="form-control" type="email"
+               [ngModel]="tenantForm().email"
+               (ngModelChange)="updateTenantForm('email', $event)"
+               placeholder="contact@hotel.com" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Timezone <span class="required">*</span></label>
+          <input class="form-control" type="text"
+                 [ngModel]="tenantForm().timezone"
+                 (ngModelChange)="updateTenantForm('timezone', $event)"
+                 placeholder="e.g. Africa/Cairo" />
+        </div>
+        <div class="form-group">
+          <label>HPMS Account UUID</label>
+          <input class="form-control" type="text"
+                 [ngModel]="tenantForm().hpmsAccountUuid"
+                 (ngModelChange)="updateTenantForm('hpmsAccountUuid', $event)"
+                 placeholder="optional" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Manager Username <span class="required">*</span></label>
+          <input class="form-control" type="text"
+                 [ngModel]="tenantForm().managerUsername"
+                 (ngModelChange)="updateTenantForm('managerUsername', $event)"
+                 autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Manager Password <span class="required">*</span></label>
+          <input class="form-control" type="password"
+                 [ngModel]="tenantForm().managerPassword"
+                 (ngModelChange)="updateTenantForm('managerPassword', $event)"
+                 autocomplete="new-password" />
+        </div>
+      </div>
+
+      @if (tenantFormError()) {
+        <div class="error">{{ tenantFormError() }}</div>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-glass" type="button" (click)="closeTenantModal()"
+                [disabled]="tenantFormSubmitting()">Cancel</button>
+        <button class="btn-glass primary" type="button" (click)="submitTenantForm()"
+                [disabled]="tenantFormSubmitting()">
+          {{ tenantFormSubmitting() ? 'Creating…' : 'Create Hotel' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================================================
+     EDIT TENANT MODAL (email + hpms account)
+============================================================ -->
+@if (editTenantModalOpen()) {
+  <div class="modal-overlay" (click)="closeEditTenantModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Edit Hotel</h3>
+        <button class="close-btn" type="button" (click)="closeEditTenantModal()" aria-label="Close">×</button>
+      </div>
+
+      @if (editingTenant(); as t) {
+        <p class="delete-lead">
+          Updating <strong>{{ t.name }}</strong>
+          <span class="muted"> ({{ t.id }})</span>
+        </p>
+      }
+
+      <div class="form-group">
+        <label>Email</label>
+        <input class="form-control" type="email"
+               [ngModel]="editTenantForm().email"
+               (ngModelChange)="updateEditTenantForm('email', $event)"
+               placeholder="contact@hotel.com" />
+      </div>
+
+      <div class="form-group">
+        <label>HPMS Account UUID</label>
+        <input class="form-control" type="text"
+               [ngModel]="editTenantForm().hpmsAccountUuid"
+               (ngModelChange)="updateEditTenantForm('hpmsAccountUuid', $event)"
+               placeholder="e.g. 5c0f2c40-..." />
+        <p class="reset-hint">Leave as-is to keep the current account UUID.</p>
+      </div>
+
+      @if (editTenantFormError()) {
+        <div class="error">{{ editTenantFormError() }}</div>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-glass" type="button" (click)="closeEditTenantModal()"
+                [disabled]="editTenantFormSubmitting()">Cancel</button>
+        <button class="btn-glass primary" type="button" (click)="submitEditTenantForm()"
+                [disabled]="editTenantFormSubmitting()">
+          {{ editTenantFormSubmitting() ? 'Saving…' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================================================
+     SYSTEM USER MODAL
+============================================================ -->
+@if (systemUserModalOpen()) {
+  <div class="modal-overlay" (click)="closeSystemUserModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create System User</h3>
+        <button class="close-btn" type="button" (click)="closeSystemUserModal()" aria-label="Close">×</button>
+      </div>
+
+      <div class="form-group">
+        <label>Username <span class="required">*</span></label>
+        <input class="form-control" type="text"
+               [ngModel]="systemUserForm().username"
+               (ngModelChange)="updateSystemUserForm('username', $event)"
+               autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label>Password <span class="required">*</span></label>
+        <input class="form-control" type="password"
+               [ngModel]="systemUserForm().password"
+               (ngModelChange)="updateSystemUserForm('password', $event)"
+               autocomplete="new-password" />
+      </div>
+
+      <div class="form-group">
+        <label>Role <span class="required">*</span></label>
+        <select class="form-control"
+                [ngModel]="systemUserForm().role"
+                (ngModelChange)="updateSystemUserForm('role', $event)">
+          @for (r of systemRoles; track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+      </div>
+
+      @if (systemUserFormError()) {
+        <div class="error">{{ systemUserFormError() }}</div>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-glass" type="button" (click)="closeSystemUserModal()"
+                [disabled]="systemUserFormSubmitting()">Cancel</button>
+        <button class="btn-glass primary" type="button" (click)="submitSystemUserForm()"
+                [disabled]="systemUserFormSubmitting()">
+          {{ systemUserFormSubmitting() ? 'Creating…' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================================================
+     DELETE CONFIRMATION
+============================================================ -->
+@if (deleteConfirm(); as target) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirm Deletion</h3>
+        <button class="close-btn" type="button" (click)="cancelDelete()" aria-label="Close">×</button>
+      </div>
+
+      <p class="delete-lead">
+        Are you sure you want to delete
+        <strong>{{ target.label }}</strong>?
+        This action cannot be undone.
+      </p>
+
+      @if (deleteError()) {
+        <div class="error">{{ deleteError() }}</div>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-glass" type="button" (click)="cancelDelete()"
+                [disabled]="deleteSubmitting()">Cancel</button>
+        <button class="btn-glass danger" type="button" (click)="confirmDelete()"
+                [disabled]="deleteSubmitting()">
+          {{ deleteSubmitting() ? 'Deleting…' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

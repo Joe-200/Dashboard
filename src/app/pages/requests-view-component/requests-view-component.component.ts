@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { debounceTime, Subject } from 'rxjs';
 
 import {
@@ -160,6 +160,14 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   cancelLoading = false;
 
   // ============================================================
+  // CANCEL CONFIGURATION
+  // ============================================================
+  showCancelConfigModal = false;
+  cancelConfigLoading = false;
+  cancelConfigError = '';
+  cancellationWindowHours: number | null = null;
+
+  // ============================================================
   // STAYS — STATE
   // ============================================================
   stays: StayDetailsExt[] = [];
@@ -213,19 +221,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   // ============================================================
   // STAYS — FILTERED GETTER
   // ============================================================
-
-    // ============================================================
-  // TRACKBY — significant perf win on large lists
-  // ============================================================
-  trackByRequestId(_index: number, req: ReservationRequestExt): number {
-    return req.id;
-  }
-  trackByStayId(_index: number, stay: StayDetailsExt): number {
-    return stay.stayId;
-  }
-  trackByIndex(index: number): number {
-    return index;
-  }
   get filteredStays(): StayDetailsExt[] {
     const term = this.staysSearchTerm.trim().toLowerCase();
     if (!term) return this.stays;
@@ -240,13 +235,27 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // TRACKBY — significant perf win on large lists
+  // ============================================================
+  trackByRequestId(_index: number, req: ReservationRequestExt): number {
+    return req.id;
+  }
+  trackByStayId(_index: number, stay: StayDetailsExt): number {
+    return stay.stayId;
+  }
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  // ============================================================
   // CONSTRUCTOR
   // ============================================================
   constructor(
     private reservationService: ReservationRequestService,
     private roomService: RoomService,
     private stayService: StayService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   // ============================================================
@@ -416,7 +425,8 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
       },
 
       onmessage: (event: EventSourceMessage) => {
-        this.handleLiveEvent(event);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this as any).handleLiveEvent(event);
       },
 
       onclose: () => {
@@ -715,6 +725,53 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
         this.error =
           'Failed to cancel reservation: ' +
           (err.error?.message || err.message);
+      }
+    });
+  }
+
+  // ============================================================
+  // CANCEL CONFIGURATION
+  // ============================================================
+  openCancelConfig(): void {
+    this.showCancelConfigModal = true;
+    this.cancelConfigLoading = true;
+    this.cancelConfigError = '';
+    
+    this.http.get<any>(`${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`).subscribe({
+      next: (data) => {
+        this.cancellationWindowHours = data.cancellationWindowHours ?? 0;
+        this.cancelConfigLoading = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.cancelConfigError = 'Failed to load cancellation policy: ' + (err.error?.message || err.message);
+        this.cancelConfigLoading = false;
+      }
+    });
+  }
+
+  closeCancelConfig(): void {
+    this.showCancelConfigModal = false;
+    this.cancellationWindowHours = null;
+    this.cancelConfigError = '';
+  }
+
+  saveCancelConfig(): void {
+    if (this.cancellationWindowHours === null || this.cancellationWindowHours < 0) return;
+    
+    this.cancelConfigLoading = true;
+    this.cancelConfigError = '';
+    
+    this.http.put<any>(
+      `${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`,
+      { cancellationWindowHours: this.cancellationWindowHours }
+    ).subscribe({
+      next: () => {
+        this.cancelConfigLoading = false;
+        this.closeCancelConfig();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.cancelConfigError = 'Failed to save cancellation policy: ' + (err.error?.message || err.message);
+        this.cancelConfigLoading = false;
       }
     });
   }

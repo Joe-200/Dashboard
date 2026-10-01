@@ -8,6 +8,7 @@ import { AiComponent } from './pages/ai-component/ai-component.component';
 import { CalendarComponent } from './pages/calendar-component/calendar-component.component';
 import { RequestsViewComponent } from './pages/requests-view-component/requests-view-component.component';
 import { GuestsComponent } from './pages/guests/guests.component';
+import { SettingsComponent } from './pages/settings/settings.component';
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
@@ -21,7 +22,8 @@ export const routes: Routes = [
       { path: '', redirectTo: 'rooms', pathMatch: 'full' },
       { path: 'calendar', component: CalendarComponent },
       { path: 'reservations' , component:RequestsViewComponent},
-      { path: 'guests' , component:GuestsComponent}
+      { path: 'guests' , component:GuestsComponent},
+      { path: 'settings' , component:SettingsComponent}
     ]
   },
   { path: '**', redirectTo: '/login' }
