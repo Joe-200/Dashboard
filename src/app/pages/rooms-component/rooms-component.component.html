@@ -1,17 +1,49 @@
 <div class="rooms-page">
 
+  <!-- ============================================================
+       PAGE HEADER
+  ============================================================ -->
   <header class="page-header-block">
     <div class="page-header-block__main">
       <span class="eyebrow">Front Desk</span>
       <h1>Rooms</h1>
-      <p class="page-subtitle">Manage rooms, availability and room information.</p>
+      <p class="page-subtitle">
+        Manage room types, rooms, availability and room information.
+      </p>
     </div>
 
     <div class="page-header-block__actions">
-      <button type="button" class="btn btn-secondary" (click)="openCreateCategoryModal()">
-        Manage categories
+      <div class="segmented" role="tablist" aria-label="View">
+        <button type="button" role="tab" class="segmented__btn"
+                [class.is-active]="activeTab === 'categories'"
+                [attr.aria-selected]="activeTab === 'categories'"
+                (click)="setTab('categories')">
+          <span>Room types</span>
+          <span class="segmented__count" *ngIf="categories.length > 0">{{ categories.length }}</span>
+        </button>
+
+        <button type="button" role="tab" class="segmented__btn"
+                [class.is-active]="activeTab === 'rooms'"
+                [attr.aria-selected]="activeTab === 'rooms'"
+                (click)="setTab('rooms')">
+          <span>Rooms</span>
+          <span class="segmented__count" *ngIf="totalElements > 0">{{ totalElements }}</span>
+        </button>
+      </div>
+
+      <button *ngIf="activeTab === 'categories'" type="button"
+              class="btn btn-primary" (click)="openCreateCategoryModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             width="14" height="14" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add room type
       </button>
-      <button type="button" class="btn btn-primary" (click)="openCreateRoomModal()">
+
+      <button *ngIf="activeTab === 'rooms'" type="button"
+              class="btn btn-primary" (click)="openCreateRoomModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
              width="14" height="14" aria-hidden="true">
@@ -23,242 +55,426 @@
     </div>
   </header>
 
-  <div *ngIf="error" class="alert alert--danger" role="alert">{{ error }}</div>
+  <!-- ============================================================
+       ROOM TYPES TAB
+  ============================================================ -->
+  <ng-container *ngIf="activeTab === 'categories'">
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="toolbar__search">
-      <svg class="toolbar__search-icon" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.75"
+    <div *ngIf="categoriesError" class="alert alert--danger" role="alert">
+      {{ categoriesError }}
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar__search">
+        <svg class="toolbar__search-icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.75"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input #categorySearchInput id="category-search" type="text"
+               class="input input--search"
+               placeholder="Search room types, view, bed type…"
+               aria-label="Search room types"
+               [(ngModel)]="categorySearchTerm"
+               (input)="onCategorySearchChange()" />
+        <button *ngIf="categorySearchTerm" type="button" class="input-clear"
+                (click)="clearCategorySearch()" aria-label="Clear search">×</button>
+      </div>
+
+      <div class="toolbar__actions">
+        <button type="button" class="icon-btn" [disabled]="categoriesLoading"
+                (click)="loadCategories()" title="Refresh" aria-label="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+               width="16" height="16" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="categoriesLoading" class="grid grid--rooms" aria-hidden="true">
+      <div class="category-card category-card--skeleton" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="category-card__image skeleton"></div>
+        <div class="category-card__body">
+          <div class="skeleton skeleton-line" style="width: 40%"></div>
+          <div class="skeleton skeleton-line" style="width: 70%"></div>
+          <div class="skeleton skeleton-line" style="width: 55%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!categoriesLoading && filteredCategories.length === 0" class="empty-block">
+      <svg class="empty-block__icon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
       </svg>
-      <input id="room-search" type="text" class="input input--search"
-             placeholder="Search rooms, categories, floor…"
-             aria-label="Search rooms"
-             [(ngModel)]="searchTerm" (input)="onSearchChange()" />
-      <button *ngIf="searchTerm" type="button" class="input-clear"
-              (click)="clearSearch()" aria-label="Clear search">×</button>
-    </div>
-
-    <div class="toolbar__filters">
-      <div class="field-inline">
-        <label for="status-filter">Status</label>
-        <select id="status-filter" class="select"
-                [(ngModel)]="filterStatus" (change)="onFilterChange()">
-          <option value="">All</option>
-          <option value="AVAILABLE">Available</option>
-          <option value="OCCUPIED">Occupied</option>
-          <option value="CLEANING">Cleaning</option>
-          <option value="MAINTENANCE">Maintenance</option>
-        </select>
-      </div>
-      <div class="field-inline">
-        <label for="floor-filter">Floor</label>
-        <input id="floor-filter" type="number" class="input"
-               placeholder="All floors"
-               [(ngModel)]="filterFloor" (input)="onFilterChange()" />
-      </div>
-    </div>
-
-    <div class="toolbar__actions">
-      <button *ngIf="searchTerm || filterStatus || filterFloor"
-              type="button" class="btn btn-ghost" (click)="clearFilters()">
-        Clear filters
+      <h3 class="empty-block__title">
+        {{ categorySearchTerm ? 'No matching room types' : 'No room types yet' }}
+      </h3>
+      <p class="empty-block__lead">
+        {{ categorySearchTerm ? 'Try a different search.' : 'Create a new room type to get started.' }}
+      </p>
+      <button class="btn btn-primary" type="button" (click)="openCreateCategoryModal()">
+        Add room type
       </button>
     </div>
-  </div>
 
-  <!-- Skeleton grid -->
-  <div *ngIf="loading" class="grid grid--rooms" aria-hidden="true">
-    <div class="room-card room-card--skeleton" *ngFor="let i of [1,2,3,4,5,6]">
-      <div class="room-card__image skeleton"></div>
-      <div class="room-card__body">
-        <div class="skeleton skeleton-line" style="width: 40%"></div>
-        <div class="skeleton skeleton-line" style="width: 70%"></div>
-        <div class="skeleton skeleton-line" style="width: 55%"></div>
+    <div *ngIf="!categoriesLoading && filteredCategories.length > 0" class="results-bar">
+      <span class="results-bar__count">
+        Showing <strong class="num">{{ filteredCategories.length }}</strong>
+        {{ filteredCategories.length === 1 ? 'room type' : 'room types' }}
+        <span *ngIf="categorySearchTerm" class="results-bar__filtered">(filtered)</span>
+      </span>
+    </div>
+
+    <div *ngIf="!categoriesLoading && filteredCategories.length > 0" class="grid grid--rooms">
+      <article class="category-card"
+               *ngFor="let cat of filteredCategories; trackBy: trackByCategoryId"
+               role="button" tabindex="0"
+               (click)="openEditCategoryModal(cat)">
+
+        <div class="category-card__image">
+          <img *ngIf="cat.imageUrl" [src]="cat.imageUrl"
+               [alt]="cat.name" loading="lazy" />
+          <div *ngIf="!cat.imageUrl" class="category-card__image-placeholder" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+                 width="32" height="32">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="category-card__body">
+          <div class="category-card__title-row">
+            <span class="badge badge-info" *ngIf="getViewLabel(cat.viewType)">
+              {{ getViewLabel(cat.viewType) }}
+            </span>
+            <button type="button" class="icon-btn icon-btn--sm"
+                    aria-label="Edit room type" title="Edit room type"
+                    (click)="$event.stopPropagation(); openEditCategoryModal(cat)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="category-card__name">{{ cat.name }}</div>
+
+          <p class="category-card__desc">
+            {{ cat.description || 'No description available.' }}
+          </p>
+
+          <ul class="category-card__amenities" aria-label="Room type features">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+                <path d="M2 15h20"/>
+                <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+                <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+              </svg>
+              <span class="num">{{ cat.numBeds }}</span>
+              <ng-container *ngIf="getBedTypeLabel(cat.bedType)">
+                · {{ getBedTypeLabel(cat.bedType) }}
+              </ng-container>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span class="num">
+                {{ cat.maxAdults }}<ng-container *ngIf="cat.maxKids > 0">+{{ cat.maxKids }}</ng-container>
+              </span>
+            </li>
+            <li *ngIf="cat.hasWifi">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+              <span>Wi-Fi</span>
+            </li>
+            <li *ngIf="cat.numTvs > 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                <polyline points="17 2 12 7 7 2"/>
+              </svg>
+              <span class="num">{{ cat.numTvs }}</span>
+            </li>
+          </ul>
+
+          <div class="category-card__footer">
+            <div class="price">
+              <strong class="num">{{ cat.price | number:'1.0-0' }}</strong>
+              <span>SAR / night</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </ng-container>
+
+  <!-- ============================================================
+       ROOMS TAB
+  ============================================================ -->
+  <ng-container *ngIf="activeTab === 'rooms'">
+
+    <div *ngIf="error" class="alert alert--danger" role="alert">{{ error }}</div>
+
+    <div class="toolbar">
+      <div class="toolbar__search">
+        <svg class="toolbar__search-icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.75"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input #roomSearchInput id="room-search" type="text" class="input input--search"
+               placeholder="Search rooms, categories, floor…"
+               aria-label="Search rooms"
+               [(ngModel)]="searchTerm" (input)="onSearchChange()" />
+        <button *ngIf="searchTerm" type="button" class="input-clear"
+                (click)="clearSearch()" aria-label="Clear search">×</button>
+      </div>
+
+      <div class="toolbar__filters">
+        <div class="field-inline">
+          <label for="status-filter">Status</label>
+          <select id="status-filter" class="select"
+                  [(ngModel)]="filterStatus" (change)="onFilterChange()">
+            <option value="">All</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="OCCUPIED">Occupied</option>
+            <option value="CLEANING">Cleaning</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+
+        <div class="field-inline">
+          <label for="floor-filter">Floor</label>
+          <input id="floor-filter" type="number" class="input"
+                 placeholder="All floors"
+                 [(ngModel)]="filterFloor" (input)="onFilterChange()" />
+        </div>
+      </div>
+
+      <div class="toolbar__actions">
+        <button *ngIf="searchTerm || filterStatus || filterFloor"
+                type="button" class="btn btn-ghost" (click)="clearFilters()">
+          Clear filters
+        </button>
       </div>
     </div>
-  </div>
 
-  <!-- Empty -->
-  <div *ngIf="!loading && filteredRooms.length === 0" class="empty-block">
-    <svg class="empty-block__icon" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="1.5"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
-      <path d="M2 15h20"/>
-      <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
-      <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
-    </svg>
-    <h3 class="empty-block__title">{{ searchTerm ? 'No matching rooms' : 'No rooms yet' }}</h3>
-    <p class="empty-block__lead">
-      {{ searchTerm ? 'Try a different search.' : 'Add a new room to get started.' }}
-    </p>
-    <button class="btn btn-primary" type="button" (click)="openCreateRoomModal()">Add room</button>
-  </div>
-
-  <!-- Results header -->
-  <div *ngIf="!loading && filteredRooms.length > 0" class="results-bar">
-    <span class="results-bar__count">
-      Showing <strong class="num">{{ filteredRooms.length }}</strong>
-      {{ filteredRooms.length === 1 ? 'room' : 'rooms' }}
-      <span *ngIf="searchTerm || filterStatus || filterFloor" class="results-bar__filtered">(filtered)</span>
-    </span>
-  </div>
-
-  <!-- Grid -->
-  <div *ngIf="!loading && filteredRooms.length > 0" class="grid grid--rooms">
-    <article class="room-card" *ngFor="let room of filteredRooms; trackBy: trackByRoomId">
-
-      <div class="room-card__image">
-        <img *ngIf="room.imageUrl" [src]="room.imageUrl"
-             [alt]="'Room ' + room.roomNumber" loading="lazy" />
-        <div *ngIf="!room.imageUrl" class="room-card__image-placeholder" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
-               width="32" height="32">
-            <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
-            <path d="M2 15h20"/>
-            <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
-            <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
-          </svg>
+    <div *ngIf="loading" class="grid grid--rooms" aria-hidden="true">
+      <div class="room-card room-card--skeleton" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="room-card__image skeleton"></div>
+        <div class="room-card__body">
+          <div class="skeleton skeleton-line" style="width: 40%"></div>
+          <div class="skeleton skeleton-line" style="width: 70%"></div>
+          <div class="skeleton skeleton-line" style="width: 55%"></div>
         </div>
       </div>
+    </div>
 
-      <div class="room-card__body">
-        <div class="room-card__title-row">
-          <span class="room-chip mono">#{{ room.roomNumber }}</span>
-          <span class="badge"
-                [class.badge-success]="room.status === 'AVAILABLE'"
-                [class.badge-danger]="room.status === 'OCCUPIED'"
-                [class.badge-info]="room.status === 'CLEANING'"
-                [class.badge-warning]="room.status === 'MAINTENANCE'">
-            {{ getStatusLabel(room.status) }}
-          </span>
-          <button type="button" class="icon-btn icon-btn--sm"
-                  aria-label="Edit room" title="Edit room"
-                  (click)="openEditRoomModal(room)">
+    <div *ngIf="!loading && filteredRooms.length === 0" class="empty-block">
+      <svg class="empty-block__icon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+        <path d="M2 15h20"/>
+        <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+        <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+      </svg>
+      <h3 class="empty-block__title">{{ searchTerm ? 'No matching rooms' : 'No rooms yet' }}</h3>
+      <p class="empty-block__lead">
+        {{ searchTerm ? 'Try a different search.' : 'Add a new room to get started.' }}
+      </p>
+      <button class="btn btn-primary" type="button" (click)="openCreateRoomModal()">Add room</button>
+    </div>
+
+    <div *ngIf="!loading && filteredRooms.length > 0" class="results-bar">
+      <span class="results-bar__count">
+        Showing <strong class="num">{{ filteredRooms.length }}</strong>
+        {{ filteredRooms.length === 1 ? 'room' : 'rooms' }}
+        <span *ngIf="searchTerm || filterStatus || filterFloor" class="results-bar__filtered">(filtered)</span>
+      </span>
+    </div>
+
+    <div *ngIf="!loading && filteredRooms.length > 0" class="grid grid--rooms">
+      <article class="room-card" *ngFor="let room of filteredRooms; trackBy: trackByRoomId">
+
+        <div class="room-card__image">
+          <img *ngIf="room.imageUrl" [src]="room.imageUrl"
+               [alt]="'Room ' + room.roomNumber" loading="lazy" />
+          <div *ngIf="!room.imageUrl" class="room-card__image-placeholder" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="room-card__subtitle">
-          Floor <span class="num">{{ room.floor }}</span>
-          <span *ngIf="room.categoryName"> · {{ room.categoryName }}</span>
-        </div>
-
-        <p class="room-card__desc">{{ room.description || 'No description available.' }}</p>
-
-        <ul class="room-card__amenities" aria-label="Amenities">
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
+                 stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+                 width="32" height="32">
               <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
               <path d="M2 15h20"/>
               <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
               <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
             </svg>
-            <span class="num">{{ room.numBeds }}</span>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <span class="num">
-              {{ room.maxAdults }}<ng-container *ngIf="room.maxKids > 0">+{{ room.maxKids }}</ng-container>
-            </span>
-          </li>
-          <li *ngIf="room.hasWifi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
-              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-              <line x1="12" y1="20" x2="12.01" y2="20"/>
-            </svg>
-            <span>Wi-Fi</span>
-          </li>
-          <li *ngIf="room.numTvs > 0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
-              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-              <polyline points="17 2 12 7 7 2"/>
-            </svg>
-            <span class="num">{{ room.numTvs }}</span>
-          </li>
-          <li *ngIf="getViewLabel(room.viewType)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 width="14" height="14" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>{{ getViewLabel(room.viewType) }}</span>
-          </li>
-        </ul>
-
-        <div class="room-card__footer">
-          <div class="price">
-            <strong class="num">{{ room.price | number:'1.0-0' }}</strong>
-            <span>SAR / night</span>
           </div>
         </div>
-      </div>
-    </article>
-  </div>
 
-  <!-- Pagination -->
-  <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
-    <span class="pagination-bar__info">
-      Page <strong class="num">{{ currentPage + 1 }}</strong>
-      of <strong class="num">{{ totalPages }}</strong>
-    </span>
-    <nav class="pager" aria-label="Pagination">
-      <button type="button" class="pager__btn"
-              [disabled]="currentPage === 0"
-              (click)="onPageChange(currentPage - 1)" aria-label="Previous page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-             width="14" height="14" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <button type="button" class="pager__btn"
-              *ngFor="let p of [].constructor(totalPages); let i = index"
-              [class.is-active]="i === currentPage"
-              (click)="onPageChange(i)">{{ i + 1 }}</button>
-      <button type="button" class="pager__btn"
-              [disabled]="currentPage === totalPages - 1"
-              (click)="onPageChange(currentPage + 1)" aria-label="Next page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-             width="14" height="14" aria-hidden="true">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-    </nav>
-  </div>
+        <div class="room-card__body">
+          <div class="room-card__title-row">
+            <span class="room-chip mono">#{{ room.roomNumber }}</span>
+            <span class="badge"
+                  [class.badge-success]="room.status === 'AVAILABLE'"
+                  [class.badge-danger]="room.status === 'OCCUPIED'"
+                  [class.badge-info]="room.status === 'CLEANING'"
+                  [class.badge-warning]="room.status === 'MAINTENANCE'">
+              {{ getStatusLabel(room.status) }}
+            </span>
+            <button type="button" class="icon-btn icon-btn--sm"
+                    aria-label="Edit room" title="Edit room"
+                    (click)="openEditRoomModal(room)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="room-card__subtitle">
+            Floor <span class="num">{{ room.floor }}</span>
+            <span *ngIf="room.categoryName"> · {{ room.categoryName }}</span>
+          </div>
+
+          <p class="room-card__desc">{{ room.description || 'No description available.' }}</p>
+
+          <ul class="room-card__amenities" aria-label="Amenities">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>
+                <path d="M2 15h20"/>
+                <path d="M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+                <path d="M12 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+              </svg>
+              <span class="num">{{ room.numBeds }}</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span class="num">
+                {{ room.maxAdults }}<ng-container *ngIf="room.maxKids > 0">+{{ room.maxKids }}</ng-container>
+              </span>
+            </li>
+            <li *ngIf="room.hasWifi">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+              <span>Wi-Fi</span>
+            </li>
+            <li *ngIf="room.numTvs > 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                <polyline points="17 2 12 7 7 2"/>
+              </svg>
+              <span class="num">{{ room.numTvs }}</span>
+            </li>
+            <li *ngIf="getViewLabel(room.viewType)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                   width="14" height="14" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>{{ getViewLabel(room.viewType) }}</span>
+            </li>
+          </ul>
+
+          <div class="room-card__footer">
+            <div class="price">
+              <strong class="num">{{ room.price | number:'1.0-0' }}</strong>
+              <span>SAR / night</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
+      <span class="pagination-bar__info">
+        Page <strong class="num">{{ currentPage + 1 }}</strong>
+        of <strong class="num">{{ totalPages }}</strong>
+      </span>
+      <nav class="pager" aria-label="Pagination">
+        <button type="button" class="pager__btn"
+                [disabled]="currentPage === 0"
+                (click)="onPageChange(currentPage - 1)" aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               width="14" height="14" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <button type="button" class="pager__btn"
+                *ngFor="let p of [].constructor(totalPages); let i = index"
+                [class.is-active]="i === currentPage"
+                (click)="onPageChange(i)">{{ i + 1 }}</button>
+        <button type="button" class="pager__btn"
+                [disabled]="currentPage === totalPages - 1"
+                (click)="onPageChange(currentPage + 1)" aria-label="Next page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               width="14" height="14" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </ng-container>
 </div>
 
 
 <!-- ============================================================
-     ROOM MODAL
+     ROOM MODAL  — two-column, wide
 ============================================================ -->
 <div *ngIf="showRoomModal" class="modal-backdrop" (click)="closeRoomModal()">
-  <div class="modal modal--lg" role="dialog" aria-modal="true"
+  <div class="modal modal--room" role="dialog" aria-modal="true"
        (click)="$event.stopPropagation()">
 
     <header class="modal__header">
@@ -269,8 +485,10 @@
       <button type="button" class="modal__close" (click)="closeRoomModal()" aria-label="Close">×</button>
     </header>
 
-    <div class="modal__body">
-      <form [formGroup]="roomForm" (ngSubmit)="saveRoom()">
+    <form [formGroup]="roomForm" (ngSubmit)="saveRoom()" class="modal-form-grid">
+
+      <!-- LEFT COLUMN: fields -->
+      <div class="modal-form-grid__col">
 
         <div class="form-grid-2">
           <div class="form-field">
@@ -299,27 +517,32 @@
         <div class="form-grid-2">
           <div class="form-field">
             <label for="room-floor">Floor <span class="req">*</span></label>
-            <input id="room-floor" type="number" class="input" formControlName="floor" min="1" />
+            <input id="room-floor" type="number" class="input"
+                   formControlName="floor" min="1" />
+          </div>
+
+          <div class="form-field" *ngIf="isEditRoom">
+            <label for="room-status">Status</label>
+            <select id="room-status" class="select select--full" formControlName="status">
+              <option value="AVAILABLE">Available</option>
+              <option value="OCCUPIED">Occupied</option>
+              <option value="CLEANING">Cleaning</option>
+              <option value="MAINTENANCE">Maintenance</option>
+            </select>
           </div>
         </div>
 
         <div class="form-field">
           <label for="room-description">Description</label>
           <textarea id="room-description" class="input textarea"
-                    formControlName="description" rows="4"
+                    formControlName="description" rows="5"
                     placeholder="Describe the room…"></textarea>
         </div>
 
-        <div class="form-field" *ngIf="isEditRoom">
-          <label for="room-status">Status</label>
-          <select id="room-status" class="select select--full" formControlName="status">
-            <option value="AVAILABLE">Available</option>
-            <option value="OCCUPIED">Occupied</option>
-            <option value="CLEANING">Cleaning</option>
-            <option value="MAINTENANCE">Maintenance</option>
-          </select>
-        </div>
+      </div>
 
+      <!-- RIGHT COLUMN: images -->
+      <div class="modal-form-grid__col">
         <div class="form-field">
           <label>Room images</label>
           <p class="form-helper">Max 5 images · JPG, PNG, WebP · Auto-compressed.</p>
@@ -374,275 +597,214 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <footer class="modal__actions">
-          <button type="button" class="btn btn-secondary" (click)="closeRoomModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary"
-                  [disabled]="roomForm.invalid || loading || imageProcessing">
-            {{ loading ? 'Saving…' : (isEditRoom ? 'Save changes' : 'Create room') }}
-          </button>
-        </footer>
-      </form>
-    </div>
+      <!-- FOOTER: spans both columns -->
+      <footer class="modal__actions">
+        <button type="button" class="btn btn-secondary" (click)="closeRoomModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"
+                [disabled]="roomForm.invalid || loading || imageProcessing">
+          {{ loading ? 'Saving…' : (isEditRoom ? 'Save changes' : 'Create room') }}
+        </button>
+      </footer>
+    </form>
   </div>
 </div>
 
 
 <!-- ============================================================
-     CATEGORY MODAL — Tier 3 workspace
+     ROOM TYPE MODAL  — two-column, wider
 ============================================================ -->
 <div *ngIf="showCategoryModal" class="modal-backdrop" (click)="closeCategoryModal()">
-  <div class="modal-workspace" role="dialog" aria-modal="true"
+  <div class="modal modal--room-type" role="dialog" aria-modal="true"
        (click)="$event.stopPropagation()">
 
-    <header class="modal-workspace__header">
+    <header class="modal__header">
       <div>
         <span class="modal__eyebrow">Room management</span>
-        <h3>Manage categories</h3>
+        <h3>{{ isEditCategory ? 'Edit room type' : 'Add room type' }}</h3>
       </div>
       <button type="button" class="modal__close" (click)="closeCategoryModal()" aria-label="Close">×</button>
     </header>
 
-    <div class="modal-workspace__body">
-      <div class="category-layout">
+    <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" class="modal-form-grid">
 
-        <!-- Left: list -->
-        <aside class="category-sidebar">
-          <div class="category-sidebar__header">
-            <h4>Categories <span class="num">({{ categories.length }})</span></h4>
-            <button type="button" class="btn btn-primary btn-sm"
-                    (click)="startNewCategory()">+ New</button>
+      <!-- LEFT COLUMN: fields -->
+      <div class="modal-form-grid__col">
+
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label for="cat-id">Category ID <span class="req">*</span></label>
+            <input id="cat-id" type="text" class="input" formControlName="id"
+                   placeholder="e.g. 1 or DLX" [readonly]="isEditCategory" />
+            <p class="field__error"
+               *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched">
+              Required.
+            </p>
           </div>
 
-          <div *ngIf="categoriesLoading" class="category-sidebar__state">Loading…</div>
-          <div *ngIf="!categoriesLoading && categories.length === 0" class="category-sidebar__state">
-            No categories yet.
+          <div class="form-field">
+            <label for="cat-name">Name <span class="req">*</span></label>
+            <input id="cat-name" type="text" class="input" formControlName="name"
+                   placeholder="e.g. Deluxe Double Room" />
+            <p class="field__error"
+               *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched">
+              Required.
+            </p>
           </div>
+        </div>
 
-          <div class="category-sidebar__list" *ngIf="!categoriesLoading && categories.length > 0">
-            <button type="button" class="category-item"
-                    *ngFor="let category of categories; trackBy: trackByCategoryId"
-                    [class.is-active]="isEditCategory && selectedCategoryId === category.id.toString()"
-                    (click)="openEditCategoryModal(category)">
-              <div class="category-item__thumb">
-                <img *ngIf="category.imageUrl" [src]="category.imageUrl"
-                     [alt]="category.name" loading="lazy" />
-                <span *ngIf="!category.imageUrl" class="category-item__thumb-ph">—</span>
-              </div>
-              <div class="category-item__info">
-                <span class="category-item__name">{{ category.name }}</span>
-                <span class="category-item__meta mono">
-                  #{{ category.id }} · {{ category.price | number:'1.0-0' }} SAR
-                </span>
-              </div>
-              <span class="category-item__delete" role="button" title="Delete category"
-                    (click)="$event.stopPropagation(); deleteCategory(category.id)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                     width="14" height="14" aria-hidden="true">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/>
-                  <path d="M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
+        <div class="form-field">
+          <label for="hpms-select">Load from HPMS (optional)</label>
+          <select id="hpms-select" class="select select--full"
+                  (change)="onHpmsSelect($event)"
+                  [disabled]="hpmsCategoriesLoading">
+            <option value="">
+              {{ hpmsCategoriesLoading ? 'Loading…' : 'Select HPMS category to auto-fill' }}
+            </option>
+            <option *ngFor="let hpms of hpmsCategories" [value]="hpms.id">
+              {{ hpms.name }} ({{ hpms.id }})
+            </option>
+          </select>
+          <p class="field__error" *ngIf="hpmsCategoriesError">{{ hpmsCategoriesError }}</p>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label for="cat-view">View <span class="req">*</span></label>
+            <select id="cat-view" class="select select--full" formControlName="viewType">
+              <option value="">Select view</option>
+              <option *ngFor="let v of viewOptions" [value]="v.value">{{ v.label }}</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="cat-bed-type">Bed type <span class="req">*</span></label>
+            <select id="cat-bed-type" class="select select--full" formControlName="bedType">
+              <option value="">Select bed type</option>
+              <option *ngFor="let b of bedTypeOptions" [value]="b.value">{{ b.label }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-field">
+            <label for="cat-beds">Beds <span class="req">*</span></label>
+            <input id="cat-beds" type="number" class="input" formControlName="numBeds" min="1" />
+          </div>
+          <div class="form-field">
+            <label for="cat-tvs">TVs <span class="req">*</span></label>
+            <input id="cat-tvs" type="number" class="input" formControlName="numTvs" min="0" />
+          </div>
+          <div class="form-field">
+            <label>Wi-Fi</label>
+            <label class="toggle">
+              <input type="checkbox" formControlName="hasWifi" />
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+              <span class="toggle__state">
+                {{ categoryForm.get('hasWifi')?.value ? 'On' : 'Off' }}
               </span>
-            </button>
+            </label>
           </div>
-        </aside>
+        </div>
 
-        <!-- Right: form -->
-        <section class="category-form">
-          <div class="category-form__header">
-            <h3>{{ isEditCategory ? 'Edit category' : 'New category' }}</h3>
-            <span *ngIf="isEditCategory" class="category-form__id mono">ID: {{ selectedCategoryId }}</span>
+        <div class="form-grid-3">
+          <div class="form-field">
+            <label for="cat-adults">Max adults <span class="req">*</span></label>
+            <input id="cat-adults" type="number" class="input" formControlName="maxAdults" min="1" />
           </div>
+          <div class="form-field">
+            <label for="cat-kids">Max kids <span class="req">*</span></label>
+            <input id="cat-kids" type="number" class="input" formControlName="maxKids" min="0" />
+          </div>
+          <div class="form-field">
+            <label for="cat-price">Price / night <span class="req">*</span></label>
+            <input id="cat-price" type="number" class="input"
+                   formControlName="price" min="0" step="0.01" />
+          </div>
+        </div>
 
-          <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" class="category-form__body">
+        <div class="form-field">
+          <label for="cat-description">Description</label>
+          <textarea id="cat-description" class="input textarea"
+                    formControlName="description" rows="3"
+                    placeholder="Describe the room type…"></textarea>
+        </div>
 
-            <div class="form-section">
-              <div class="form-section__title">Identity</div>
-
-              <div class="form-grid-2">
-                <div class="form-field">
-                  <label for="cat-id">Category ID <span class="req">*</span></label>
-                  <input id="cat-id" type="text" class="input" formControlName="id"
-                         placeholder="e.g. 1 or DLX" [readonly]="isEditCategory" />
-                  <p class="field__error"
-                     *ngIf="categoryForm.get('id')?.invalid && categoryForm.get('id')?.touched">
-                    Required.
-                  </p>
-                </div>
-
-                <div class="form-field">
-                  <label for="cat-name">Category name <span class="req">*</span></label>
-                  <input id="cat-name" type="text" class="input"
-                         formControlName="name" placeholder="e.g. Deluxe Double Room" />
-                  <p class="field__error"
-                     *ngIf="categoryForm.get('name')?.invalid && categoryForm.get('name')?.touched">
-                    Required.
-                  </p>
-                </div>
-              </div>
-
-              <div class="hpms-inline">
-                <label for="hpms-select">Load from HPMS (optional)</label>
-                <select id="hpms-select" class="select select--full"
-                        (change)="onHpmsSelect($event)"
-                        [disabled]="hpmsCategoriesLoading">
-                  <option value="">
-                    {{ hpmsCategoriesLoading ? 'Loading…' : 'Select HPMS category to auto-fill' }}
-                  </option>
-                  <option *ngFor="let hpms of hpmsCategories" [value]="hpms.id">
-                    {{ hpms.name }} ({{ hpms.id }})
-                  </option>
-                </select>
-                <p class="field__error" *ngIf="hpmsCategoriesError">{{ hpmsCategoriesError }}</p>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <div class="form-section__title">Room configuration</div>
-
-              <div class="form-grid-2">
-                <div class="form-field">
-                  <label for="cat-view">View <span class="req">*</span></label>
-                  <select id="cat-view" class="select select--full" formControlName="viewType">
-                    <option value="">Select view</option>
-                    <option *ngFor="let v of viewOptions" [value]="v.value">{{ v.label }}</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="cat-bed-type">Bed type <span class="req">*</span></label>
-                  <select id="cat-bed-type" class="select select--full" formControlName="bedType">
-                    <option value="">Select bed type</option>
-                    <option *ngFor="let b of bedTypeOptions" [value]="b.value">{{ b.label }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-grid-3">
-                <div class="form-field">
-                  <label for="cat-beds">Beds <span class="req">*</span></label>
-                  <input id="cat-beds" type="number" class="input" formControlName="numBeds" min="1" />
-                </div>
-                <div class="form-field">
-                  <label for="cat-tvs">TVs <span class="req">*</span></label>
-                  <input id="cat-tvs" type="number" class="input" formControlName="numTvs" min="0" />
-                </div>
-                <div class="form-field">
-                  <label>Wi-Fi</label>
-                  <label class="toggle">
-                    <input type="checkbox" formControlName="hasWifi" />
-                    <span class="toggle__track"><span class="toggle__thumb"></span></span>
-                    <span class="toggle__state">
-                      {{ categoryForm.get('hasWifi')?.value ? 'On' : 'Off' }}
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <div class="form-section__title">Occupancy &amp; pricing</div>
-
-              <div class="form-grid-3">
-                <div class="form-field">
-                  <label for="cat-adults">Max adults <span class="req">*</span></label>
-                  <input id="cat-adults" type="number" class="input" formControlName="maxAdults" min="1" />
-                </div>
-                <div class="form-field">
-                  <label for="cat-kids">Max kids <span class="req">*</span></label>
-                  <input id="cat-kids" type="number" class="input" formControlName="maxKids" min="0" />
-                </div>
-                <div class="form-field">
-                  <label for="cat-price">Price per night <span class="req">*</span></label>
-                  <input id="cat-price" type="number" class="input"
-                         formControlName="price" min="0" step="0.01" />
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <div class="form-section__title">Description</div>
-              <div class="form-field">
-                <label for="cat-description" class="visually-hidden">Description</label>
-                <textarea id="cat-description" class="input textarea"
-                          formControlName="description" rows="3"
-                          placeholder="Describe the category…"></textarea>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <div class="form-section__title">Images</div>
-
-              <p class="form-helper">Max 5 images · Auto-compressed to WebP.</p>
-
-              <label class="dropzone">
-                <input type="file" class="dropzone__input"
-                       accept="image/jpeg,image/png,image/webp,image/jpg" multiple
-                       (change)="onCategoryFilesSelected($event)" />
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
-                     width="24" height="24" aria-hidden="true">
-                  <path d="M16 16l-4-4-4 4"/>
-                  <path d="M12 12v9"/>
-                  <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-                </svg>
-                <span class="dropzone__title">Drop images or click to browse</span>
-                <span class="dropzone__hint">PNG, JPG, WebP up to 5 MB each</span>
-              </label>
-
-              <div class="image-processing" *ngIf="imageProcessing">Processing images…</div>
-
-              <div class="image-gallery" *ngIf="categoryGallery.length > 0">
-                <div class="gallery-item" *ngFor="let img of categoryGallery; let i = index"
-                     [class.is-primary]="img.isPrimary"
-                     [class.is-deleted]="img.markedForDeletion">
-                  <img [src]="img.previewUrl" [alt]="'Category image ' + (i + 1)" />
-                  <span class="gallery-badge" *ngIf="img.isPrimary && !img.markedForDeletion">Primary</span>
-                  <span class="gallery-badge gallery-badge--danger" *ngIf="img.markedForDeletion">Removed</span>
-
-                  <div class="gallery-overlay" *ngIf="!img.markedForDeletion">
-                    <button type="button" class="gallery-btn" [disabled]="i === 0"
-                            (click)="moveCategoryImageLeft(i)">‹</button>
-                    <button type="button" class="gallery-btn" [class.is-active]="img.isPrimary"
-                            (click)="setPrimaryCategoryImage(i)">★</button>
-                    <button type="button" class="gallery-btn"
-                            [disabled]="i === categoryGallery.length - 1"
-                            (click)="moveCategoryImageRight(i)">›</button>
-                    <button type="button" class="gallery-btn gallery-btn--danger"
-                            (click)="removeCategoryImage(i)">×</button>
-                  </div>
-
-                  <div class="gallery-overlay" *ngIf="img.markedForDeletion">
-                    <button type="button" class="gallery-btn gallery-btn--undo"
-                            (click)="undoRemoveCategoryImage(i)">↺</button>
-                  </div>
-
-                  <div class="gallery-footer">
-                    <span class="num">{{ i + 1 }} / {{ categoryGallery.length }}</span>
-                    <span *ngIf="img.file" class="num">{{ getFileSize(img.file) }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div *ngIf="categoriesError" class="alert alert--danger">{{ categoriesError }}</div>
-
-            <footer class="category-form__actions">
-              <button type="button" class="btn btn-secondary"
-                      (click)="closeCategoryModal()">Close</button>
-              <button type="button" class="btn btn-secondary"
-                      *ngIf="isEditCategory" (click)="startNewCategory()">Reset</button>
-              <button type="submit" class="btn btn-primary"
-                      [disabled]="categoryForm.invalid || categoriesLoading || imageProcessing">
-                {{ categoriesLoading ? 'Saving…' : (isEditCategory ? 'Save changes' : 'Create category') }}
-              </button>
-            </footer>
-          </form>
-        </section>
       </div>
-    </div>
+
+      <!-- RIGHT COLUMN: images -->
+      <div class="modal-form-grid__col">
+        <div class="form-field">
+          <label>Room type images</label>
+          <p class="form-helper">Max 5 images · Auto-compressed to WebP.</p>
+
+          <label class="dropzone">
+            <input type="file" class="dropzone__input"
+                   accept="image/jpeg,image/png,image/webp,image/jpg" multiple
+                   (change)="onCategoryFilesSelected($event)" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                 width="24" height="24" aria-hidden="true">
+              <path d="M16 16l-4-4-4 4"/>
+              <path d="M12 12v9"/>
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            </svg>
+            <span class="dropzone__title">Drop images or click to browse</span>
+            <span class="dropzone__hint">PNG, JPG, WebP up to 5 MB each</span>
+          </label>
+
+          <div class="image-processing" *ngIf="imageProcessing">Processing images…</div>
+
+          <div class="image-gallery" *ngIf="categoryGallery.length > 0">
+            <div class="gallery-item" *ngFor="let img of categoryGallery; let i = index"
+                 [class.is-primary]="img.isPrimary"
+                 [class.is-deleted]="img.markedForDeletion">
+              <img [src]="img.previewUrl" [alt]="'Room type image ' + (i + 1)" />
+              <span class="gallery-badge" *ngIf="img.isPrimary && !img.markedForDeletion">Primary</span>
+              <span class="gallery-badge gallery-badge--danger" *ngIf="img.markedForDeletion">Removed</span>
+
+              <div class="gallery-overlay" *ngIf="!img.markedForDeletion">
+                <button type="button" class="gallery-btn" [disabled]="i === 0"
+                        (click)="moveCategoryImageLeft(i)">‹</button>
+                <button type="button" class="gallery-btn" [class.is-active]="img.isPrimary"
+                        (click)="setPrimaryCategoryImage(i)">★</button>
+                <button type="button" class="gallery-btn"
+                        [disabled]="i === categoryGallery.length - 1"
+                        (click)="moveCategoryImageRight(i)">›</button>
+                <button type="button" class="gallery-btn gallery-btn--danger"
+                        (click)="removeCategoryImage(i)">×</button>
+              </div>
+
+              <div class="gallery-overlay" *ngIf="img.markedForDeletion">
+                <button type="button" class="gallery-btn gallery-btn--undo"
+                        (click)="undoRemoveCategoryImage(i)">↺</button>
+              </div>
+
+              <div class="gallery-footer">
+                <span class="num">{{ i + 1 }} / {{ categoryGallery.length }}</span>
+                <span *ngIf="img.file" class="num">{{ getFileSize(img.file) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="categoriesError" class="alert alert--danger modal-form-grid__alert">
+        {{ categoriesError }}
+      </div>
+
+      <!-- FOOTER: spans both columns -->
+      <footer class="modal__actions">
+        <button *ngIf="isEditCategory" type="button" class="btn btn-danger-ghost"
+                (click)="deleteCategory(selectedCategoryId!, $event)">
+          Delete
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="closeCategoryModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"
+                [disabled]="categoryForm.invalid || categoriesLoading || imageProcessing">
+          {{ categoriesLoading ? 'Saving…' : (isEditCategory ? 'Save changes' : 'Create room type') }}
+        </button>
+      </footer>
+    </form>
   </div>
 </div>

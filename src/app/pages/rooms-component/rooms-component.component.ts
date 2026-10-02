@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ElementRef,
+  ViewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
@@ -26,9 +31,6 @@ import {
   UpdateCategoryRequest
 } from '../../category-service.service';
 
-/* =========================================================
-   GALLERY IMAGE
-========================================================= */
 interface GalleryImage {
   id?: number;
   file?: File;
@@ -38,9 +40,6 @@ interface GalleryImage {
   markedForDeletion?: boolean;
 }
 
-/* =========================================================
-   HPMS ROOM / CATEGORY SUMMARY
-========================================================= */
 interface HpmsRoomSummary {
   id: string;
   name: string;
@@ -51,9 +50,6 @@ interface SelectOption {
   label: string;
 }
 
-/* =========================================================
-   CONSTANTS — canonical enum values
-========================================================= */
 const VALID_VIEWS: readonly string[] = [
   'CITY', 'PANORAMIC', 'SEA', 'GARDEN',
   'MOUNTAIN', 'POOL', 'RIVER', 'LANDMARK'
@@ -62,6 +58,8 @@ const VALID_VIEWS: readonly string[] = [
 const VALID_BED_TYPES: readonly string[] = [
   'SINGLE', 'DOUBLE', 'QUEEN', 'KING', 'TWIN'
 ];
+
+type RoomsPageTab = 'categories' | 'rooms';
 
 @Component({
   selector: 'app-rooms',
@@ -77,9 +75,23 @@ const VALID_BED_TYPES: readonly string[] = [
 })
 export class RoomsComponent implements OnInit {
 
-  /* =========================================================
-     ROOMS
-  ========================================================= */
+  activeTab: RoomsPageTab = 'categories';
+
+  @ViewChild('roomSearchInput')
+  set roomSearchInputRef(ref: ElementRef<HTMLInputElement> | undefined) {
+    if (ref && this.activeTab === 'rooms') {
+      setTimeout(() => ref.nativeElement.focus(), 0);
+    }
+  }
+
+  @ViewChild('categorySearchInput')
+  set categorySearchInputRef(ref: ElementRef<HTMLInputElement> | undefined) {
+    if (ref && this.activeTab === 'categories') {
+      setTimeout(() => ref.nativeElement.focus(), 0);
+    }
+  }
+
+  /* ROOMS */
   rooms: RoomResponse[] = [];
   totalElements = 0;
   currentPage = 0;
@@ -91,9 +103,7 @@ export class RoomsComponent implements OnInit {
   loading = false;
   error = '';
 
-  /* =========================================================
-     ROOM MODAL
-  ========================================================= */
+  /* ROOM MODAL */
   showRoomModal = false;
   isEditRoom = false;
   selectedRoomId: number | null = null;
@@ -102,16 +112,13 @@ export class RoomsComponent implements OnInit {
   roomDragOver = false;
   imageProcessing = false;
 
-  /* =========================================================
-     CATEGORIES
-  ========================================================= */
+  /* CATEGORIES */
   categories: RoomCategory[] = [];
   categoriesLoading = false;
   categoriesError = '';
+  categorySearchTerm = '';
 
-  /* =========================================================
-     CATEGORY MODAL
-  ========================================================= */
+  /* CATEGORY MODAL */
   showCategoryModal = false;
   isEditCategory = false;
   selectedCategoryId: string | null = null;
@@ -119,18 +126,9 @@ export class RoomsComponent implements OnInit {
   categoryGallery: GalleryImage[] = [];
   categoryDragOver = false;
 
-  /* =========================================================
-     DROPDOWN OPTIONS
-     Only used by the Category modal now — the Room form no
-     longer exposes View/Bed Type (they are inherited from the
-     selected Category).
-  ========================================================= */
   viewOptions: SelectOption[] = this.buildViewOptions();
   bedTypeOptions: SelectOption[] = this.buildBedTypeOptions();
 
-  /* =========================================================
-     HPMS CATEGORIES (reference dropdown)
-  ========================================================= */
   hpmsCategories: HpmsRoomSummary[] = [];
   hpmsCategoriesLoading = false;
   hpmsCategoriesError = '';
@@ -146,7 +144,6 @@ export class RoomsComponent implements OnInit {
     private http: HttpClient
   ) {
 
-    /* ROOM FORM — View removed; it is derived from the Category. */
     this.roomForm = this.fb.group({
       roomNumber: ['', Validators.required],
       categoryId: [null, [Validators.required, Validators.min(1)]],
@@ -155,7 +152,6 @@ export class RoomsComponent implements OnInit {
       status: ['AVAILABLE']
     });
 
-    /* CATEGORY FORM */
     this.categoryForm = this.fb.group({
       id: ['', Validators.required],
       name: ['', [Validators.required, Validators.maxLength(100)]],
@@ -176,9 +172,18 @@ export class RoomsComponent implements OnInit {
     this.loadCategories();
   }
 
-  /* =========================================================
-     SEARCH / FILTER
-  ========================================================= */
+  setTab(tab: RoomsPageTab): void {
+    if (this.activeTab === tab) return;
+    this.activeTab = tab;
+
+    if (tab === 'categories') {
+      this.loadHpmsCategoriesIfNeeded();
+    } else {
+      if (this.rooms.length === 0) this.loadRooms();
+    }
+  }
+
+  /* ============ ROOM SEARCH / FILTER ============ */
   get filteredRooms(): RoomResponse[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.rooms;
@@ -204,9 +209,24 @@ export class RoomsComponent implements OnInit {
     this.onFilterChange();
   }
 
-  /* =========================================================
-     ROOMS LOAD / PAGINATION
-  ========================================================= */
+  /* ============ CATEGORY SEARCH ============ */
+  get filteredCategories(): RoomCategory[] {
+    const term = this.categorySearchTerm.trim().toLowerCase();
+    if (!term) return this.categories;
+
+    return this.categories.filter(cat => (
+      (cat.name || '').toLowerCase().includes(term) ||
+      (cat.description || '').toLowerCase().includes(term) ||
+      (cat.viewType || '').toLowerCase().includes(term) ||
+      (cat.bedType || '').toLowerCase().includes(term) ||
+      String(cat.id).toLowerCase().includes(term)
+    ));
+  }
+
+  onCategorySearchChange(): void { /* client-side filtering */ }
+  clearCategorySearch(): void { this.categorySearchTerm = ''; }
+
+  /* ============ ROOMS LOAD ============ */
   loadRooms(): void {
     this.loading = true;
     this.error = '';
@@ -245,9 +265,7 @@ export class RoomsComponent implements OnInit {
     this.loadRooms();
   }
 
-  /* =========================================================
-     CREATE / EDIT ROOM
-  ========================================================= */
+  /* ============ ROOM MODAL ============ */
   openCreateRoomModal(): void {
     this.isEditRoom = false;
     this.selectedRoomId = null;
@@ -268,7 +286,6 @@ export class RoomsComponent implements OnInit {
     this.isEditRoom = true;
     this.selectedRoomId = room.id;
 
-    /* View is no longer part of the form — it comes from the Category. */
     this.roomForm.patchValue({
       roomNumber: room.roomNumber,
       categoryId: room.categoryId,
@@ -305,10 +322,6 @@ export class RoomsComponent implements OnInit {
     this.clearRoomGallery();
   }
 
-  /* =========================================================
-     SAVE ROOM
-     View is derived from the selected category.
-  ========================================================= */
   async saveRoom(): Promise<void> {
     if (this.roomForm.invalid) {
       this.roomForm.markAllAsTouched();
@@ -317,7 +330,6 @@ export class RoomsComponent implements OnInit {
 
     const formValue = this.roomForm.value;
 
-    /* Derive viewType from the selected category. */
     const selectedCategory = this.categories.find(
       c => String(c.id) === String(formValue.categoryId)
     );
@@ -373,9 +385,6 @@ export class RoomsComponent implements OnInit {
     }
   }
 
-  /* =========================================================
-     SYNC ROOM GALLERY
-  ========================================================= */
   private async syncRoomGallery(roomId: number): Promise<void> {
     const gallery = this.roomGallery;
     const finalList = gallery.filter(img => !img.markedForDeletion);
@@ -440,9 +449,6 @@ export class RoomsComponent implements OnInit {
     }
   }
 
-  /* =========================================================
-     ROOM GALLERY — FILE PICKER
-  ========================================================= */
   async onRoomFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -501,9 +507,6 @@ export class RoomsComponent implements OnInit {
     await this.processRoomFiles(files);
   }
 
-  /* =========================================================
-     ROOM GALLERY — ACTIONS
-  ========================================================= */
   setPrimaryRoomImage(index: number): void {
     this.roomGallery = this.roomGallery.map((img, i) => ({
       ...img,
@@ -563,9 +566,6 @@ export class RoomsComponent implements OnInit {
     this.roomGallery = [];
   }
 
-  /* =========================================================
-     IMAGE COMPRESSION (WebP)
-  ========================================================= */
   private async compressToWebP(
     file: File,
     maxWidth = 1600,
@@ -626,9 +626,7 @@ export class RoomsComponent implements OnInit {
     return `${mb.toFixed(2)} MB`;
   }
 
-  /* =========================================================
-     CATEGORIES
-  ========================================================= */
+  /* ============ CATEGORIES ============ */
   loadCategories(): void {
     this.categoriesLoading = true;
     this.categoriesError = '';
@@ -647,9 +645,6 @@ export class RoomsComponent implements OnInit {
     });
   }
 
-  /* =========================================================
-     HPMS CATEGORIES
-  ========================================================= */
   private loadHpmsCategoriesIfNeeded(): void {
     if (this.hpmsCategoriesLoaded || this.hpmsCategoriesLoading) return;
     this.loadHpmsCategories();
@@ -674,9 +669,6 @@ export class RoomsComponent implements OnInit {
     });
   }
 
-  /* =========================================================
-     CATEGORY MODAL — ENTRY POINTS
-  ========================================================= */
   openCreateCategoryModal(): void {
     this.startNewCategory();
     this.loadHpmsCategoriesIfNeeded();
@@ -687,7 +679,6 @@ export class RoomsComponent implements OnInit {
     this.isEditCategory = false;
     this.selectedCategoryId = null;
 
-    /* Reset dropdown options to the standard set */
     this.viewOptions = this.buildViewOptions();
     this.bedTypeOptions = this.buildBedTypeOptions();
 
@@ -713,8 +704,6 @@ export class RoomsComponent implements OnInit {
     this.isEditCategory = true;
     this.selectedCategoryId = String(category.id);
 
-    /* Normalize whatever the backend sends; if unmatched,
-       inject it as a one-off option so the dropdown isn't empty. */
     const rawView = (category.viewType ?? '').toString();
     const rawBed  = (category.bedType  ?? '').toString();
 
@@ -768,9 +757,6 @@ export class RoomsComponent implements OnInit {
     this.clearCategoryGallery();
   }
 
-  /* =========================================================
-     APPLY HPMS CATEGORY
-  ========================================================= */
   onHpmsSelect(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const id = select.value;
@@ -786,9 +772,6 @@ export class RoomsComponent implements OnInit {
     select.value = '';
   }
 
-  /* =========================================================
-     SAVE CATEGORY
-  ========================================================= */
   async saveCategory(): Promise<void> {
     if (this.categoryForm.invalid) {
       this.categoryForm.markAllAsTouched();
@@ -861,9 +844,6 @@ export class RoomsComponent implements OnInit {
     }
   }
 
-  /* =========================================================
-     SYNC CATEGORY GALLERY
-  ========================================================= */
   private async syncCategoryGallery(categoryId: number): Promise<void> {
     const gallery = this.categoryGallery;
     const finalList = gallery.filter(img => !img.markedForDeletion);
@@ -930,9 +910,6 @@ export class RoomsComponent implements OnInit {
     }
   }
 
-  /* =========================================================
-     CATEGORY GALLERY — FILE PICKER & ACTIONS
-  ========================================================= */
   async onCategoryFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -1048,17 +1025,19 @@ export class RoomsComponent implements OnInit {
     this.categoryGallery = [];
   }
 
-  /* =========================================================
-     DELETE CATEGORY
-  ========================================================= */
-  deleteCategory(id: number | string): void {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+  deleteCategory(id: number | string, event?: Event): void {
+    if (event) event.stopPropagation();
+
+    if (!confirm('Are you sure you want to delete this room type?')) return;
 
     const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
 
     this.categoryService.deleteCategory(numericId).subscribe({
       next: () => {
-        if (this.selectedCategoryId === String(id)) this.startNewCategory();
+        if (this.selectedCategoryId === String(id)) {
+          this.closeCategoryModal();
+          this.startNewCategory();
+        }
         this.loadCategories();
         this.loadRooms();
       },
@@ -1070,9 +1049,6 @@ export class RoomsComponent implements OnInit {
     });
   }
 
-  /* =========================================================
-     LABELS
-  ========================================================= */
   getStatusLabel(status: string): string {
     const map: Record<string, string> = {
       AVAILABLE: 'Available',
@@ -1093,9 +1069,11 @@ export class RoomsComponent implements OnInit {
       .replace(/\b\w/g, char => char.toUpperCase());
   }
 
-  /* =========================================================
-     DROPDOWN OPTION BUILDERS (used by Category modal)
-  ========================================================= */
+  getBedTypeLabel(bed: string | null | undefined): string {
+    if (!bed) return '';
+    return this.getViewLabel(bed);
+  }
+
   private buildViewOptions(extra?: string): SelectOption[] {
     const base: SelectOption[] = VALID_VIEWS.map(v => ({
       value: v,
@@ -1120,9 +1098,6 @@ export class RoomsComponent implements OnInit {
     return base;
   }
 
-  /* =========================================================
-     ENUM NORMALIZER
-  ========================================================= */
   private normalizeEnum(
     value: string | null | undefined,
     valid: readonly string[]
@@ -1145,10 +1120,6 @@ export class RoomsComponent implements OnInit {
     return '';
   }
 
-
-    // =========================================================
-  // TRACKBY — perf helpers for large lists
-  // =========================================================
   trackByRoomId(_index: number, room: RoomResponse): number {
     return room.id;
   }
