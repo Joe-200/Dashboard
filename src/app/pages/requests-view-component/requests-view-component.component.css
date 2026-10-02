@@ -1,7 +1,17 @@
 /* =========================================================
    RESERVATIONS & STAYS
 ========================================================= */
-:host { display: block; }
+:host {
+  display: block;
+
+  /* Single source of truth for border radii across the page.
+     Falls back to the app-wide tokens if defined, otherwise
+     6px / fully-rounded. Every button, input, badge, chip and
+     modal uses these so nothing is sharp-cornered. */
+  --btn-radius:  var(--radius-sm, 6px);
+  --chip-radius: var(--radius-sm, 6px);
+  --pill-radius: var(--radius-full, 999px);
+}
 
 .requests-page {
   width: 100%;
@@ -49,7 +59,7 @@
   padding: 3px;
   background: var(--bg-subtle);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
 }
 .segmented__btn {
   display: inline-flex;
@@ -59,7 +69,7 @@
   padding: 0 var(--space-3);
   background: transparent;
   border: none;
-  border-radius: var(--radius-xs);
+  border-radius: calc(var(--btn-radius) - 2px);
   color: var(--text-secondary);
   font-family: inherit;
   font-size: var(--text-base);
@@ -83,7 +93,7 @@
   height: 18px;
   padding: 0 5px;
   background: var(--bg-muted);
-  border-radius: var(--radius-full);
+  border-radius: var(--pill-radius);
   color: var(--text-secondary);
   font-size: 10px;
   font-weight: 600;
@@ -146,7 +156,7 @@
   padding: 0 var(--space-3);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-primary);
   font-family: inherit;
   font-size: var(--text-base);
@@ -174,7 +184,7 @@
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-tertiary);
   font-size: 16px;
   line-height: 1;
@@ -187,7 +197,7 @@
   padding: 0 30px 0 var(--space-3);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-primary);
   font-family: inherit;
   font-size: var(--text-base);
@@ -218,7 +228,7 @@
   padding: 0;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-secondary);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out),
@@ -241,7 +251,7 @@
   padding: 0 var(--space-3);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--pill-radius);
   color: var(--text-tertiary);
   font-family: inherit;
   font-size: var(--text-xs);
@@ -272,7 +282,7 @@
 .alert {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   font-size: var(--text-base);
   font-weight: 500;
   line-height: 1.5;
@@ -283,25 +293,30 @@
   color: var(--danger-text);
 }
 
-/* ---------- Table ---------- */
+/* ---------- Table (shared by BOTH views) ---------- */
 .table {
   display: flex;
   flex-direction: column;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--btn-radius);
   overflow: hidden;
 }
 
+/*
+  Unified 5-column layout — identical for Requests and Stays.
+  Column 5 has a 330px floor so up to 4 action buttons fit on a
+  single line without wrapping.
+*/
 .table__head,
 .table__row {
   display: grid;
   grid-template-columns:
-    minmax(240px, 2.4fr)
-    minmax(200px, 2fr)
-    minmax(100px, 0.9fr)
-    minmax(120px, 1.1fr)
-    minmax(240px, 2.6fr);
+    minmax(240px, 2.2fr)   /* Guest         */
+    minmax(200px, 1.9fr)   /* Stay dates    */
+    minmax(130px, 0.9fr)   /* Guests / Room */
+    minmax(140px, 1.0fr)   /* Status        */
+    minmax(330px, 2.8fr);  /* Actions       */
   gap: var(--space-4);
   align-items: center;
 }
@@ -316,10 +331,21 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+.table__head > span { padding-left: 2px; }
+
+/* Status column — header and cell content both centred so the
+   title sits symmetrically above the status pills. */
+.table__head > span:nth-child(4) {
+  text-align: center;
+  padding-left: 0;
+}
+.table__row > *:nth-child(4) {
+  justify-self: center;
+}
 
 .table__row {
   padding: var(--space-3) var(--space-4);
-  min-height: 56px;
+  min-height: 64px;
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
@@ -383,15 +409,134 @@
   font-size: var(--text-md);
 }
 .cell--num { text-align: right; }
+.cell--mid { text-align: left; }
 .cell--dates { display: flex; flex-direction: column; gap: 4px; }
+
+/* =========================================================
+   TABLE ACTION BUTTONS
+   ---------------------------------------------------------
+   Scoped, polished button system for the Actions column.
+   Every button is outlined (so it reads as clickable), uses
+   its natural width (so labels fit cleanly), and shares a
+   single height / radius / spacing rhythm.
+
+   nowrap + a 78px min-width + a 330px column floor means up
+   to four actions sit comfortably on one line.
+========================================================= */
 .cell--actions {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: var(--space-2);
-  white-space: nowrap;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 .col--actions { text-align: right; }
+
+/* ----- Base: every action button ----- */
+.cell--actions .btn {
+  /* size */
+  flex: 0 0 auto;
+  height: 30px;
+  min-width: 78px;
+  padding: 0 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  border-radius: 7px;
+
+  /* default look — outlined, neutral */
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.02);
+
+  /* feel */
+  cursor: pointer;
+  white-space: nowrap;
+  justify-content: center;
+  transition:
+    background    var(--duration-fast) var(--ease-out),
+    border-color  var(--duration-fast) var(--ease-out),
+    color         var(--duration-fast) var(--ease-out),
+    box-shadow    var(--duration-fast) var(--ease-out),
+    transform     var(--duration-fast) var(--ease-out);
+}
+
+.cell--actions .btn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.cell--actions .btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+
+.cell--actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ----- Primary (Accept · Check in · Check out) ----- */
+.cell--actions .btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+.cell--actions .btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-text);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+/* ----- Secondary (Accept in Requests) ----- */
+.cell--actions .btn-secondary {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+.cell--actions .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--text-tertiary);
+}
+
+/* ----- Ghost (Dates · Extend · Receipt) ----- */
+.cell--actions .btn-ghost {
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+.cell--actions .btn-ghost:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* ----- Danger ghost (Reject · Cancel) ----- */
+.cell--actions .btn-danger-ghost {
+  background: var(--bg-surface);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+.cell--actions .btn-danger-ghost:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger-text);
+  color: var(--danger-text);
+}
+
+/* ----- Empty state dash stays vertically centred ----- */
+.cell--actions .no-action {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px;
+}
 
 .date-row {
   display: flex;
@@ -425,7 +570,7 @@
   padding: 2px 8px;
   background: var(--bg-subtle);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-xs);
+  border-radius: var(--chip-radius);
   color: var(--text-primary);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -445,9 +590,9 @@
 /* Skeleton */
 .skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
 .skeleton-line { height: 10px; }
-.skeleton-chip { width: 60px; height: 22px; border-radius: var(--radius-xs); }
-.skeleton-pill { width: 90px; height: 22px; border-radius: var(--radius-sm); }
-.skeleton-btn { width: 72px; height: 32px; border-radius: var(--radius-sm); }
+.skeleton-chip { width: 60px; height: 22px; border-radius: var(--chip-radius); }
+.skeleton-pill { width: 96px; height: 22px; border-radius: var(--chip-radius); }
+.skeleton-btn { width: 78px; height: 30px; border-radius: 7px; }
 
 /* ---------- Empty ---------- */
 .empty {
@@ -497,7 +642,7 @@
   padding: 0 var(--space-2);
   background: transparent;
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-secondary);
   font-family: inherit;
   font-size: var(--text-base);
@@ -509,7 +654,7 @@
 .pager__btn:hover:not(:disabled) { background: var(--bg-subtle); color: var(--text-primary); }
 .pager__btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (page-level, not actions column) ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -518,7 +663,7 @@
   height: var(--h-md);
   padding: 0 var(--space-4);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   font-family: inherit;
   font-size: var(--text-base);
   font-weight: 500;
@@ -582,14 +727,16 @@
   font-size: var(--text-sm);
 }
 
-/* ---------- Badges ---------- */
+/* ---------- Badges (fixed footprint so both tables line up) ---------- */
 .badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
+  justify-content: center;
+  min-width: 108px;
+  height: 24px;
+  padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--chip-radius);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -619,7 +766,7 @@
   width: 100%;
   max-width: 560px;
   background: var(--bg-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--btn-radius);
   box-shadow: var(--shadow-lg);
   padding: var(--space-6);
   max-height: 90vh;
@@ -662,7 +809,7 @@
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--text-tertiary);
   font-size: 20px;
   line-height: 1;
@@ -691,7 +838,7 @@
   margin-top: var(--space-2) !important;
   background: var(--warning-bg);
   border: 1px solid var(--warning-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   color: var(--warning-text) !important;
   font-weight: 500;
   font-size: var(--text-base) !important;
@@ -794,7 +941,7 @@
   margin-top: var(--space-5);
   padding: var(--space-4) var(--space-5);
   background: var(--bg-subtle);
-  border-radius: var(--radius);
+  border-radius: var(--btn-radius);
   color: var(--text-primary);
   font-size: var(--text-lg);
   font-weight: 600;
@@ -806,16 +953,17 @@
 .num  { font-variant-numeric: tabular-nums; }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .table__head, .table__row {
     grid-template-columns:
-      minmax(200px, 2fr)
-      minmax(180px, 1.8fr)
-      minmax(90px, 0.8fr)
-      minmax(110px, 1fr)
-      minmax(220px, 2.4fr);
+      minmax(200px, 2.0fr)
+      minmax(170px, 1.8fr)
+      minmax(110px, 0.8fr)
+      minmax(120px, 0.9fr)
+      minmax(320px, 2.6fr);
     gap: var(--space-3);
   }
+  .badge { min-width: 96px; }
 }
 
 @media (max-width: 900px) {
@@ -829,12 +977,26 @@
     gap: var(--space-3);
     padding: var(--space-4);
   }
-  .cell--num, .cell--actions { text-align: left; justify-content: flex-start; }
+  .cell--num, .cell--mid, .cell--actions { text-align: left; justify-content: flex-start; }
   .cell--dates { padding-top: var(--space-2); }
   .col--actions { text-align: left; }
+  .table__row > *:nth-child(4) { justify-self: start; }
+
+  /* On mobile, allow wrapping — a narrow phone can't fit 4 in a row. */
+  .cell--actions { flex-wrap: wrap; }
+  .cell--actions .btn { min-width: 0; }
 
   .kv-grid { grid-template-columns: 1fr; }
   .form-grid-2 { grid-template-columns: 1fr; gap: 0; }
   .modal__actions { flex-direction: column-reverse; align-items: stretch; }
   .modal__actions .btn { width: 100%; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }

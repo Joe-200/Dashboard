@@ -30,10 +30,6 @@ import { environment } from '../../environment';
 
 export type ReservationRequestExt = ReservationRequest & {
   referenceCode?: string;
-  proposedCheckInDate?: string;
-  proposedCheckOutDate?: string;
-  canCancel?: boolean;
-  cancellationDeadline?: string;
 };
 
 export type StayDetailsExt = StayDetailsResponse & {
@@ -42,6 +38,149 @@ export type StayDetailsExt = StayDetailsResponse & {
 
 export type ViewTab = 'requests' | 'stays';
 export type StayQuickFilter = 'ALL' | 'CHECKIN_TODAY' | 'CHECKOUT_TODAY';
+
+// ============================================================
+// MODULE-SCOPED SSE SINGLETON
+// ------------------------------------------------------------
+// Lives at module scope so it outlives any single component
+// instance. Navigating away from this route will NOT close the
+// connection — the next mount simply re-subscribes to the same
+// underlying stream.
+// ============================================================
+type LiveEvent = EventSourceMessage;
+type EventListener = (msg: LiveEvent) => void;
+type StateListener = (connected: boolean) => void;
+
+interface LiveConnection {
+  abortController: AbortController | null;
+  lastToken: string | null;
+  lastHotelId: string | null;
+  connected: boolean;
+  eventListeners: Set<EventListener>;
+  stateListeners: Set<StateListener>;
+  url: string;
+  fetchAuth: (() => { token: string | null; hotelId: string | null }) | null;
+}
+
+const liveConnection: LiveConnection = {
+  abortController: null,
+  lastToken: null,
+  lastHotelId: null,
+  connected: false,
+  eventListeners: new Set(),
+  stateListeners: new Set(),
+  url: `${environment.apiUrl}/api/dashboard/front-desk/live`,
+  fetchAuth: null
+};
+
+function setLiveConnected(value: boolean): void {
+  if (liveConnection.connected === value) return;
+  liveConnection.connected = value;
+  liveConnection.stateListeners.forEach(fn => {
+    try { fn(value); } catch { /* noop */ }
+  });
+}
+
+function openLiveConnection(token: string, hotelId: string | null): void {
+  // Tear down any previous connection first
+  closeLiveConnection();
+
+  liveConnection.abortController = new AbortController();
+  liveConnection.lastToken = token;
+  liveConnection.lastHotelId = hotelId;
+
+  const headers: Record<string, string> = {
+    Accept: 'text/event-stream',
+    Authorization: `Bearer ${token}`
+  };
+  if (hotelId) headers['X-Tenant-ID'] = hotelId;
+
+  fetchEventSource(liveConnection.url, {
+    method: 'GET',
+    headers,
+    credentials: 'omit',
+    signal: liveConnection.abortController.signal,
+    openWhenHidden: true,
+
+    onopen: async (response: Response) => {
+      const contentType = response.headers.get('content-type') || '';
+      if (response.ok && contentType.includes('text/event-stream')) {
+        setLiveConnected(true);
+        return;
+      }
+      if ([401, 403, 404].includes(response.status)) {
+        throw new Error(
+          `SSE fatal: ${response.status} ${response.statusText}`
+        );
+      }
+      throw new Error(`SSE error: ${response.status} ${response.statusText}`);
+    },
+
+    onmessage: (event: EventSourceMessage) => {
+      liveConnection.eventListeners.forEach(fn => {
+        try { fn(event); } catch { /* noop */ }
+      });
+    },
+
+    onclose: () => {
+      setLiveConnected(false);
+    },
+
+    onerror: (err: any) => {
+      setLiveConnected(false);
+      if (
+        typeof err?.message === 'string' &&
+        err.message.startsWith('SSE fatal')
+      ) {
+        throw err; // stops retries — auth is broken
+      }
+      return 3000; // otherwise retry in 3s
+    }
+  })
+    .then(() => setLiveConnected(false))
+    .catch(() => setLiveConnected(false));
+}
+
+function closeLiveConnection(): void {
+  if (liveConnection.abortController) {
+    try {
+      liveConnection.abortController.abort();
+    } catch { /* noop */ }
+    liveConnection.abortController = null;
+  }
+  liveConnection.lastToken = null;
+  liveConnection.lastHotelId = null;
+  setLiveConnected(false);
+}
+
+/**
+ * Idempotent — only opens a new connection if none exists or if
+ * the auth token has changed (login / refresh).
+ */
+function ensureLiveConnection(auth: AuthService): void {
+  const token = auth.getToken();
+  const hotelId = auth.getHotelId();
+
+  if (!token) {
+    if (liveConnection.abortController) closeLiveConnection();
+    return;
+  }
+
+  if (
+    liveConnection.abortController &&
+    liveConnection.lastToken === token &&
+    liveConnection.lastHotelId === hotelId
+  ) {
+    return; // already connected with the same identity
+  }
+
+  openLiveConnection(token, hotelId);
+}
+
+function forceReconnectLive(auth: AuthService): void {
+  closeLiveConnection();
+  ensureLiveConnection(auth);
+}
 
 @Component({
   selector: 'app-requests-view',
@@ -93,16 +232,15 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   todayIso = new Date().toISOString().substring(0, 10);
 
   // ============================================================
-  // LIVE (SSE)
+  // LIVE (SSE) — binds to the module-scoped singleton above
   // ============================================================
   liveConnected = false;
 
-  private abortController: AbortController | null = null;
+  private liveEventListener: EventListener = () => { /* replaced in bind */ };
+  private liveStateListener: StateListener = () => { /* replaced in bind */ };
+
   private sseReloadTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
-
-  private static readonly SSE_URL =
-    `${environment.apiUrl}/api/dashboard/front-desk/live`;
 
   // ============================================================
   // REQUESTS — FILTERED GETTER
@@ -235,7 +373,7 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
-  // TRACKBY — significant perf win on large lists
+  // TRACKBY
   // ============================================================
   trackByRequestId(_index: number, req: ReservationRequestExt): number {
     return req.id;
@@ -272,12 +410,59 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     });
 
     this.loadRequests();
-    this.connectLiveStream();
+    this.bindLiveStream();
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
-    this.disconnectLiveStream();
+
+    if (this.sseReloadTimer) {
+      clearTimeout(this.sseReloadTimer);
+      this.sseReloadTimer = null;
+    }
+
+    // Detach our listeners — the underlying connection stays open.
+    liveConnection.eventListeners.delete(this.liveEventListener);
+    liveConnection.stateListeners.delete(this.liveStateListener);
+  }
+
+  // ============================================================
+  // LIVE STREAM — attaches to module-level singleton
+  // ============================================================
+  private bindLiveStream(): void {
+    this.liveEventListener = (event: LiveEvent) =>
+      this.handleLiveEvent(event);
+
+    this.liveStateListener = (connected: boolean) => {
+      this.liveConnected = connected;
+    };
+
+    liveConnection.eventListeners.add(this.liveEventListener);
+    liveConnection.stateListeners.add(this.liveStateListener);
+
+    // Reflect current state immediately (in case it's already open)
+    this.liveConnected = liveConnection.connected;
+
+    // Opens only if not already open with the same token.
+    ensureLiveConnection(this.authService);
+  }
+
+  private handleLiveEvent(_event: LiveEvent): void {
+    if (this.destroyed) return;
+    if (this.sseReloadTimer) clearTimeout(this.sseReloadTimer);
+    this.sseReloadTimer = setTimeout(() => {
+      this.sseReloadTimer = null;
+      if (this.activeTab === 'stays') {
+        this.loadStays(true);
+      } else {
+        this.loadRequests(true);
+      }
+    }, 300);
+  }
+
+  reconnectLive(): void {
+    if (this.liveConnected) return;
+    forceReconnectLive(this.authService);
   }
 
   // ============================================================
@@ -377,116 +562,6 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     if (page < 0 || page >= this.staysTotalPages) return;
     this.staysPage = page;
     this.loadStays();
-  }
-
-  // ============================================================
-  // LIVE STREAM (SSE)
-  // ============================================================
-  private connectLiveStream(): void {
-    if (this.destroyed || this.abortController) return;
-
-    const token = this.authService.getToken();
-    const hotelId = this.authService.getHotelId();
-
-    if (!token) {
-      this.liveConnected = false;
-      return;
-    }
-
-    this.abortController = new AbortController();
-
-    const headers: Record<string, string> = {
-      Accept: 'text/event-stream',
-      Authorization: `Bearer ${token}`
-    };
-    if (hotelId) headers['X-Tenant-ID'] = hotelId;
-
-    fetchEventSource(RequestsViewComponent.SSE_URL, {
-      method: 'GET',
-      headers,
-      credentials: 'omit',
-      signal: this.abortController.signal,
-      openWhenHidden: true,
-
-      async onopen(response: Response) {
-        const contentType = response.headers.get('content-type') || '';
-        if (response.ok && contentType.includes('text/event-stream')) return;
-
-        if (
-          response.status === 401 ||
-          response.status === 403 ||
-          response.status === 404
-        ) {
-          throw new Error(
-            `SSE fatal: ${response.status} ${response.statusText}`
-          );
-        }
-        throw new Error(`SSE error: ${response.status} ${response.statusText}`);
-      },
-
-      onmessage: (event: EventSourceMessage) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any).handleLiveEvent(event);
-      },
-
-      onclose: () => {
-        this.liveConnected = false;
-      },
-
-      onerror: (err: any) => {
-        this.liveConnected = false;
-        if (
-          typeof err?.message === 'string' &&
-          err.message.startsWith('SSE fatal')
-        ) {
-          throw err;
-        }
-        return 3000;
-      }
-    })
-      .then(() => {
-        if (!this.destroyed) this.liveConnected = false;
-      })
-      .catch(() => {
-        this.liveConnected = false;
-      });
-
-    this.liveConnected = true;
-  }
-
-  private disconnectLiveStream(): void {
-    if (this.sseReloadTimer) {
-      clearTimeout(this.sseReloadTimer);
-      this.sseReloadTimer = null;
-    }
-    if (this.abortController) {
-      try {
-        this.abortController.abort();
-      } catch {
-        /* noop */
-      }
-      this.abortController = null;
-    }
-    this.liveConnected = false;
-  }
-
-  private handleLiveEvent(_event: EventSourceMessage): void {
-    if (this.destroyed) return;
-    if (this.sseReloadTimer) clearTimeout(this.sseReloadTimer);
-    this.sseReloadTimer = setTimeout(() => {
-      this.sseReloadTimer = null;
-      if (this.activeTab === 'stays') {
-        this.loadStays(true);
-      } else {
-        this.loadRequests(true);
-      }
-    }, 300);
-  }
-
-  reconnectLive(): void {
-    if (this.liveConnected) return;
-    this.disconnectLiveStream();
-    this.connectLiveStream();
   }
 
   // ============================================================
@@ -736,17 +811,23 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
     this.showCancelConfigModal = true;
     this.cancelConfigLoading = true;
     this.cancelConfigError = '';
-    
-    this.http.get<any>(`${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`).subscribe({
-      next: (data) => {
-        this.cancellationWindowHours = data.cancellationWindowHours ?? 0;
-        this.cancelConfigLoading = false;
-      },
-      error: (err: HttpErrorResponse) => {
-        this.cancelConfigError = 'Failed to load cancellation policy: ' + (err.error?.message || err.message);
-        this.cancelConfigLoading = false;
-      }
-    });
+
+    this.http
+      .get<any>(
+        `${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`
+      )
+      .subscribe({
+        next: (data) => {
+          this.cancellationWindowHours = data.cancellationWindowHours ?? 0;
+          this.cancelConfigLoading = false;
+        },
+        error: (err: HttpErrorResponse) => {
+          this.cancelConfigError =
+            'Failed to load cancellation policy: ' +
+            (err.error?.message || err.message);
+          this.cancelConfigLoading = false;
+        }
+      });
   }
 
   closeCancelConfig(): void {
@@ -756,24 +837,32 @@ export class RequestsViewComponent implements OnInit, OnDestroy {
   }
 
   saveCancelConfig(): void {
-    if (this.cancellationWindowHours === null || this.cancellationWindowHours < 0) return;
-    
+    if (
+      this.cancellationWindowHours === null ||
+      this.cancellationWindowHours < 0
+    )
+      return;
+
     this.cancelConfigLoading = true;
     this.cancelConfigError = '';
-    
-    this.http.put<any>(
-      `${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`,
-      { cancellationWindowHours: this.cancellationWindowHours }
-    ).subscribe({
-      next: () => {
-        this.cancelConfigLoading = false;
-        this.closeCancelConfig();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.cancelConfigError = 'Failed to save cancellation policy: ' + (err.error?.message || err.message);
-        this.cancelConfigLoading = false;
-      }
-    });
+
+    this.http
+      .put<any>(
+        `${environment.apiUrl}/api/dashboard/front-desk/policy/cancellation`,
+        { cancellationWindowHours: this.cancellationWindowHours }
+      )
+      .subscribe({
+        next: () => {
+          this.cancelConfigLoading = false;
+          this.closeCancelConfig();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.cancelConfigError =
+            'Failed to save cancellation policy: ' +
+            (err.error?.message || err.message);
+          this.cancelConfigLoading = false;
+        }
+      });
   }
 
   // ============================================================
