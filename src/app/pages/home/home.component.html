@@ -96,6 +96,51 @@
     <!-- Bottom section -->
     <div class="sidebar__footer">
 
+      <!-- Theme switcher -->
+      <button type="button"
+              class="nav-item nav-item--button theme-trigger"
+              (click)="toggleThemeMenu($event)"
+              [attr.aria-expanded]="themeMenuOpen"
+              aria-haspopup="menu"
+              [attr.aria-label]="'Theme: ' + themeLabel"
+              [attr.title]="collapsed ? ('Theme: ' + themeLabel + ' (click to change)') : null">
+
+        <ng-container [ngSwitch]="themePref">
+          <!-- Sun (light) -->
+          <svg *ngSwitchCase="'light'" class="nav-item__icon" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.75"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+
+          <!-- Moon (dark) -->
+          <svg *ngSwitchCase="'dark'" class="nav-item__icon" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.75"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+
+          <!-- Moon + star (midnight) -->
+          <svg *ngSwitchCase="'midnight'" class="nav-item__icon" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.75"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 12.5A8 8 0 1 1 11.5 4a6 6 0 0 0 8.5 8.5z"/>
+            <path d="M18 4.5l.55 1.25L19.8 6.3l-1.25.55L18 8.1l-.55-1.25L16.2 6.3l1.25-.55z"/>
+          </svg>
+
+          <!-- Monitor (system) -->
+          <svg *ngSwitchDefault class="nav-item__icon" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.75"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="14" rx="2"/>
+            <path d="M8 22h8M12 18v4"/>
+          </svg>
+        </ng-container>
+
+        <span class="nav-item__label">Theme</span>
+      </button>
+
       <!-- Minimize / maximize (directly above Settings) -->
       <button type="button" class="nav-item nav-item--button"
               (click)="toggleSidebar()"
@@ -158,4 +203,42 @@
     </div>
   </main>
 
+</div>
+
+<!-- ============================================================
+     THEME POPOVER (fixed — escapes sidebar overflow)
+============================================================ -->
+<div *ngIf="themeMenuOpen"
+     class="theme-menu"
+     role="menu"
+     aria-label="Appearance"
+     [style.left.px]="themeMenuPos.x"
+     [style.bottom.px]="themeMenuPos.bottom"
+     (click)="$event.stopPropagation()">
+
+  <div class="theme-menu__title">Appearance</div>
+
+  <button *ngFor="let opt of themeOptions"
+          type="button"
+          class="theme-option"
+          role="menuitemradio"
+          [attr.aria-checked]="themePref === opt.value"
+          [class.is-active]="themePref === opt.value"
+          (click)="setTheme(opt.value)">
+
+    <span class="theme-option__swatch"
+          [attr.data-swatch]="opt.value"
+          aria-hidden="true"></span>
+
+    <span class="theme-option__text">
+      <span class="theme-option__label">{{ opt.label }}</span>
+      <span class="theme-option__hint">{{ opt.hint }}</span>
+    </span>
+
+    <svg class="theme-option__check" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.25"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+  </button>
 </div>

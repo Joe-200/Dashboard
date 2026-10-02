@@ -179,6 +179,194 @@
 }
 
 /* =========================================================
+   THEME — DARK (zinc, low glare)
+========================================================= */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-app:      #0A0A0B;
+  --bg-surface:  #111113;
+  --bg-subtle:   #1A1A1D;
+  --bg-muted:    #232327;
+  --bg-inset:    #17171A;
+
+  /* Borders */
+  --border-subtle:  #1E1E22;
+  --border-default: #2A2A2F;
+  --border-strong:  #3F3F46;
+
+  /* Text */
+  --text-primary:     #FAFAFA;
+  --text-secondary:   #B4B4BC;
+  --text-tertiary:    #8B8B94;
+  --text-quaternary:  #5F5F68;
+
+  /* Accent — inverted: light on dark */
+  --accent:        #FAFAFA;
+  --accent-hover:  #FFFFFF;
+  --accent-text:   #18181B;
+  --accent-data:   #60A5FA;
+
+  /* Statuses — translucent fills */
+  --success-bg:     rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.28);
+  --success-text:   #6EE7B7;
+
+  --warning-bg:     rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.28);
+  --warning-text:   #FCD34D;
+
+  --danger-bg:      rgba(220, 38, 38, 0.14);
+  --danger-border:  rgba(220, 38, 38, 0.32);
+  --danger-text:    #FCA5A5;
+  --danger-solid:   #EF4444;
+  --danger-solid-h: #DC2626;
+
+  --info-bg:        rgba(37, 99, 235, 0.14);
+  --info-border:    rgba(37, 99, 235, 0.32);
+  --info-text:      #93C5FD;
+
+  --neutral-bg:     rgba(255, 255, 255, 0.06);
+  --neutral-border: rgba(255, 255, 255, 0.10);
+  --neutral-text:   #B4B4BC;
+
+  /* Shadows — deeper, blacker */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.50),
+               0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.50),
+               0 2px 4px  rgba(0, 0, 0, 0.40);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.60),
+               0 4px 8px   rgba(0, 0, 0, 0.40);
+
+  /* Legacy overrides (kept neutral) */
+  --primary-hover:  #3B82F6;
+  --primary-active: #2563EB;
+  --primary-soft:   rgba(96, 165, 250, 0.12);
+  --primary-soft-2: rgba(96, 165, 250, 0.20);
+  --primary-border: rgba(96, 165, 250, 0.32);
+  --primary-text:   #93C5FD;
+
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger:  #EF4444;
+  --info:    #60A5FA;
+}
+
+/* =========================================================
+   THEME — MIDNIGHT (deep navy, OLED-friendly)
+========================================================= */
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+
+  --bg-app:      #060810;
+  --bg-surface:  #0B0E18;
+  --bg-subtle:   #131826;
+  --bg-muted:    #1B2133;
+  --bg-inset:    #0E121E;
+
+  --border-subtle:  #161C2B;
+  --border-default: #232B40;
+  --border-strong:  #364159;
+
+  --text-primary:     #E8ECF5;
+  --text-secondary:   #A8B2C7;
+  --text-tertiary:    #7A869E;
+  --text-quaternary:  #525C72;
+
+  --accent:        #E8ECF5;
+  --accent-hover:  #FFFFFF;
+  --accent-text:   #0B0E18;
+  --accent-data:   #7C9CFF;
+
+  --success-bg:     rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.28);
+  --success-text:   #6EE7B7;
+
+  --warning-bg:     rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.28);
+  --warning-text:   #FCD34D;
+
+  --danger-bg:      rgba(239, 68, 68, 0.14);
+  --danger-border:  rgba(239, 68, 68, 0.32);
+  --danger-text:    #FCA5A5;
+  --danger-solid:   #F87171;
+  --danger-solid-h: #EF4444;
+
+  --info-bg:        rgba(124, 156, 255, 0.14);
+  --info-border:    rgba(124, 156, 255, 0.32);
+  --info-text:      #A5B8FF;
+
+  --neutral-bg:     rgba(255, 255, 255, 0.05);
+  --neutral-border: rgba(255, 255, 255, 0.09);
+  --neutral-text:   #A8B2C7;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.50);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.60),
+               0 1px 2px rgba(0, 0, 0, 0.50);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.60),
+               0 2px 4px  rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.70),
+               0 4px 8px   rgba(0, 0, 0, 0.50);
+
+  --primary-hover:  #93A9FF;
+  --primary-active: #7C9CFF;
+  --primary-soft:   rgba(124, 156, 255, 0.12);
+  --primary-soft-2: rgba(124, 156, 255, 0.20);
+  --primary-border: rgba(124, 156, 255, 0.32);
+  --primary-text:   #A5B8FF;
+
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger:  #F87171;
+  --info:    #7C9CFF;
+}
+
+/* =========================================================
+   THEME — smooth cross-fade (applied briefly on switch)
+========================================================= */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 220ms var(--ease-in-out),
+    border-color     220ms var(--ease-in-out),
+    color            220ms var(--ease-in-out),
+    fill             220ms var(--ease-in-out),
+    stroke           220ms var(--ease-in-out) !important;
+  transition-delay: 0 !important;
+}
+
+/* Base html background so overscroll matches the theme */
+html { background: var(--bg-app); }
+
+/* Dark-aware selection + scrollbars */
+:root[data-theme="dark"] ::selection,
+:root[data-theme="midnight"] ::selection {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] *,
+:root[data-theme="midnight"] * {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb,
+:root[data-theme="midnight"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+:root[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+
+/* =========================================================
    RESET & BASE
 ========================================================= */
 *, *::before, *::after { box-sizing: border-box; }
