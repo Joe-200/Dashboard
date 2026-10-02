@@ -48,6 +48,19 @@ interface BelowBasePriceWarningItem {
   newPrice: number;
 }
 
+/**
+ * One contiguous stay inside a room's day range. Rendered as a
+ * single absolutely positioned block on top of the reserved strip.
+ *
+ * `startCol` is 1-based; column 1 is the label, so the first day
+ * is column 2. `span` is the number of day columns covered.
+ */
+interface RoomStaySegment {
+  startCol: number;
+  span: number;
+  stay: StayDetailsResponse;
+}
+
 interface HpmsConfigResponse {
   enabled: boolean;
   webhook: string;
@@ -95,7 +108,8 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('calendarScroll') calendarScroll?: ElementRef<HTMLElement>;
 
   private readonly destroy$ = new Subject<void>();
-  private readonly DAY_CELL_WIDTH = 80;
+  /** Public so the template can compute absolute pixel positions. */
+  readonly DAY_CELL_WIDTH = 80;
   private readonly STICKY_COL_WIDTH = 240;
 
   private readonly API_BASE = environment.apiUrl;
@@ -275,14 +289,9 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   // ------------------------------------------------------------
   switchView(mode: 'rates' | 'rooms'): void {
     this.viewMode = mode;
-
     if (mode === 'rooms' && this.rooms.length === 0) {
-      // Rooms data hasn't loaded yet — `#calendarScroll` will be created
-      // once `staysLoading` becomes false, and `loadRoomsAndStays` will
-      // trigger the scroll then.
       this.loadRoomsAndStays();
     } else {
-      // View is already rendered — just scroll once Angular finishes CD.
       setTimeout(() => this.scrollToToday(), 50);
     }
   }
@@ -298,7 +307,6 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
           next: (stayData) => {
             this.stays = stayData.content;
             this.staysLoading = false;
-            // DOM now exists — scroll to today
             this.scrollToTodayAfterRender();
           },
           error: (err) => {
@@ -315,13 +323,58 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Type-safe match so numeric room.id still matches stringified
+   * stay.roomId (and vice versa), and date strings are normalised
+   * to YYYY-MM-DD before comparison.
+   */
   getStayForRoomAndDate(roomId: number, date: Date): StayDetailsResponse | null {
     const dateStr = this.formatDate(date);
-    return this.stays.find(stay =>
-      stay.roomId === roomId &&
-      dateStr >= stay.expectedCheckInDate &&
-      dateStr <= stay.expectedCheckOutDate
-    ) || null;
+    const rid = String(roomId);
+    return this.stays.find(stay => {
+      if (String(stay.roomId) !== rid) return false;
+      const inDate = String(stay.expectedCheckInDate).substring(0, 10);
+      const outDate = String(stay.expectedCheckOutDate).substring(0, 10);
+      return dateStr >= inDate && dateStr <= outDate;
+    }) || null;
+  }
+
+  /**
+   * Returns only the contiguous STAY blocks for a room. Non-stay days
+   * are rendered as background cells by the template, so we don't
+   * need to emit them here.
+   */
+  getRoomStaySegments(room: RoomResponse): RoomStaySegment[] {
+    const segments: RoomStaySegment[] = [];
+    let i = 0;
+    while (i < this.days.length) {
+      const stay = this.getStayForRoomAndDate(room.id, this.days[i]);
+      if (stay) {
+        const stayKey = this.getStayKey(stay);
+        let span = 1;
+        while (i + span < this.days.length) {
+          const next = this.getStayForRoomAndDate(room.id, this.days[i + span]);
+          if (next && this.getStayKey(next) === stayKey) span++;
+          else break;
+        }
+        segments.push({ startCol: i + 2, span, stay });
+        i += span;
+      } else {
+        i += 1;
+      }
+    }
+    return segments;
+  }
+
+  /**
+   * Stable identity for a stay when it has no `id` field.
+   */
+  private getStayKey(stay: StayDetailsResponse): string {
+    return `${stay.roomId}|${stay.expectedCheckInDate}|${stay.expectedCheckOutDate}|${stay.guestName}`;
+  }
+
+  trackByStaySeg(_index: number, seg: RoomStaySegment): string {
+    return `${seg.startCol}|${seg.span}|${this.getStayKey(seg.stay)}`;
   }
 
   openStayDetails(stay: StayDetailsResponse | null): void {
@@ -653,7 +706,7 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ============================================================
-  // TRACKBY — perf helpers
+  // TRACKBY
   // ============================================================
   trackByIndex(index: number): number {
     return index;
@@ -1181,27 +1234,13 @@ export class CalendarComponent implements OnInit, AfterViewInit, OnDestroy {
   // ============================================================
   // SCROLL TO TODAY
   // ============================================================
-
-  /**
-   * Waits for Angular to render the newly created room tables before
-   * scrolling — with a couple of retries in case layout takes an extra
-   * frame (large lists, images, fonts).
-   */
   private scrollToTodayAfterRender(attempt: number = 0): void {
-    // Let Angular finish CD + browser layout
     requestAnimationFrame(() => {
       setTimeout(() => {
         const el = this.calendarScroll?.nativeElement;
         const hasContent = !!el && el.scrollWidth > 0;
-
-        if (hasContent) {
-          this.scrollToToday();
-          return;
-        }
-        // Retry up to 5 times, 60ms apart (max ~300ms)
-        if (attempt < 5) {
-          this.scrollToTodayAfterRender(attempt + 1);
-        }
+        if (hasContent) { this.scrollToToday(); return; }
+        if (attempt < 5) this.scrollToTodayAfterRender(attempt + 1);
       }, 30);
     });
   }

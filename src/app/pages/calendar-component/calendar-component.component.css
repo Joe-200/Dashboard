@@ -1,7 +1,5 @@
 /* =========================================================
    CALENDAR — Availability & Rates
-   Refined editorial data-grid: calmer surfaces, clearer
-   hierarchy, softer separators, stronger scanability.
 ========================================================= */
 :host { display: block; }
 
@@ -189,6 +187,49 @@
   border-color: var(--danger-solid-h);
 }
 
+/* ---------- Colored button variants (contextual cues) ---------- */
+.btn-info {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.28);
+  color: var(--accent);
+  font-weight: 600;
+}
+.btn-info:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.5);
+}
+.btn-warn {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+  font-weight: 600;
+}
+.btn-warn:hover:not(:disabled) {
+  background: rgba(202, 138, 4, 0.14);
+  border-color: rgba(202, 138, 4, 0.55);
+}
+.btn-warn-solid {
+  background: var(--warning-text);
+  border-color: var(--warning-text);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+.btn-warn-solid:hover:not(:disabled) {
+  background: #A16207;
+  border-color: #A16207;
+}
+.btn-danger-tint {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+  font-weight: 600;
+}
+.btn-danger-tint:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
 /* =========================================================
    BULK EDIT BAR
 ========================================================= */
@@ -326,19 +367,21 @@
 
 /* =========================================================
    CALENDAR SCROLL AREA
+   No height cap, no inner vertical scroll. The page scrolls
+   vertically; the calendar scrolls horizontally only.
 ========================================================= */
 .calendar-scroll {
   position: relative;
-  height: calc(100vh - 300px);
   min-height: 420px;
-  overflow: auto;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  overflow-x: auto;
+  overflow-y: visible;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding-bottom: var(--space-3);
   cursor: grab;
   user-select: none;
-  overscroll-behavior: contain;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
 }
@@ -358,16 +401,20 @@
 }
 
 /* =========================================================
-   CATEGORY BLOCK
+   CATEGORY / ROOM BLOCK
+   Each block is a separate rounded card, vertically stacked.
 ========================================================= */
 .cal-block {
   display: block;
   width: max-content;
   min-width: 100%;
+  margin-bottom: var(--space-5);
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-default);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.cal-block:last-child { border-bottom: none; }
+.cal-block:last-child { margin-bottom: 0; }
 
 /* ---------- Category band ---------- */
 .cal-band {
@@ -379,6 +426,8 @@
   border-bottom: 1px solid var(--border-default);
   position: relative;
   z-index: 5;
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
 }
 .cal-band__content {
   position: sticky;
@@ -418,8 +467,9 @@
 ========================================================= */
 .cal-grid {
   display: grid;
+  grid-auto-flow: row;
   width: max-content;
-  /* grid-template-columns set inline: "240px repeat(N, 72px)" */
+  /* grid-template-columns set inline: "240px repeat(N, 80px)" */
 }
 
 /* ---------- Base cell ---------- */
@@ -1219,7 +1269,6 @@
 ========================================================= */
 @media (max-width: 900px) {
   .page-header-block__actions { width: 100%; }
-  .calendar-scroll { height: calc(100vh - 400px); min-height: 380px; }
   .bulk-bar { gap: var(--space-2); }
   .bulk-bar__actions { margin-left: 0; }
 }
